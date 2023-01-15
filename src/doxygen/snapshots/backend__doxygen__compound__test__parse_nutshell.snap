@@ -1,0 +1,23 @@
+---
+source: src/doxygen/compound.rs
+expression: result.unwrap()
+---
+Root {
+    compound_def: CompoundDef {
+        compound_name: "Nutshell",
+        brief_description: Description {
+            content: [],
+        },
+        detailed_description: Description {
+            content: [
+                Para(
+                    [
+                        Text(
+                            "With a little bit of a elaboration, should you feel it necessary.",
+                        ),
+                    ],
+                ),
+            ],
+        },
+    },
+}
