@@ -1,5 +1,12 @@
+# Python related
+/breathe/*.so
+__pycache__
+
 # Rust related
 /target
 
 # Sphinx related
 /documentation/build
+
+# Examples
+/examples/**/xml

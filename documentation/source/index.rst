@@ -11,6 +11,8 @@ Welcome to Breathe Pro's documentation!
    :caption: Contents:
 
 
+.. breatheclass:: Nutshell
+
 
 Indices and tables
 ==================
