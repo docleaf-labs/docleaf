@@ -1,2 +1,5 @@
 # Rust related
 /target
+
+# Sphinx related
+/documentation/build
