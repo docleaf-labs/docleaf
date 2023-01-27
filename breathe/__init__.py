@@ -12,7 +12,7 @@ from . import backend
 __version__ = "0.0.0"
 
 node_lookup = {
-    "paragraph": nodes.paragraph,
+    "container": nodes.container,
     "desc": sphinx.addnodes.desc,
     "desc_name": sphinx.addnodes.desc_name,
     "desc_content": sphinx.addnodes.desc_content,
@@ -21,6 +21,9 @@ node_lookup = {
     "desc_sig_keyword": sphinx.addnodes.desc_sig_keyword,
     "desc_sig_space": sphinx.addnodes.desc_sig_space,
     "desc_sig_name": sphinx.addnodes.desc_sig_name,
+    "paragraph": nodes.paragraph,
+    "index": sphinx.addnodes.index,
+    "rubric": nodes.rubric,
 }
 
 

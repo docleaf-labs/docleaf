@@ -1,5 +1,5 @@
 use anyhow::anyhow;
-use quick_xml::events::Event;
+use quick_xml::events::{BytesStart, Event};
 use quick_xml::reader::Reader;
 
 use crate::xml;
@@ -14,6 +14,12 @@ pub struct CompoundDef {
     pub compound_name: String,
     pub brief_description: Description,
     pub detailed_description: Description,
+    pub section_defs: Vec<SectionDef>,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct SectionDef {
+    kind: String,
 }
 
 #[derive(Debug, Default, PartialEq)]
@@ -55,15 +61,8 @@ pub fn parse(xml: &str) -> anyhow::Result<Root> {
 
             Ok(Event::Start(tag)) => match tag.name().as_ref() {
                 b"compounddef" => {
-                    let compound_def_contents = parse_compound_def(&mut reader)?;
-
-                    return Ok(Root {
-                        compound_def: CompoundDef {
-                            compound_name: compound_def_contents.name,
-                            brief_description: compound_def_contents.brief_description,
-                            detailed_description: compound_def_contents.detailed_description,
-                        },
-                    });
+                    let compound_def = parse_compound_def(&mut reader)?;
+                    return Ok(Root { compound_def });
                 }
                 _ => {}
             },
@@ -75,22 +74,17 @@ pub fn parse(xml: &str) -> anyhow::Result<Root> {
     }
 }
 
-struct CompoundDefContents {
-    name: String,
-    brief_description: Description,
-    detailed_description: Description,
-}
-
-fn parse_compound_def(reader: &mut Reader<&[u8]>) -> anyhow::Result<CompoundDefContents> {
-    let mut name = String::new();
+fn parse_compound_def(reader: &mut Reader<&[u8]>) -> anyhow::Result<CompoundDef> {
+    let mut compound_name = String::new();
     let mut brief_description = Description::default();
     let mut detailed_description = Description::default();
+    let mut section_defs = Vec::new();
 
     loop {
         match reader.read_event() {
             Ok(Event::Start(tag)) => match tag.name().as_ref() {
                 b"compoundname" => {
-                    name = xml::parse_text(reader)?;
+                    compound_name = xml::parse_text(reader)?;
                 }
                 b"briefdescription" => {
                     brief_description = parse_description(reader, b"briefdescription")?;
@@ -98,15 +92,39 @@ fn parse_compound_def(reader: &mut Reader<&[u8]>) -> anyhow::Result<CompoundDefC
                 b"detaileddescription" => {
                     detailed_description = parse_description(reader, b"detaileddescription")?;
                 }
+                b"sectiondef" => {
+                    section_defs.push(parse_section_def(reader, tag)?);
+                }
                 _ => {}
             },
             Ok(Event::End(tag)) => {
                 if tag.local_name().as_ref() == b"compounddef" {
-                    return Ok(CompoundDefContents {
-                        name,
+                    return Ok(CompoundDef {
+                        compound_name,
                         brief_description,
                         detailed_description,
+                        section_defs,
                     });
+                }
+            }
+            _ => {}
+        }
+    }
+}
+
+fn parse_section_def(
+    reader: &mut Reader<&[u8]>,
+    tag: BytesStart<'_>,
+) -> anyhow::Result<SectionDef> {
+    let kind = xml::get_attribute_string(b"kind", &tag)?;
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(tag)) => match tag.name().as_ref() {
+                _ => {}
+            },
+            Ok(Event::End(tag)) => {
+                if tag.local_name().as_ref() == b"sectiondef" {
+                    return Ok(SectionDef { kind });
                 }
             }
             _ => {}

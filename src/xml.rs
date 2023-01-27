@@ -23,3 +23,8 @@ pub fn get_attribute<'a>(name: &[u8], tag: &'a BytesStart<'a>) -> anyhow::Result
         .ok_or(anyhow!("Unable to find refid"))?
         .map_err(|err| anyhow!("{:?}", err))
 }
+
+pub fn get_attribute_string<'a>(name: &[u8], tag: &'a BytesStart<'a>) -> anyhow::Result<String> {
+    let attr = get_attribute(name, tag)?;
+    Ok(String::from_utf8(attr.value.into_owned())?)
+}

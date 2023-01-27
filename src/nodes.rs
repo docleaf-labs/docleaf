@@ -63,9 +63,12 @@ pub enum SignatureType {
 
 #[derive(Debug, Clone)]
 pub enum Node {
-    Paragraph(Vec<Node>),
-    Desc(Vec<Node>, Box<Node>),
+    // Plain text
     Text(String),
+
+    // Nodes
+    Container(Vec<Node>),
+    Desc(Vec<Node>, Box<Node>),
     DescSignatureKeyword(String),
     DescSignatureSpace,
     DescName(Box<Node>),
@@ -73,14 +76,19 @@ pub enum Node {
     DescSignatureLine(Vec<Node>),
     DescSignatureName(String),
     DescContent(Vec<Node>),
+    Index,
+    Paragraph(Vec<Node>),
+    Rubric,
 }
 
 impl IntoPy<PyObject> for Node {
     fn into_py(self, py: Python<'_>) -> PyObject {
         match self {
-            Self::Paragraph(children) => {
-                node(py, "paragraph", CallAs::SourceText, children).into_py(py)
-            }
+            // Plain text
+            Self::Text(text_) => text(text_).into_py(py),
+
+            // Nodes
+            Self::Container(nodes) => node(py, "container", CallAs::Source, nodes).into_py(py),
             Self::Desc(lines, content) => {
                 let mut children: Vec<_> =
                     lines.into_iter().map(|entry| entry.into_py(py)).collect();
@@ -88,7 +96,6 @@ impl IntoPy<PyObject> for Node {
 
                 node(py, "desc", CallAs::Source, children).into_py(py)
             }
-            Self::Text(text_) => text(text_).into_py(py),
             Self::DescSignatureKeyword(keyword) => node(
                 py,
                 "desc_sig_keyword",
@@ -117,6 +124,11 @@ impl IntoPy<PyObject> for Node {
                 node(py, "desc_sig_name", CallAs::SourceText, vec![text(name)]).into_py(py)
             }
             Self::DescContent(nodes) => node(py, "desc_content", CallAs::Source, nodes).into_py(py),
+            Self::Index => node(py, "index", CallAs::Source, Vec::<Node>::new()).into_py(py),
+            Self::Paragraph(children) => {
+                node(py, "paragraph", CallAs::SourceText, children).into_py(py)
+            }
+            Self::Rubric => node(py, "rubric", CallAs::Source, Vec::<Node>::new()).into_py(py),
         }
     }
 }
