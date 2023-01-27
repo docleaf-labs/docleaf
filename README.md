@@ -14,7 +14,13 @@ Requires a Rust & Cargo installation.
 
 - https://www.rust-lang.org/tools/install
 
+And Poetry for Python package management.
+
+- https://python-poetry.org/docs/#installation
+
 ```
+poetry install
+poetry shell
 ./build.sh
 make -C documentation html
 firefox documentation/build/html/index.html
