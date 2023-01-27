@@ -25,3 +25,7 @@ poetry shell
 make -C documentation html
 firefox documentation/build/html/index.html
 ```
+
+## License
+
+Licensed under the [Parity Public License](./LICENSE)
