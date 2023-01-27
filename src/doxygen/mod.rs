@@ -2,7 +2,7 @@ pub mod compound;
 pub mod index;
 
 use super::nodes::{Node, SignatureType};
-use compound::{DescriptionType, DocParaType, SectionDef};
+use compound::{DescriptionType, DocParaType};
 
 pub fn render_class_compound(compound: compound::Root) -> Vec<Node> {
     let compound_def = compound.compound_def;
@@ -33,8 +33,34 @@ pub fn render_class_compound(compound: compound::Root) -> Vec<Node> {
     )]
 }
 
-pub fn render_section_def(_section_def: SectionDef) -> Node {
-    Node::Container(Vec::new())
+pub fn render_section_def(section_def: compound::SectionDef) -> Node {
+    let mut content_nodes = vec![Node::Rubric(vec![Node::Text(section_def.kind)])];
+    content_nodes.append(
+        &mut section_def
+            .member_defs
+            .into_iter()
+            .map(render_member_def)
+            .collect(),
+    );
+
+    Node::Container(content_nodes)
+}
+
+pub fn render_member_def(member_def: compound::MemberDef) -> Node {
+    let content_nodes = Vec::new();
+    let content = Node::DescContent(content_nodes);
+
+    Node::Desc(
+        vec![Node::DescSignature(
+            SignatureType::MultiLine,
+            vec![Node::DescSignatureLine(vec![
+                Node::DescSignatureKeyword(member_def.kind),
+                Node::DescSignatureSpace,
+                Node::DescName(Box::new(Node::DescSignatureName(member_def.name))),
+            ])],
+        )],
+        Box::new(content),
+    )
 }
 
 pub fn render_description(description: compound::Description) -> Vec<Node> {

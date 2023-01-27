@@ -19,7 +19,16 @@ pub struct CompoundDef {
 
 #[derive(Debug, PartialEq)]
 pub struct SectionDef {
-    kind: String,
+    pub kind: String,
+    pub member_defs: Vec<MemberDef>,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct MemberDef {
+    pub name: String,
+    pub kind: String,
+    pub brief_description: Description,
+    pub detailed_description: Description,
 }
 
 #[derive(Debug, Default, PartialEq)]
@@ -117,14 +126,54 @@ fn parse_section_def(
     tag: BytesStart<'_>,
 ) -> anyhow::Result<SectionDef> {
     let kind = xml::get_attribute_string(b"kind", &tag)?;
+    let mut member_defs = Vec::new();
     loop {
         match reader.read_event() {
             Ok(Event::Start(tag)) => match tag.name().as_ref() {
+                b"memberdef" => {
+                    member_defs.push(parse_member_def(reader, tag)?);
+                }
                 _ => {}
             },
             Ok(Event::End(tag)) => {
                 if tag.local_name().as_ref() == b"sectiondef" {
-                    return Ok(SectionDef { kind });
+                    return Ok(SectionDef { kind, member_defs });
+                }
+            }
+            _ => {}
+        }
+    }
+}
+
+fn parse_member_def(reader: &mut Reader<&[u8]>, tag: BytesStart<'_>) -> anyhow::Result<MemberDef> {
+    let kind = xml::get_attribute_string(b"kind", &tag)?;
+
+    let mut name = String::new();
+    let mut brief_description = Description::default();
+    let mut detailed_description = Description::default();
+
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(tag)) => match tag.name().as_ref() {
+                b"name" => {
+                    name = xml::parse_text(reader)?;
+                }
+                b"briefdescription" => {
+                    brief_description = parse_description(reader, b"briefdescription")?;
+                }
+                b"detaileddescription" => {
+                    detailed_description = parse_description(reader, b"detaileddescription")?;
+                }
+                _ => {}
+            },
+            Ok(Event::End(tag)) => {
+                if tag.local_name().as_ref() == b"memberdef" {
+                    return Ok(MemberDef {
+                        name,
+                        kind,
+                        brief_description,
+                        detailed_description,
+                    });
                 }
             }
             _ => {}

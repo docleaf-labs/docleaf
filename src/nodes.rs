@@ -78,7 +78,7 @@ pub enum Node {
     DescContent(Vec<Node>),
     Index,
     Paragraph(Vec<Node>),
-    Rubric,
+    Rubric(Vec<Node>),
 }
 
 impl IntoPy<PyObject> for Node {
@@ -128,7 +128,7 @@ impl IntoPy<PyObject> for Node {
             Self::Paragraph(children) => {
                 node(py, "paragraph", CallAs::SourceText, children).into_py(py)
             }
-            Self::Rubric => node(py, "rubric", CallAs::Source, Vec::<Node>::new()).into_py(py),
+            Self::Rubric(nodes) => node(py, "rubric", CallAs::Source, nodes).into_py(py),
         }
     }
 }
