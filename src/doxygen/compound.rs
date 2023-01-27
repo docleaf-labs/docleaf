@@ -18,7 +18,7 @@ pub struct CompoundDef {
 
 #[derive(Debug, Default, PartialEq)]
 pub struct Description {
-    content: Vec<DescriptionType>,
+    pub content: Vec<DescriptionType>,
 }
 
 #[derive(Debug, PartialEq)]
