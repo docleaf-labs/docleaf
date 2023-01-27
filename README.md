@@ -28,4 +28,4 @@ firefox documentation/build/html/index.html
 
 ## License
 
-Licensed under the [Parity Public License](./LICENSE)
+Licensed under the [Parity Public License](./LICENSE.md)
