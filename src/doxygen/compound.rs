@@ -26,9 +26,29 @@ pub struct SectionDef {
 #[derive(Debug, PartialEq)]
 pub struct MemberDef {
     pub name: String,
-    pub kind: String,
     pub brief_description: Description,
     pub detailed_description: Description,
+    pub kind: MemberDefKind,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum MemberDefKind {
+    Enum { values: Vec<EnumValue> },
+    Unknown(String),
+}
+
+impl MemberDefKind {
+    pub fn name(&self) -> String {
+        match self {
+            Self::Enum { .. } => String::from("enum"),
+            Self::Unknown(name) => name.clone(),
+        }
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub struct EnumValue {
+    pub name: String,
 }
 
 #[derive(Debug, Default, PartialEq)]
@@ -131,7 +151,15 @@ fn parse_section_def(
         match reader.read_event() {
             Ok(Event::Start(tag)) => match tag.name().as_ref() {
                 b"memberdef" => {
-                    member_defs.push(parse_member_def(reader, tag)?);
+                    let kind = xml::get_attribute_string(b"kind", &tag)?;
+                    match kind.as_str() {
+                        "enum" => {
+                            member_defs.push(parse_enum_member_def(reader, tag)?);
+                        }
+                        name => {
+                            member_defs.push(parse_unknown_member_def(reader, tag, name)?);
+                        }
+                    }
                 }
                 _ => {}
             },
@@ -145,9 +173,73 @@ fn parse_section_def(
     }
 }
 
-fn parse_member_def(reader: &mut Reader<&[u8]>, tag: BytesStart<'_>) -> anyhow::Result<MemberDef> {
-    let kind = xml::get_attribute_string(b"kind", &tag)?;
+fn parse_enum_member_def(
+    reader: &mut Reader<&[u8]>,
+    tag: BytesStart<'_>,
+) -> anyhow::Result<MemberDef> {
+    let mut name = String::new();
+    let mut brief_description = Description::default();
+    let mut detailed_description = Description::default();
+    let mut values = Vec::new();
 
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(tag)) => match tag.name().as_ref() {
+                b"name" => {
+                    name = xml::parse_text(reader)?;
+                }
+                b"briefdescription" => {
+                    brief_description = parse_description(reader, b"briefdescription")?;
+                }
+                b"detaileddescription" => {
+                    detailed_description = parse_description(reader, b"detaileddescription")?;
+                }
+                b"enumvalue" => {
+                    values.push(parse_enum_value(reader, tag)?);
+                }
+                _ => {}
+            },
+            Ok(Event::End(tag)) => {
+                if tag.local_name().as_ref() == b"memberdef" {
+                    return Ok(MemberDef {
+                        name,
+                        brief_description,
+                        detailed_description,
+                        kind: MemberDefKind::Enum { values },
+                    });
+                }
+            }
+            _ => {}
+        }
+    }
+}
+
+fn parse_enum_value(reader: &mut Reader<&[u8]>, tag: BytesStart<'_>) -> anyhow::Result<EnumValue> {
+    let mut name = String::new();
+
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(tag)) => match tag.name().as_ref() {
+                b"name" => {
+                    name = xml::parse_text(reader)?;
+                }
+                _ => {}
+            },
+            Ok(Event::End(tag)) => {
+                if tag.local_name().as_ref() == b"enumvalue" {
+                    return Ok(EnumValue { name });
+                }
+            }
+            _ => {}
+        }
+    }
+}
+
+fn parse_unknown_member_def(
+    reader: &mut Reader<&[u8]>,
+    tag: BytesStart<'_>,
+    kind: &str,
+) -> anyhow::Result<MemberDef> {
     let mut name = String::new();
     let mut brief_description = Description::default();
     let mut detailed_description = Description::default();
@@ -170,9 +262,9 @@ fn parse_member_def(reader: &mut Reader<&[u8]>, tag: BytesStart<'_>) -> anyhow::
                 if tag.local_name().as_ref() == b"memberdef" {
                     return Ok(MemberDef {
                         name,
-                        kind,
                         brief_description,
                         detailed_description,
+                        kind: MemberDefKind::Unknown(kind.to_string()),
                     });
                 }
             }

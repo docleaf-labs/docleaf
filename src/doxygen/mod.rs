@@ -47,17 +47,38 @@ pub fn render_section_def(section_def: compound::SectionDef) -> Node {
 }
 
 pub fn render_member_def(member_def: compound::MemberDef) -> Node {
-    let content_nodes = Vec::new();
+    let name = member_def.kind.name();
+    let content_nodes = match member_def.kind {
+        compound::MemberDefKind::Enum { values } => {
+            values.into_iter().map(render_enum_value).collect()
+        }
+        compound::MemberDefKind::Unknown(_) => Vec::new(),
+    };
+
     let content = Node::DescContent(content_nodes);
 
     Node::Desc(
         vec![Node::DescSignature(
             SignatureType::MultiLine,
             vec![Node::DescSignatureLine(vec![
-                Node::DescSignatureKeyword(member_def.kind),
+                Node::DescSignatureKeyword(name),
                 Node::DescSignatureSpace,
                 Node::DescName(Box::new(Node::DescSignatureName(member_def.name))),
             ])],
+        )],
+        Box::new(content),
+    )
+}
+
+pub fn render_enum_value(enum_value: compound::EnumValue) -> Node {
+    let content_nodes = Vec::new();
+    let content = Node::DescContent(content_nodes);
+    Node::Desc(
+        vec![Node::DescSignature(
+            SignatureType::MultiLine,
+            vec![Node::DescSignatureLine(vec![Node::DescName(Box::new(
+                Node::DescSignatureName(enum_value.name),
+            ))])],
         )],
         Box::new(content),
     )
