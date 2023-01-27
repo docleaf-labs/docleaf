@@ -8,6 +8,7 @@ pub fn render_class_compound(compound: compound::Root) -> Vec<Node> {
     let compound_def = compound.compound_def;
 
     let mut content_nodes = Vec::new();
+    content_nodes.append(&mut render_description(compound_def.brief_description));
     content_nodes.append(&mut render_description(compound_def.detailed_description));
     content_nodes.append(
         &mut compound_def
@@ -48,11 +49,15 @@ pub fn render_section_def(section_def: compound::SectionDef) -> Node {
 
 pub fn render_member_def(member_def: compound::MemberDef) -> Node {
     let name = member_def.kind.name();
-    let content_nodes = match member_def.kind {
+    let mut content_nodes = Vec::new();
+    content_nodes.append(&mut render_description(member_def.brief_description));
+    content_nodes.append(&mut render_description(member_def.detailed_description));
+
+    match member_def.kind {
         compound::MemberDefKind::Enum { values } => {
-            values.into_iter().map(render_enum_value).collect()
+            content_nodes.append(&mut values.into_iter().map(render_enum_value).collect());
         }
-        compound::MemberDefKind::Unknown(_) => Vec::new(),
+        compound::MemberDefKind::Unknown(_) => {}
     };
 
     let content = Node::DescContent(content_nodes);
@@ -71,7 +76,9 @@ pub fn render_member_def(member_def: compound::MemberDef) -> Node {
 }
 
 pub fn render_enum_value(enum_value: compound::EnumValue) -> Node {
-    let content_nodes = Vec::new();
+    let mut content_nodes = Vec::new();
+    content_nodes.append(&mut render_description(enum_value.brief_description));
+    content_nodes.append(&mut render_description(enum_value.detailed_description));
     let content = Node::DescContent(content_nodes);
     Node::Desc(
         vec![Node::DescSignature(
