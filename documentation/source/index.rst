@@ -11,7 +11,11 @@ Welcome to Breathe Pro's documentation!
    :caption: Contents:
 
 
-.. breatheclass:: Nutshell
+.. doxygenclass:: Nutshell
+   :project: nutshell
+
+.. doxygenclass:: Example
+   :project: class_methods
 
 
 Indices and tables

@@ -54,20 +54,20 @@ class ClassDirective(Directive):
     optional_arguments = 0
     final_argument_whitespace = True
     option_spec = {
-        "class": directives.class_option,
-        "name": directives.unchanged,
+        "project": directives.unchanged,
     }
 
     def run(self) -> List[Node]:
         name = self.arguments[0]
-        path = self.app.config.breathe_projects[self.app.config.breathe_default_project]
+        project = self.options['project'] or self.app.config.breathe_default_project
+        path = self.app.config.breathe_projects[project]
         node_list = backend.render_class(name, path)
         return render_node_list(node_list)
 
 
 def setup(app: Sphinx):
     ClassDirective.app = app
-    app.add_directive("breatheclass", ClassDirective)
+    app.add_directive("doxygenclass", ClassDirective)
     app.add_config_value("breathe_projects", {}, "env")
     app.add_config_value("breathe_default_project", None, "env")
     return {"version": __version__}

@@ -29,7 +29,7 @@ public:
 
       \param tool the tool with which to crack the nut
     */
-    void crack( Tool tool );
+    void crack(Tool tool);
 
     /*!
       \return Whether or not the nut is cracked
@@ -42,5 +42,3 @@ private:
     bool m_isCracked;
 
 };
-
-
