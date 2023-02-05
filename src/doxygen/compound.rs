@@ -116,7 +116,7 @@ pub enum DocParamName {
 #[derive(Debug, PartialEq)]
 pub struct DocSimpleSect {
     // title: String,
-    paras: Vec<DocPara>,
+    pub paras: Vec<DocPara>,
 }
 
 #[derive(Debug, PartialEq)]
