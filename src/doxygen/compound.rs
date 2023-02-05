@@ -99,7 +99,7 @@ pub fn parse_file(compound_xml_path: &std::path::Path) -> anyhow::Result<Root> {
 }
 
 pub fn parse(xml: &str) -> anyhow::Result<Root> {
-    let mut reader = Reader::from_str(&xml);
+    let mut reader = Reader::from_str(xml);
     reader.trim_text(true);
 
     let mut txt = Vec::new();
@@ -114,13 +114,12 @@ pub fn parse(xml: &str) -> anyhow::Result<Root> {
             // exits the loop when reaching end of file
             Ok(Event::Eof) => {}
 
-            Ok(Event::Start(tag)) => match tag.name().as_ref() {
-                b"compounddef" => {
+            Ok(Event::Start(tag)) => {
+                if let b"compounddef" = tag.name().as_ref() {
                     let compound_def = parse_compound_def(&mut reader)?;
                     return Ok(Root { compound_def });
                 }
-                _ => {}
-            },
+            }
             Ok(Event::Text(e)) => txt.push(e.unescape().unwrap().into_owned()),
 
             // There are several other `Event`s we do not consider here
@@ -193,7 +192,11 @@ fn parse_section_def(
                         }
                     }
                 }
-                _ => {}
+                tag_name => {
+                    return Err(anyhow!(
+                        "unexpected tag when parsing sectiondef: {tag_name:?}"
+                    ))
+                }
             },
             Ok(Event::End(tag)) => {
                 if tag.local_name().as_ref() == b"sectiondef" {
@@ -440,7 +443,11 @@ pub fn parse_description(
         match reader.read_event() {
             Ok(Event::Start(tag)) => match tag.name().as_ref() {
                 b"para" => content.push(DescriptionType::Para(parse_para(reader)?)),
-                _ => {}
+                tag_name => {
+                    return Err(anyhow!(
+                        "unexpected tag when parsing description: {tag_name:?}"
+                    ))
+                }
             },
             Ok(Event::Text(text)) => content.push(DescriptionType::Text(
                 String::from_utf8(text.to_vec()).map_err(|err| anyhow!("{:?}", err))?,
@@ -496,7 +503,7 @@ pub fn parse_para(reader: &mut Reader<&[u8]>) -> anyhow::Result<Vec<DocParaType>
                         text: xml::parse_text(reader)?,
                     }))
                 }
-                _ => {}
+                tag_name => return Err(anyhow!("unexpected tag when parsing para: {tag_name:?}")),
             },
             Ok(Event::Text(text)) => content.push(DocParaType::Text(
                 String::from_utf8(text.to_vec()).map_err(|err| anyhow!("{:?}", err))?,

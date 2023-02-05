@@ -29,7 +29,7 @@ pub fn parse_file(index_xml_path: &std::path::Path) -> anyhow::Result<Root> {
 }
 
 pub fn parse(xml: &str) -> anyhow::Result<Root> {
-    let mut reader = Reader::from_str(&xml);
+    let mut reader = Reader::from_str(xml);
     reader.trim_text(true);
 
     let mut txt = Vec::new();
@@ -46,8 +46,8 @@ pub fn parse(xml: &str) -> anyhow::Result<Root> {
             // exits the loop when reaching end of file
             Ok(Event::Eof) => break,
 
-            Ok(Event::Start(tag)) => match tag.name().as_ref() {
-                b"compound" => {
+            Ok(Event::Start(tag)) => {
+                if let b"compound" = tag.name().as_ref() {
                     let refid_attr = xml::get_attribute(b"refid", &tag)?;
                     let kind_attr = xml::get_attribute(b"kind", &tag)?;
 
@@ -60,8 +60,7 @@ pub fn parse(xml: &str) -> anyhow::Result<Root> {
                         members: compound_contents.members,
                     })
                 }
-                _ => {}
-            },
+            }
             Ok(Event::Text(e)) => txt.push(e.unescape().unwrap().into_owned()),
 
             // There are several other `Event`s we do not consider here

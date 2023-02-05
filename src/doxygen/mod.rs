@@ -64,7 +64,7 @@ pub fn render_member_def(member_def: compound::MemberDef) -> Node {
             content_nodes.append(&mut values.into_iter().map(render_enum_value).collect());
         }
         compound::MemberDefKind::Function { params } => {
-            let mut parameter_list_items = params
+            let parameter_list_items = params
                 .into_iter()
                 .map(|param| {
                     let type_ = match param.type_ {
