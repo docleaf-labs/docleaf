@@ -36,6 +36,7 @@ html_static_path = ["_static"]
 # -- Options for Breathe
 breathe_projects = {
     "nutshell": "../../examples/nutshell/xml/",
-    "class_methods": "../../examples/class_methods/xml/"
+    "class_methods": "../../examples/class_methods/xml/",
+    "references": "../../examples/references/xml/",
 }
 breathe_default_project = "nutshell"

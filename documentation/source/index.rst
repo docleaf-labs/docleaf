@@ -14,8 +14,24 @@ Welcome to Breathe Pro's documentation!
 .. doxygenclass:: Nutshell
    :project: nutshell
 
+Methods
+-------
+
 .. doxygenclass:: Example
    :project: class_methods
+
+
+References
+----------
+
+.. doxygenclass:: ReferenceExample
+   :project: references
+
+.. doxygenclass:: OtherReferenceExample
+   :project: references
+
+.. doxygenclass:: DocReferenceExample
+   :project: references
 
 
 Indices and tables
