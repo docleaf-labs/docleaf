@@ -8,7 +8,9 @@ pub fn parse_text(reader: &mut Reader<&[u8]>) -> anyhow::Result<String> {
         Ok(Event::Text(text)) => {
             String::from_utf8(text.to_vec()).map_err(|err| anyhow!("{:?}", err))
         }
-        _ => Err(anyhow!("parse_text called on non-text node")),
+        event => Err(anyhow!(
+            "parse_text called on non-text node resulting in event: {event:?}"
+        )),
     }
 }
 

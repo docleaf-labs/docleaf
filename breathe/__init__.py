@@ -16,6 +16,8 @@ node_lookup = {
     "desc": sphinx.addnodes.desc,
     "desc_name": sphinx.addnodes.desc_name,
     "desc_content": sphinx.addnodes.desc_content,
+    "desc_parameter": sphinx.addnodes.desc_parameter,
+    "desc_parameterlist": sphinx.addnodes.desc_parameterlist,
     "desc_signature": sphinx.addnodes.desc_signature,
     "desc_signature_line": sphinx.addnodes.desc_signature_line,
     "desc_sig_keyword": sphinx.addnodes.desc_sig_keyword,
@@ -59,7 +61,7 @@ class ClassDirective(Directive):
 
     def run(self) -> List[Node]:
         name = self.arguments[0]
-        project = self.options['project'] or self.app.config.breathe_default_project
+        project = self.options["project"] or self.app.config.breathe_default_project
         path = self.app.config.breathe_projects[project]
         node_list = backend.render_class(name, path)
         return render_node_list(node_list)

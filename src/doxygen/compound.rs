@@ -26,14 +26,16 @@ pub struct SectionDef {
 #[derive(Debug, PartialEq)]
 pub struct MemberDef {
     pub name: String,
+    pub kind: MemberDefKind,
     pub brief_description: Description,
     pub detailed_description: Description,
-    pub kind: MemberDefKind,
 }
 
 #[derive(Debug, PartialEq)]
 pub enum MemberDefKind {
     Enum { values: Vec<EnumValue> },
+    Function { params: Vec<Param> },
+    Variable,
     Unknown(String),
 }
 
@@ -41,9 +43,17 @@ impl MemberDefKind {
     pub fn name(&self) -> String {
         match self {
             Self::Enum { .. } => String::from("enum"),
+            Self::Function { .. } => String::from("function"),
+            Self::Variable => String::from("variable"),
             Self::Unknown(name) => name.clone(),
         }
     }
+}
+
+#[derive(Debug, PartialEq)]
+pub struct Param {
+    pub type_: LinkedText,
+    pub declname: String,
 }
 
 #[derive(Debug, PartialEq)]
@@ -67,7 +77,20 @@ pub enum DescriptionType {
 
 #[derive(Debug, PartialEq)]
 pub enum DocParaType {
+    Ref(RefText),
     Text(String),
+}
+
+#[derive(Debug, PartialEq)]
+pub enum LinkedText {
+    Ref(RefText),
+    Text(String),
+}
+
+#[derive(Debug, PartialEq)]
+pub struct RefText {
+    pub id: String,
+    pub text: String,
 }
 
 pub fn parse_file(compound_xml_path: &std::path::Path) -> anyhow::Result<Root> {
@@ -159,6 +182,12 @@ fn parse_section_def(
                         "enum" => {
                             member_defs.push(parse_enum_member_def(reader, tag)?);
                         }
+                        "function" => {
+                            member_defs.push(parse_function_member_def(reader, tag)?);
+                        }
+                        "variable" => {
+                            member_defs.push(parse_variable_member_def(reader, tag)?);
+                        }
                         _ => {
                             member_defs.push(parse_unknown_member_def(reader, tag, &kind)?);
                         }
@@ -209,6 +238,115 @@ fn parse_enum_member_def(
                         brief_description,
                         detailed_description,
                         kind: MemberDefKind::Enum { values },
+                    });
+                }
+            }
+            _ => {}
+        }
+    }
+}
+
+fn parse_function_member_def(
+    reader: &mut Reader<&[u8]>,
+    _tag: BytesStart<'_>,
+) -> anyhow::Result<MemberDef> {
+    let mut name = String::new();
+    let mut brief_description = Description::default();
+    let mut detailed_description = Description::default();
+    let mut params = Vec::new();
+
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(tag)) => match tag.name().as_ref() {
+                b"name" => {
+                    name = xml::parse_text(reader)?;
+                }
+                b"briefdescription" => {
+                    brief_description = parse_description(reader, b"briefdescription")?;
+                }
+                b"detaileddescription" => {
+                    detailed_description = parse_description(reader, b"detaileddescription")?;
+                }
+                b"param" => {
+                    params.push(parse_param(reader, tag)?);
+                }
+                _ => {}
+            },
+            Ok(Event::End(tag)) => {
+                if tag.local_name().as_ref() == b"memberdef" {
+                    return Ok(MemberDef {
+                        name,
+                        brief_description,
+                        detailed_description,
+                        kind: MemberDefKind::Function { params },
+                    });
+                }
+            }
+            _ => {}
+        }
+    }
+}
+
+fn parse_param(reader: &mut Reader<&[u8]>, _tag: BytesStart<'_>) -> anyhow::Result<Param> {
+    let mut type_ = None;
+    let mut declname = String::new();
+
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(tag)) => match tag.name().as_ref() {
+                b"type" => {
+                    type_ = Some(parse_linked_text(reader, tag)?);
+                }
+                b"declname" => {
+                    declname = xml::parse_text(reader)?;
+                }
+                _ => {}
+            },
+            Ok(Event::End(tag)) => {
+                if tag.local_name().as_ref() == b"param" {
+                    return type_
+                        .map(|type_| Param { type_, declname })
+                        .ok_or_else(|| anyhow::anyhow!("Failed to find type for param"));
+                }
+            }
+            _ => {}
+        }
+    }
+}
+
+fn parse_variable_member_def(
+    reader: &mut Reader<&[u8]>,
+    _tag: BytesStart<'_>,
+) -> anyhow::Result<MemberDef> {
+    let mut name = String::new();
+    let mut brief_description = Description::default();
+    let mut detailed_description = Description::default();
+    let mut values = Vec::new();
+
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(tag)) => match tag.name().as_ref() {
+                b"name" => {
+                    name = xml::parse_text(reader)?;
+                }
+                b"briefdescription" => {
+                    brief_description = parse_description(reader, b"briefdescription")?;
+                }
+                b"detaileddescription" => {
+                    detailed_description = parse_description(reader, b"detaileddescription")?;
+                }
+                b"enumvalue" => {
+                    values.push(parse_enum_value(reader, tag)?);
+                }
+                _ => {}
+            },
+            Ok(Event::End(tag)) => {
+                if tag.local_name().as_ref() == b"memberdef" {
+                    return Ok(MemberDef {
+                        name,
+                        brief_description,
+                        detailed_description,
+                        kind: MemberDefKind::Variable,
                     });
                 }
             }
@@ -317,11 +455,47 @@ pub fn parse_description(
     }
 }
 
+fn parse_linked_text(
+    reader: &mut Reader<&[u8]>,
+    _tag: BytesStart<'_>,
+) -> anyhow::Result<LinkedText> {
+    match reader.read_event() {
+        Ok(Event::Start(tag)) => match tag.name().as_ref() {
+            b"ref" => {
+                let id = xml::get_attribute_string(b"refid", &tag)?;
+                Ok(LinkedText::Ref(RefText {
+                    id,
+                    text: xml::parse_text(reader)?,
+                }))
+            }
+            tag_name => Err(anyhow!(
+                "unexpected tag when parsing linked text: {tag_name:?}"
+            )),
+        },
+        Ok(Event::Text(text)) => Ok(LinkedText::Text(
+            String::from_utf8(text.to_vec()).map_err(|err| anyhow!("{:?}", err))?,
+        )),
+        event => {
+            return Err(anyhow!(
+                "unexpected event when parsing linked text: {:?}",
+                event
+            ))
+        }
+    }
+}
+
 pub fn parse_para(reader: &mut Reader<&[u8]>) -> anyhow::Result<Vec<DocParaType>> {
     let mut content = Vec::new();
     loop {
         match reader.read_event() {
             Ok(Event::Start(tag)) => match tag.name().as_ref() {
+                b"ref" => {
+                    let id = xml::get_attribute_string(b"refid", &tag)?;
+                    content.push(DocParaType::Ref(RefText {
+                        id,
+                        text: xml::parse_text(reader)?,
+                    }))
+                }
                 _ => {}
             },
             Ok(Event::Text(text)) => content.push(DocParaType::Text(

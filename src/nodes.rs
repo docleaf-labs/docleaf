@@ -69,13 +69,16 @@ pub enum Node {
     // Nodes
     Container(Vec<Node>),
     Desc(Vec<Node>, Box<Node>),
-    DescSignatureKeyword(String),
-    DescSignatureSpace,
+    DescContent(Vec<Node>),
     DescName(Box<Node>),
+    DescParameter(Vec<Node>),
+    DescParameterList(Vec<Node>),
     DescSignature(SignatureType, Vec<Node>),
+    DescSignatureKeyword(String),
     DescSignatureLine(Vec<Node>),
     DescSignatureName(String),
-    DescContent(Vec<Node>),
+    DescSignaturePunctuation(String),
+    DescSignatureSpace,
     Index,
     Paragraph(Vec<Node>),
     Rubric(Vec<Node>),
@@ -96,11 +99,38 @@ impl IntoPy<PyObject> for Node {
 
                 node(py, "desc", CallAs::Source, children).into_py(py)
             }
+            Self::DescContent(nodes) => node(py, "desc_content", CallAs::Source, nodes).into_py(py),
+            Self::DescName(desc_sig_name) => {
+                node(py, "desc_name", CallAs::SourceText, vec![*desc_sig_name]).into_py(py)
+            }
+            Self::DescParameter(nodes) => {
+                node(py, "desc_parameter", CallAs::SourceText, nodes).into_py(py)
+            }
+            Self::DescParameterList(nodes) => {
+                node(py, "desc_parameterlist", CallAs::SourceText, nodes).into_py(py)
+            }
+            Self::DescSignature(_type, nodes) => {
+                // The Sphinx docs make it look like it should be CallAs::Args but it seems to be SourceText instead
+                node(py, "desc_signature", CallAs::SourceText, nodes).into_py(py)
+            }
             Self::DescSignatureKeyword(keyword) => node(
                 py,
                 "desc_sig_keyword",
                 CallAs::SourceText,
                 vec![text(keyword)],
+            )
+            .into_py(py),
+            Self::DescSignatureLine(nodes) => {
+                node(py, "desc_signature_line", CallAs::SourceText, nodes).into_py(py)
+            }
+            Self::DescSignatureName(name) => {
+                node(py, "desc_sig_name", CallAs::SourceText, vec![text(name)]).into_py(py)
+            }
+            Self::DescSignaturePunctuation(text_) => node(
+                py,
+                "desc_sig_punctuation",
+                CallAs::SourceText,
+                vec![text(text_)],
             )
             .into_py(py),
             Self::DescSignatureSpace => node(
@@ -110,20 +140,6 @@ impl IntoPy<PyObject> for Node {
                 vec![text(" ".to_string())],
             )
             .into_py(py),
-            Self::DescName(desc_sig_name) => {
-                node(py, "desc_name", CallAs::SourceText, vec![*desc_sig_name]).into_py(py)
-            }
-            Self::DescSignature(_type, nodes) => {
-                // The Sphinx docs make it look like it should be CallAs::Args but it seems to be SourceText instead
-                node(py, "desc_signature", CallAs::SourceText, nodes).into_py(py)
-            }
-            Self::DescSignatureLine(nodes) => {
-                node(py, "desc_signature_line", CallAs::SourceText, nodes).into_py(py)
-            }
-            Self::DescSignatureName(name) => {
-                node(py, "desc_sig_name", CallAs::SourceText, vec![text(name)]).into_py(py)
-            }
-            Self::DescContent(nodes) => node(py, "desc_content", CallAs::Source, nodes).into_py(py),
             Self::Index => node(py, "index", CallAs::Source, Vec::<Node>::new()).into_py(py),
             Self::Paragraph(children) => {
                 node(py, "paragraph", CallAs::SourceText, children).into_py(py)

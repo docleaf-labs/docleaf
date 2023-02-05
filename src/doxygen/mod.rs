@@ -53,10 +53,37 @@ pub fn render_member_def(member_def: compound::MemberDef) -> Node {
     content_nodes.append(&mut render_description(member_def.brief_description));
     content_nodes.append(&mut render_description(member_def.detailed_description));
 
+    let mut signature_line = vec![
+        Node::DescSignatureKeyword(name),
+        Node::DescSignatureSpace,
+        Node::DescName(Box::new(Node::DescSignatureName(member_def.name))),
+    ];
+
     match member_def.kind {
         compound::MemberDefKind::Enum { values } => {
             content_nodes.append(&mut values.into_iter().map(render_enum_value).collect());
         }
+        compound::MemberDefKind::Function { params } => {
+            let mut parameter_list_items = params
+                .into_iter()
+                .map(|param| {
+                    let type_ = match param.type_ {
+                        compound::LinkedText::Ref(ref_text) => {
+                            Node::DescSignatureName(ref_text.text)
+                        }
+                        compound::LinkedText::Text(text_) => Node::DescSignatureName(text_),
+                    };
+
+                    Node::DescParameter(vec![
+                        type_,
+                        Node::DescSignatureSpace,
+                        Node::DescSignatureName(param.declname),
+                    ])
+                })
+                .collect();
+            signature_line.push(Node::DescParameterList(parameter_list_items));
+        }
+        compound::MemberDefKind::Variable => {}
         compound::MemberDefKind::Unknown(_) => {}
     };
 
@@ -65,11 +92,7 @@ pub fn render_member_def(member_def: compound::MemberDef) -> Node {
     Node::Desc(
         vec![Node::DescSignature(
             SignatureType::MultiLine,
-            vec![Node::DescSignatureLine(vec![
-                Node::DescSignatureKeyword(name),
-                Node::DescSignatureSpace,
-                Node::DescName(Box::new(Node::DescSignatureName(member_def.name))),
-            ])],
+            vec![Node::DescSignatureLine(signature_line)],
         )],
         Box::new(content),
     )
@@ -109,6 +132,7 @@ pub fn render_para(content: Vec<DocParaType>) -> Vec<Node> {
 
     for entry in content {
         match entry {
+            DocParaType::Ref(ref_text) => nodes.push(Node::Text(ref_text.text)),
             DocParaType::Text(text) => nodes.push(Node::Text(text)),
         }
     }
