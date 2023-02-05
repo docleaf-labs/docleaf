@@ -2,7 +2,7 @@ pub mod compound;
 pub mod index;
 
 use super::nodes::{Node, SignatureType};
-use compound::{DescriptionType, DocParaType};
+use compound::{DescriptionType, DocPara};
 
 pub fn render_class_compound(compound: compound::Root) -> Vec<Node> {
     let compound_def = compound.compound_def;
@@ -127,13 +127,15 @@ pub fn render_description(description: compound::Description) -> Vec<Node> {
     nodes
 }
 
-pub fn render_para(content: Vec<DocParaType>) -> Vec<Node> {
+pub fn render_para(content: Vec<DocPara>) -> Vec<Node> {
     let mut nodes = Vec::new();
 
     for entry in content {
         match entry {
-            DocParaType::Ref(ref_text) => nodes.push(Node::Text(ref_text.text)),
-            DocParaType::Text(text) => nodes.push(Node::Text(text)),
+            DocPara::ParameterList(_) => {}
+            DocPara::SimpleSect(_) => {}
+            DocPara::Ref(ref_text) => nodes.push(Node::Text(ref_text.text)),
+            DocPara::Text(text) => nodes.push(Node::Text(text)),
         }
     }
 

@@ -32,15 +32,9 @@ pub fn parse(xml: &str) -> anyhow::Result<Root> {
     let mut reader = Reader::from_str(xml);
     reader.trim_text(true);
 
-    let mut txt = Vec::new();
-
     let mut compounds = Vec::new();
 
-    // The `Reader` does not implement `Iterator` because it outputs borrowed data (`Cow`s)
     loop {
-        // NOTE: this is the generic case when we don't know about the input BufRead.
-        // when the input is a &str or a &[u8], we don't actually need to use another
-        // buffer, we could directly call `reader.read_event()`
         match reader.read_event() {
             Err(e) => panic!("Error at position {}: {:?}", reader.buffer_position(), e),
             // exits the loop when reaching end of file
@@ -61,9 +55,6 @@ pub fn parse(xml: &str) -> anyhow::Result<Root> {
                     })
                 }
             }
-            Ok(Event::Text(e)) => txt.push(e.unescape().unwrap().into_owned()),
-
-            // There are several other `Event`s we do not consider here
             _ => (),
         }
     }
