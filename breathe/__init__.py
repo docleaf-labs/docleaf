@@ -11,41 +11,54 @@ from . import backend
 
 __version__ = "0.0.0"
 
-node_lookup = {
-    "container": nodes.container,
-    "desc": sphinx.addnodes.desc,
-    "desc_name": sphinx.addnodes.desc_name,
-    "desc_content": sphinx.addnodes.desc_content,
-    "desc_parameter": sphinx.addnodes.desc_parameter,
-    "desc_parameterlist": sphinx.addnodes.desc_parameterlist,
-    "desc_signature": sphinx.addnodes.desc_signature,
-    "desc_signature_line": sphinx.addnodes.desc_signature_line,
-    "desc_sig_keyword": sphinx.addnodes.desc_sig_keyword,
-    "desc_sig_space": sphinx.addnodes.desc_sig_space,
-    "desc_sig_name": sphinx.addnodes.desc_sig_name,
-    "paragraph": nodes.paragraph,
-    "index": sphinx.addnodes.index,
-    "rubric": nodes.rubric,
-}
+
+class NodeManager:
+    def __init__(self, document):
+        self.document = document
+        self.lookup = {
+            "container": nodes.container,
+            "desc": sphinx.addnodes.desc,
+            "desc_name": sphinx.addnodes.desc_name,
+            "desc_content": sphinx.addnodes.desc_content,
+            "desc_parameter": sphinx.addnodes.desc_parameter,
+            "desc_parameterlist": sphinx.addnodes.desc_parameterlist,
+            "desc_signature": sphinx.addnodes.desc_signature,
+            "desc_signature_line": sphinx.addnodes.desc_signature_line,
+            "desc_sig_keyword": sphinx.addnodes.desc_sig_keyword,
+            "desc_sig_space": sphinx.addnodes.desc_sig_space,
+            "desc_sig_name": sphinx.addnodes.desc_sig_name,
+            "paragraph": nodes.paragraph,
+            "index": sphinx.addnodes.index,
+            "reference": nodes.reference,
+            "rubric": nodes.rubric,
+            "target": self.build_target,
+        }
+
+    def get_builder(self, node_type):
+        return self.lookup[node_type]
+
+    def build_target(self, key, *children, **attributes):
+        # self.document.note_explicit_target(target)
+        return nodes.target(key, *children, **attributes)
 
 
-def render_node_list(node_list):
-    return [render_node(node) for node in node_list]
+def render_node_list(node_list, node_manager):
+    return [render_node(node, node_manager) for node in node_list]
 
 
-def render_node(node):
+def render_node(node, node_manager):
     if node.type == "text":
         return nodes.Text(node.text)
 
-    node_builder = node_lookup[node.type]
-    children = render_node_list(node.children)
+    node_builder = node_manager.get_builder(node.type)
+    children = render_node_list(node.children, node_manager)
 
     if node.call_as == "source-text":
-        return node_builder("", "", *children)
+        return node_builder("", "", *children, **node.attributes)
     elif node.call_as == "source":
-        return node_builder("", *children)
+        return node_builder("", *children, **node.attributes)
     elif node.call_as == "args":
-        return node_builder(*children)
+        return node_builder(*children, **node.attributes)
     else:
         raise Exception("Call As not implemented" + node.call_as)
 
@@ -64,7 +77,10 @@ class ClassDirective(Directive):
         project = self.options["project"] or self.app.config.breathe_default_project
         path = self.app.config.breathe_projects[project]
         node_list = backend.render_class(name, path)
-        return render_node_list(node_list)
+        document = self.state.document
+
+        node_builder = NodeManager(document)
+        return render_node_list(node_list, node_builder)
 
 
 def setup(app: Sphinx):

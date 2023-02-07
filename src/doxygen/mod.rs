@@ -19,10 +19,14 @@ pub fn render_class_compound(compound: compound::Root) -> Vec<Node> {
     );
     let content = Node::DescContent(content_nodes);
 
+    let ids = compound_def.id.clone();
+    let names = compound_def.id;
+
     vec![Node::Desc(
         vec![Node::DescSignature(
             SignatureType::MultiLine,
             vec![Node::DescSignatureLine(vec![
+                Node::Target { ids, names },
                 Node::DescSignatureKeyword("class".to_string()),
                 Node::DescSignatureSpace,
                 Node::DescName(Box::new(Node::DescSignatureName(
@@ -53,7 +57,11 @@ pub fn render_member_def(member_def: compound::MemberDef) -> Node {
     content_nodes.append(&mut render_description(member_def.brief_description));
     content_nodes.append(&mut render_description(member_def.detailed_description));
 
+    let ids = member_def.id.clone();
+    let names = member_def.id;
+
     let mut signature_line = vec![
+        Node::Target { ids, names },
         Node::DescSignatureKeyword(name),
         Node::DescSignatureSpace,
         Node::DescName(Box::new(Node::DescSignatureName(member_def.name))),
@@ -68,9 +76,11 @@ pub fn render_member_def(member_def: compound::MemberDef) -> Node {
                 .into_iter()
                 .map(|param| {
                     let type_ = match param.type_ {
-                        compound::LinkedText::Ref(ref_text) => {
-                            Node::DescSignatureName(ref_text.text)
-                        }
+                        compound::LinkedText::Ref(ref_text) => Node::Reference {
+                            internal: true,
+                            refid: ref_text.id,
+                            children: vec![Node::DescSignatureName(ref_text.text)],
+                        },
                         compound::LinkedText::Text(text_) => Node::DescSignatureName(text_),
                     };
 

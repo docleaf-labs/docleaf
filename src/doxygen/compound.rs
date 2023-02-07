@@ -11,6 +11,7 @@ pub struct Root {
 
 #[derive(Debug, PartialEq)]
 pub struct CompoundDef {
+    pub id: String,
     pub compound_name: String,
     pub brief_description: Description,
     pub detailed_description: Description,
@@ -25,6 +26,7 @@ pub struct SectionDef {
 
 #[derive(Debug, PartialEq)]
 pub struct MemberDef {
+    pub id: String,
     pub name: String,
     pub kind: MemberDefKind,
     pub brief_description: Description,
@@ -156,7 +158,7 @@ pub fn parse(xml: &str) -> anyhow::Result<Root> {
 
             Ok(Event::Start(tag)) => {
                 if let b"compounddef" = tag.name().as_ref() {
-                    let compound_def = parse_compound_def(&mut reader)?;
+                    let compound_def = parse_compound_def(&mut reader, tag)?;
                     return Ok(Root { compound_def });
                 }
             }
@@ -166,7 +168,11 @@ pub fn parse(xml: &str) -> anyhow::Result<Root> {
     }
 }
 
-fn parse_compound_def(reader: &mut Reader<&[u8]>) -> anyhow::Result<CompoundDef> {
+fn parse_compound_def(
+    reader: &mut Reader<&[u8]>,
+    start_tag: BytesStart<'_>,
+) -> anyhow::Result<CompoundDef> {
+    let id = xml::get_attribute_string(b"id", &start_tag)?;
     let mut compound_name = String::new();
     let mut brief_description = Description::default();
     let mut detailed_description = Description::default();
@@ -192,6 +198,7 @@ fn parse_compound_def(reader: &mut Reader<&[u8]>) -> anyhow::Result<CompoundDef>
             Ok(Event::End(tag)) => {
                 if tag.local_name().as_ref() == b"compounddef" {
                     return Ok(CompoundDef {
+                        id,
                         compound_name,
                         brief_description,
                         detailed_description,
@@ -248,8 +255,9 @@ fn parse_section_def(
 
 fn parse_enum_member_def(
     reader: &mut Reader<&[u8]>,
-    _tag: BytesStart<'_>,
+    start_tag: BytesStart<'_>,
 ) -> anyhow::Result<MemberDef> {
+    let id = xml::get_attribute_string(b"id", &start_tag)?;
     let mut name = String::new();
     let mut brief_description = Description::default();
     let mut detailed_description = Description::default();
@@ -275,6 +283,7 @@ fn parse_enum_member_def(
             Ok(Event::End(tag)) => {
                 if tag.local_name().as_ref() == b"memberdef" {
                     return Ok(MemberDef {
+                        id,
                         name,
                         brief_description,
                         detailed_description,
@@ -289,8 +298,9 @@ fn parse_enum_member_def(
 
 fn parse_function_member_def(
     reader: &mut Reader<&[u8]>,
-    _tag: BytesStart<'_>,
+    start_tag: BytesStart<'_>,
 ) -> anyhow::Result<MemberDef> {
+    let id = xml::get_attribute_string(b"id", &start_tag)?;
     let mut name = String::new();
     let mut brief_description = Description::default();
     let mut detailed_description = Description::default();
@@ -316,6 +326,7 @@ fn parse_function_member_def(
             Ok(Event::End(tag)) => {
                 if tag.local_name().as_ref() == b"memberdef" {
                     return Ok(MemberDef {
+                        id,
                         name,
                         brief_description,
                         detailed_description,
@@ -357,8 +368,9 @@ fn parse_param(reader: &mut Reader<&[u8]>, _tag: BytesStart<'_>) -> anyhow::Resu
 
 fn parse_variable_member_def(
     reader: &mut Reader<&[u8]>,
-    _tag: BytesStart<'_>,
+    start_tag: BytesStart<'_>,
 ) -> anyhow::Result<MemberDef> {
+    let id = xml::get_attribute_string(b"id", &start_tag)?;
     let mut name = String::new();
     let mut brief_description = Description::default();
     let mut detailed_description = Description::default();
@@ -384,6 +396,7 @@ fn parse_variable_member_def(
             Ok(Event::End(tag)) => {
                 if tag.local_name().as_ref() == b"memberdef" {
                     return Ok(MemberDef {
+                        id,
                         name,
                         brief_description,
                         detailed_description,
@@ -436,9 +449,10 @@ fn parse_enum_value(reader: &mut Reader<&[u8]>, _tag: BytesStart<'_>) -> anyhow:
 
 fn parse_unknown_member_def(
     reader: &mut Reader<&[u8]>,
-    _tag: BytesStart<'_>,
+    start_tag: BytesStart<'_>,
     kind: &str,
 ) -> anyhow::Result<MemberDef> {
+    let id = xml::get_attribute_string(b"id", &start_tag)?;
     let mut name = String::new();
     let mut brief_description = Description::default();
     let mut detailed_description = Description::default();
@@ -460,6 +474,7 @@ fn parse_unknown_member_def(
             Ok(Event::End(tag)) => {
                 if tag.local_name().as_ref() == b"memberdef" {
                     return Ok(MemberDef {
+                        id,
                         name,
                         brief_description,
                         detailed_description,
@@ -776,6 +791,7 @@ mod test {
             result.unwrap(),
             Root {
                 compound_def: CompoundDef {
+                    id: "class_nutshell".to_string(),
                     compound_name: "Nutshell".to_string(),
                     brief_description: Description::default(),
                     detailed_description: Description::default(),
