@@ -33,7 +33,7 @@ fn render_class(name: String, path: String) -> PyResult<Vec<Node>> {
             let compound_xml_path = xml_path.join(format!("{refid}.xml"));
             let compound = doxygen::compound::parse_file(&compound_xml_path)?;
 
-            Ok(doxygen::render_class_compound(compound))
+            Ok(doxygen::render::render_class_compound(compound))
         }
         None => Err(PyValueError::new_err(format!(
             "Unable to find class matching '{name}'"
