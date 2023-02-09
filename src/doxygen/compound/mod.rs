@@ -7,12 +7,12 @@ use quick_xml::reader::Reader;
 use crate::doxygen::compound::elements::*;
 use crate::xml;
 
-pub fn parse_file(compound_xml_path: &std::path::Path) -> anyhow::Result<Root> {
+pub fn parse_file(compound_xml_path: &std::path::Path) -> anyhow::Result<DoxygenType> {
     let xml = std::fs::read_to_string(compound_xml_path)?;
     parse(&xml)
 }
 
-pub fn parse(xml: &str) -> anyhow::Result<Root> {
+pub fn parse(xml: &str) -> anyhow::Result<DoxygenType> {
     let mut reader = Reader::from_str(xml);
     reader.trim_text(true);
 
@@ -25,7 +25,7 @@ pub fn parse(xml: &str) -> anyhow::Result<Root> {
             Ok(Event::Start(tag)) => {
                 if let b"compounddef" = tag.name().as_ref() {
                     let compound_def = parse_compound_def(&mut reader, tag)?;
-                    return Ok(Root { compound_def });
+                    return Ok(DoxygenType { compound_def });
                 }
             }
 
@@ -655,7 +655,7 @@ mod test {
 
         assert_eq!(
             result.unwrap(),
-            Root {
+            DoxygenType {
                 compound_def: CompoundDef {
                     id: "class_nutshell".to_string(),
                     compound_name: "Nutshell".to_string(),
