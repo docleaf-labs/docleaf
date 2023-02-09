@@ -1,49 +1,49 @@
 #[derive(Debug, PartialEq)]
 pub struct DoxygenType {
     // Attributes
-    version: DoxVersionNumber,
+    pub version: DoxVersionNumber,
     // Children
-    compound_def: Option<CompoundDefType>,
+    pub compound_def: Option<CompoundDefType>,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct CompoundDefType {
     // Attributes
-    id: String,
-    kind: DoxCompoundKind,
-    language: DoxLanguage,
-    prot: DoxProtectionKind,
-    final_: bool,
-    inline: bool,
-    sealed: bool,
-    abstract_: bool,
+    pub id: String,
+    pub kind: DoxCompoundKind,
+    pub language: DoxLanguage,
+    pub prot: DoxProtectionKind,
+    pub final_: bool,
+    pub inline: bool,
+    pub sealed: bool,
+    pub abstract_: bool,
     // Children
-    compoundname: String,
-    title: Option<String>,
-    basecompoundref: Vec<CompoundRefType>,
-    derivedcompoundref: Vec<CompoundRefType>,
-    includes: Vec<IncType>,
-    includedby: Vec<IncType>,
-    incdepgraph: Option<GraphType>,
-    invincdepgraph: Option<GraphType>,
-    innerdir: Vec<RefType>,
-    innerfile: Vec<RefType>,
-    innerclass: Vec<RefType>,
-    innernamespace: Vec<RefType>,
-    innerpage: Vec<RefType>,
-    innergroup: Vec<RefType>,
-    templateparamlist: Option<TemplateparamlistType>,
-    sectiondef: Vec<SectionDefType>,
-    tableofcontents: Option<Box<TableofcontentsType>>,
-    requiresclause: Option<LinkedTextType>,
-    initializer: Option<LinkedTextType>,
-    briefdescription: Option<DescriptionType>,
-    detaileddescription: Option<DescriptionType>,
-    inheritancegraph: Option<GraphType>,
-    collaborationgraph: Option<GraphType>,
-    programlisting: Option<ListingType>,
-    location: Option<LocationType>,
-    listofallmembers: Option<ListofallmembersType>,
+    pub compoundname: String,
+    pub title: Option<String>,
+    pub basecompoundref: Vec<CompoundRefType>,
+    pub derivedcompoundref: Vec<CompoundRefType>,
+    pub includes: Vec<IncType>,
+    pub includedby: Vec<IncType>,
+    pub incdepgraph: Option<GraphType>,
+    pub invincdepgraph: Option<GraphType>,
+    pub innerdir: Vec<RefType>,
+    pub innerfile: Vec<RefType>,
+    pub innerclass: Vec<RefType>,
+    pub innernamespace: Vec<RefType>,
+    pub innerpage: Vec<RefType>,
+    pub innergroup: Vec<RefType>,
+    pub templateparamlist: Option<TemplateparamlistType>,
+    pub sectiondef: Vec<SectionDefType>,
+    pub tableofcontents: Option<Box<TableofcontentsType>>,
+    pub requiresclause: Option<LinkedTextType>,
+    pub initializer: Option<LinkedTextType>,
+    pub briefdescription: Option<DescriptionType>,
+    pub detaileddescription: Option<DescriptionType>,
+    pub inheritancegraph: Option<GraphType>,
+    pub collaborationgraph: Option<GraphType>,
+    pub programlisting: Option<ListingType>,
+    pub location: Option<LocationType>,
+    pub listofallmembers: Option<ListofallmembersType>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -51,16 +51,16 @@ pub struct ListofallmembersType {
     // Attributes
 
     // Children
-    member: Vec<MemberRefType>,
+    pub member: Vec<MemberRefType>,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct MemberRefType {
     // Attributes
-    refid: String,
-    prot: DoxProtectionKind,
-    virt: DoxVirtualKind,
-    ambiguityscope: String,
+    pub refid: String,
+    pub prot: DoxProtectionKind,
+    pub virt: DoxVirtualKind,
+    pub ambiguityscope: String,
     // Children
 }
 
@@ -109,74 +109,74 @@ pub struct RefTextType {
 #[derive(Debug, PartialEq)]
 pub struct SectionDefType {
     // Attributes
-    kind: DoxSectionKind,
+    pub kind: DoxSectionKind,
     // Children
-    header: Option<String>,
-    description: Option<DescriptionType>,
-    memberdef: vec1::Vec1<MemberDefType>,
+    pub header: Option<String>,
+    pub description: Option<DescriptionType>,
+    pub memberdef: vec1::Vec1<MemberDefType>,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct MemberDefType {
     // Attributes
-    kind: DoxMemberKind,
-    id: String,
-    prot: DoxProtectionKind,
-    static_: bool,
-    strong: bool,
-    const_: bool,
-    explicit: bool,
-    inline: bool,
-    refqual: DoxRefQualifierKind,
-    virt: DoxVirtualKind,
-    volatile: bool,
-    mutable: bool,
-    noexcept: bool,
-    constexpr: bool,
-    readable: bool,
-    writable: bool,
-    initonly: bool,
-    settable: bool,
-    privatesettable: bool,
-    protectedsettable: bool,
-    gettable: bool,
-    privategettable: bool,
-    protectedgettable: bool,
-    final_: bool,
-    sealed: bool,
-    new: bool,
-    add: bool,
-    remove: bool,
-    raise: bool,
-    optional: bool,
-    required: bool,
-    accessor: DoxAccessor,
-    attribute: bool,
-    property: bool,
-    readonly: bool,
-    bound: bool,
-    removable: bool,
-    constrained: bool,
-    transient: bool,
-    maybevoid: bool,
-    maybedefault: bool,
-    maybeambiguous: bool,
+    pub kind: DoxMemberKind,
+    pub id: String,
+    pub prot: DoxProtectionKind,
+    pub static_: bool,
+    pub strong: bool,
+    pub const_: bool,
+    pub explicit: bool,
+    pub inline: bool,
+    pub refqual: DoxRefQualifierKind,
+    pub virt: DoxVirtualKind,
+    pub volatile: bool,
+    pub mutable: bool,
+    pub noexcept: bool,
+    pub constexpr: bool,
+    pub readable: bool,
+    pub writable: bool,
+    pub initonly: bool,
+    pub settable: bool,
+    pub privatesettable: bool,
+    pub protectedsettable: bool,
+    pub gettable: bool,
+    pub privategettable: bool,
+    pub protectedgettable: bool,
+    pub final_: bool,
+    pub sealed: bool,
+    pub new: bool,
+    pub add: bool,
+    pub remove: bool,
+    pub raise: bool,
+    pub optional: bool,
+    pub required: bool,
+    pub accessor: DoxAccessor,
+    pub attribute: bool,
+    pub property: bool,
+    pub readonly: bool,
+    pub bound: bool,
+    pub removable: bool,
+    pub constrained: bool,
+    pub transient: bool,
+    pub maybevoid: bool,
+    pub maybedefault: bool,
+    pub maybeambiguous: bool,
     // Children
-    templateparamlist: Option<TemplateparamlistType>,
-    type_: Option<LinkedTextType>,
-    reimplements: Vec<ReimplementType>,
-    reimplementedby: Vec<ReimplementType>,
-    param: Vec<ParamType>,
-    enumvalue: Vec<EnumvalueType>,
-    requiresclause: Option<LinkedTextType>,
-    initializer: Option<LinkedTextType>,
-    exceptions: Option<LinkedTextType>,
-    briefdescription: Option<DescriptionType>,
-    detaileddescription: Option<DescriptionType>,
-    inbodydescription: Option<DescriptionType>,
-    location: LocationType,
-    references: Vec<ReferenceType>,
-    referencedby: Vec<ReferenceType>,
+    pub templateparamlist: Option<TemplateparamlistType>,
+    pub type_: Option<LinkedTextType>,
+    pub reimplements: Vec<ReimplementType>,
+    pub reimplementedby: Vec<ReimplementType>,
+    pub param: Vec<ParamType>,
+    pub enumvalue: Vec<EnumvalueType>,
+    pub requiresclause: Option<LinkedTextType>,
+    pub initializer: Option<LinkedTextType>,
+    pub exceptions: Option<LinkedTextType>,
+    pub briefdescription: Option<DescriptionType>,
+    pub detaileddescription: Option<DescriptionType>,
+    pub inbodydescription: Option<DescriptionType>,
+    pub location: LocationType,
+    pub references: Vec<ReferenceType>,
+    pub referencedby: Vec<ReferenceType>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -184,21 +184,21 @@ pub struct DescriptionType {
     // Attributes
 
     // Children
-    title: Option<String>,
-    para: Vec<DocParaType>,
-    internal: Vec<DocInternalType>,
-    sect1: Vec<DocSect1Type>,
+    pub title: Option<String>,
+    pub para: Vec<DocParaType>,
+    pub internal: Vec<DocInternalType>,
+    pub sect1: Vec<DocSect1Type>,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct EnumvalueType {
     // Attributes
-    id: String,
-    prot: DoxProtectionKind,
+    pub id: String,
+    pub prot: DoxProtectionKind,
     // Children
-    initializer: Option<LinkedTextType>,
-    briefdescription: Option<DescriptionType>,
-    detaileddescription: Option<DescriptionType>,
+    pub initializer: Option<LinkedTextType>,
+    pub briefdescription: Option<DescriptionType>,
+    pub detaileddescription: Option<DescriptionType>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -206,7 +206,7 @@ pub struct TemplateparamlistType {
     // Attributes
 
     // Children
-    param: Vec<ParamType>,
+    pub param: Vec<ParamType>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -214,10 +214,10 @@ pub struct ParamType {
     // Attributes
 
     // Children
-    type_: Option<LinkedTextType>,
-    defval: Option<LinkedTextType>,
-    typeconstraint: Option<LinkedTextType>,
-    briefdescription: Option<DescriptionType>,
+    pub type_: Option<LinkedTextType>,
+    pub defval: Option<LinkedTextType>,
+    pub typeconstraint: Option<LinkedTextType>,
+    pub briefdescription: Option<DescriptionType>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -225,7 +225,7 @@ pub struct LinkedTextType {
     // Attributes
 
     // Children
-    ref_: Vec<RefTextType>,
+    pub ref_: Vec<RefTextType>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -233,122 +233,122 @@ pub struct GraphType {
     // Attributes
 
     // Children
-    node: vec1::Vec1<NodeType>,
+    pub node: vec1::Vec1<NodeType>,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct NodeType {
     // Attributes
-    id: String,
+    pub id: String,
     // Children
-    link: Option<LinkType>,
-    childnode: Vec<ChildnodeType>,
+    pub link: Option<LinkType>,
+    pub childnode: Vec<ChildnodeType>,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct ChildnodeType {
     // Attributes
-    refid: String,
-    relation: DoxGraphRelation,
+    pub refid: String,
+    pub relation: DoxGraphRelation,
     // Children
 }
 
 #[derive(Debug, PartialEq)]
 pub struct LinkType {
     // Attributes
-    refid: String,
-    external: String,
+    pub refid: String,
+    pub external: String,
     // Children
 }
 
 #[derive(Debug, PartialEq)]
 pub struct ListingType {
     // Attributes
-    filename: String,
+    pub filename: String,
     // Children
-    codeline: Vec<CodelineType>,
+    pub codeline: Vec<CodelineType>,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct CodelineType {
     // Attributes
-    lineno: i32,
-    refid: String,
-    refkind: DoxRefKind,
-    external: bool,
+    pub lineno: i32,
+    pub refid: String,
+    pub refkind: DoxRefKind,
+    pub external: bool,
     // Children
-    highlight: Vec<HighlightType>,
+    pub highlight: Vec<HighlightType>,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct HighlightType {
     // Attributes
-    class: DoxHighlightClass,
+    pub class: DoxHighlightClass,
     // Children
 }
 
 #[derive(Debug, PartialEq)]
 pub struct SpType {
     // Attributes
-    value: i32,
+    pub value: i32,
     // Children
 }
 
 #[derive(Debug, PartialEq)]
 pub struct ReferenceType {
     // Attributes
-    refid: String,
-    compoundref: String,
-    startline: i32,
-    endline: i32,
+    pub refid: String,
+    pub compoundref: String,
+    pub startline: i32,
+    pub endline: i32,
     // Children
 }
 
 #[derive(Debug, PartialEq)]
 pub struct LocationType {
     // Attributes
-    file: String,
-    line: i32,
-    column: i32,
-    declfile: String,
-    declline: i32,
-    declcolumn: i32,
-    bodyfile: String,
-    bodystart: i32,
-    bodyend: i32,
+    pub file: String,
+    pub line: i32,
+    pub column: i32,
+    pub declfile: String,
+    pub declline: i32,
+    pub declcolumn: i32,
+    pub bodyfile: String,
+    pub bodystart: i32,
+    pub bodyend: i32,
     // Children
 }
 
 #[derive(Debug, PartialEq)]
 pub struct DocSect1Type {
     // Attributes
-    id: String,
+    pub id: String,
     // Children
-    title: Option<String>,
+    pub title: Option<String>,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct DocSect2Type {
     // Attributes
-    id: String,
+    pub id: String,
     // Children
-    title: String,
+    pub title: String,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct DocSect3Type {
     // Attributes
-    id: String,
+    pub id: String,
     // Children
-    title: String,
+    pub title: String,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct DocSect4Type {
     // Attributes
-    id: String,
+    pub id: String,
     // Children
-    title: String,
+    pub title: String,
 }
 
 #[derive(Debug, PartialEq)]
@@ -356,8 +356,8 @@ pub struct DocInternalType {
     // Attributes
 
     // Children
-    para: Vec<DocParaType>,
-    sect1: Vec<DocSect1Type>,
+    pub para: Vec<DocParaType>,
+    pub sect1: Vec<DocSect1Type>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -365,8 +365,8 @@ pub struct DocInternalS1Type {
     // Attributes
 
     // Children
-    para: Vec<DocParaType>,
-    sect2: Vec<DocSect2Type>,
+    pub para: Vec<DocParaType>,
+    pub sect2: Vec<DocSect2Type>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -374,8 +374,8 @@ pub struct DocInternalS2Type {
     // Attributes
 
     // Children
-    para: Vec<DocParaType>,
-    sect3: Vec<DocSect3Type>,
+    pub para: Vec<DocParaType>,
+    pub sect3: Vec<DocSect3Type>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -383,8 +383,8 @@ pub struct DocInternalS3Type {
     // Attributes
 
     // Children
-    para: Vec<DocParaType>,
-    sect3: Vec<DocSect4Type>,
+    pub para: Vec<DocParaType>,
+    pub sect3: Vec<DocSect4Type>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -392,7 +392,7 @@ pub struct DocInternalS4Type {
     // Attributes
 
     // Children
-    para: Vec<DocParaType>,
+    pub para: Vec<DocParaType>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -419,21 +419,21 @@ pub struct DocMarkupType {
 #[derive(Debug, PartialEq)]
 pub struct DocURLLink {
     // Attributes
-    url: String,
+    pub url: String,
     // Children
 }
 
 #[derive(Debug, PartialEq)]
 pub struct DocAnchorType {
     // Attributes
-    id: String,
+    pub id: String,
     // Children
 }
 
 #[derive(Debug, PartialEq)]
 pub struct DocFormulaType {
     // Attributes
-    id: String,
+    pub id: String,
     // Children
 }
 
@@ -442,33 +442,33 @@ pub struct DocIndexEntryType {
     // Attributes
 
     // Children
-    primaryie: String,
-    secondaryie: String,
+    pub primaryie: String,
+    pub secondaryie: String,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct DocListType {
     // Attributes
-    type_: String,
-    start: i32,
+    pub type_: String,
+    pub start: i32,
     // Children
-    listitem: vec1::Vec1<DocListItemType>,
+    pub listitem: vec1::Vec1<DocListItemType>,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct DocListItemType {
     // Attributes
-    value: i32,
+    pub value: i32,
     // Children
-    para: Vec<DocParaType>,
+    pub para: Vec<DocParaType>,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct DocSimpleSectType {
     // Attributes
-    kind: DoxSimpleSectKind,
+    pub kind: DoxSimpleSectKind,
     // Children
-    title: Option<DocTitleType>,
+    pub title: Option<DocTitleType>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -476,7 +476,7 @@ pub struct DocVarListEntryType {
     // Attributes
 
     // Children
-    term: DocTitleType,
+    pub term: DocTitleType,
 }
 
 #[derive(Debug, PartialEq)]
@@ -489,21 +489,21 @@ pub struct DocVariableListType {
 #[derive(Debug, PartialEq)]
 pub struct DocRefTextType {
     // Attributes
-    refid: String,
-    kindref: DoxRefKind,
-    external: String,
+    pub refid: String,
+    pub kindref: DoxRefKind,
+    pub external: String,
     // Children
 }
 
 #[derive(Debug, PartialEq)]
 pub struct DocTableType {
     // Attributes
-    rows: i32,
-    cols: i32,
-    width: String,
+    pub rows: i32,
+    pub cols: i32,
+    pub width: String,
     // Children
-    caption: Option<DocCaptionType>,
-    row: Vec<DocRowType>,
+    pub caption: Option<DocCaptionType>,
+    pub row: Vec<DocRowType>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -511,84 +511,84 @@ pub struct DocRowType {
     // Attributes
 
     // Children
-    entry: Vec<DocEntryType>,
+    pub entry: Vec<DocEntryType>,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct DocEntryType {
     // Attributes
-    thead: bool,
-    colspan: i32,
-    rowspan: i32,
-    align: DoxAlign,
-    valign: DoxVerticalAlign,
-    width: String,
-    class: String,
+    pub thead: bool,
+    pub colspan: i32,
+    pub rowspan: i32,
+    pub align: DoxAlign,
+    pub valign: DoxVerticalAlign,
+    pub width: String,
+    pub class: String,
     // Children
-    para: Vec<DocParaType>,
+    pub para: Vec<DocParaType>,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct DocCaptionType {
     // Attributes
-    id: String,
+    pub id: String,
     // Children
 }
 
 #[derive(Debug, PartialEq)]
 pub struct DocHeadingType {
     // Attributes
-    level: i32,
+    pub level: i32,
     // Children
 }
 
 #[derive(Debug, PartialEq)]
 pub struct DocImageType {
     // Attributes
-    type_: DoxImageKind,
-    name: String,
-    width: String,
-    height: String,
-    alt: String,
-    inline: bool,
-    caption: String,
+    pub type_: DoxImageKind,
+    pub name: String,
+    pub width: String,
+    pub height: String,
+    pub alt: String,
+    pub inline: bool,
+    pub caption: String,
     // Children
 }
 
 #[derive(Debug, PartialEq)]
 pub struct DocDotMscType {
     // Attributes
-    name: String,
-    width: String,
-    height: String,
-    caption: String,
+    pub name: String,
+    pub width: String,
+    pub height: String,
+    pub caption: String,
     // Children
 }
 
 #[derive(Debug, PartialEq)]
 pub struct DocImageFileType {
     // Attributes
-    name: String,
-    width: String,
-    height: String,
+    pub name: String,
+    pub width: String,
+    pub height: String,
     // Children
 }
 
 #[derive(Debug, PartialEq)]
 pub struct DocPlantumlType {
     // Attributes
-    name: String,
-    width: String,
-    height: String,
-    caption: String,
-    engine: DoxPlantumlEngine,
+    pub name: String,
+    pub width: String,
+    pub height: String,
+    pub caption: String,
+    pub engine: DoxPlantumlEngine,
     // Children
 }
 
 #[derive(Debug, PartialEq)]
 pub struct DocTocItemType {
     // Attributes
-    id: String,
+    pub id: String,
     // Children
 }
 
@@ -597,23 +597,23 @@ pub struct DocTocListType {
     // Attributes
 
     // Children
-    tocitem: Vec<DocTocItemType>,
+    pub tocitem: Vec<DocTocItemType>,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct DocLanguageType {
     // Attributes
-    langid: String,
+    pub langid: String,
     // Children
-    para: Vec<DocParaType>,
+    pub para: Vec<DocParaType>,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct DocParamListType {
     // Attributes
-    kind: DoxParamListKind,
+    pub kind: DoxParamListKind,
     // Children
-    parameteritem: Vec<DocParamListItem>,
+    pub parameteritem: Vec<DocParamListItem>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -621,8 +621,8 @@ pub struct DocParamListItem {
     // Attributes
 
     // Children
-    parameternamelist: Vec<DocParamNameList>,
-    parameterdescription: DescriptionType,
+    pub parameternamelist: Vec<DocParamNameList>,
+    pub parameterdescription: DescriptionType,
 }
 
 #[derive(Debug, PartialEq)]
@@ -630,8 +630,8 @@ pub struct DocParamNameList {
     // Attributes
 
     // Children
-    parametertype: Vec<DocParamType>,
-    parametername: Vec<DocParamName>,
+    pub parametertype: Vec<DocParamType>,
+    pub parametername: Vec<DocParamName>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -639,34 +639,34 @@ pub struct DocParamType {
     // Attributes
 
     // Children
-    ref_: Option<RefTextType>,
+    pub ref_: Option<RefTextType>,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct DocParamName {
     // Attributes
-    direction: DoxParamDir,
+    pub direction: DoxParamDir,
     // Children
-    ref_: Option<RefTextType>,
+    pub ref_: Option<RefTextType>,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct DocXRefSectType {
     // Attributes
-    id: String,
+    pub id: String,
     // Children
-    xreftitle: Vec<String>,
-    xrefdescription: DescriptionType,
+    pub xreftitle: Vec<String>,
+    pub xrefdescription: DescriptionType,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct DocCopyType {
     // Attributes
-    link: String,
+    pub link: String,
     // Children
-    para: Vec<DocParaType>,
-    sect1: Vec<DocSect1Type>,
-    internal: Option<DocInternalType>,
+    pub para: Vec<DocParaType>,
+    pub sect1: Vec<DocSect1Type>,
+    pub internal: Option<DocInternalType>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -674,7 +674,7 @@ pub struct DocDetailsType {
     // Attributes
 
     // Children
-    para: Vec<DocParaType>,
+    pub para: Vec<DocParaType>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -682,7 +682,7 @@ pub struct DocBlockQuoteType {
     // Attributes
 
     // Children
-    para: Vec<DocParaType>,
+    pub para: Vec<DocParaType>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -690,7 +690,7 @@ pub struct DocParBlockType {
     // Attributes
 
     // Children
-    para: Vec<DocParaType>,
+    pub para: Vec<DocParaType>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -705,7 +705,7 @@ pub struct TableofcontentsType {
     // Attributes
 
     // Children
-    tocsect: vec1::Vec1<TableofcontentsKindType>,
+    pub tocsect: vec1::Vec1<TableofcontentsKindType>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -713,16 +713,16 @@ pub struct TableofcontentsKindType {
     // Attributes
 
     // Children
-    name: String,
-    reference: String,
-    tableofcontents: Vec<Box<TableofcontentsType>>,
+    pub name: String,
+    pub reference: String,
+    pub tableofcontents: Vec<Box<TableofcontentsType>>,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct DocEmojiType {
     // Attributes
-    name: String,
-    unicode: String,
+    pub name: String,
+    pub unicode: String,
     // Children
 }
 
