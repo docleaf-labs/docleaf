@@ -29,14 +29,30 @@ def output_struct(tag):
                 field_name = convert_field_name(child.attrib["name"])
                 field_type = convert_type_name(child.attrib["type"], True)
 
-                attribute_fields.append(f"  pub {field_name}: {field_type}")
+                attribute_fields.append(f"  {field_name}: {field_type}")
 
         if child.tag == "{http://www.w3.org/2001/XMLSchema}sequence":
             for element in child:
                 if "name" in element.attrib and "type" in element.attrib:
                     field_name = convert_field_name(element.attrib["name"])
                     field_type = convert_type_name(element.attrib["type"], True)
-                    element_fields.append(f"    pub {field_name}: {field_type}")
+
+                    min_occurs = (
+                        int(element.attrib["minOccurs"]) if "minOccurs" in element.attrib else 1
+                    )
+
+                    max_occurs = element.attrib["maxOccurs"] if "maxOccurs" in element.attrib else 1
+
+                    if min_occurs == 0 and max_occurs in [1, "1"]:
+                        element_fields.append(f"    {field_name}: Option<{field_type}>")
+                    elif min_occurs == 0 and max_occurs == "unbounded":
+                        element_fields.append(f"    {field_name}: Vec<{field_type}>")
+                    elif min_occurs == 1 and max_occurs == "unbounded":
+                        element_fields.append(f"    {field_name}: vec1::Vec1<{field_type}>")
+                    elif min_occurs == 1 and max_occurs in [1, "1"]:
+                        element_fields.append(f"    {field_name}: {field_type}")
+                    else:
+                        raise Exception(f"min:{repr(min_occurs)} max:{repr(max_occurs)}")
 
     attribute_fields = ",\n".join(attribute_fields)
     attribute_fields = f"{attribute_fields}," if attribute_fields else attribute_fields
