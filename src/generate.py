@@ -18,7 +18,10 @@ def main(args):
         for child in root:
             if "name" in child.attrib:
                 if child.tag == "{http://www.w3.org/2001/XMLSchema}complexType":
-                    output_struct(output, child, comment_lookup)
+                    if "mixed" in child.attrib:
+                        output_mixed(output, child)
+                    else:
+                        output_struct(output, child, comment_lookup)
                 elif child.tag == "{http://www.w3.org/2001/XMLSchema}simpleType":
                     for grandchild in child:
                         if grandchild.tag == "{http://www.w3.org/2001/XMLSchema}restriction":
@@ -126,6 +129,49 @@ pub struct {name} {{
     file=output
     )
 
+
+def output_mixed(output, tag):
+    """
+    Output a rust enum for a mixed complex type
+    """
+
+    name = convert_type_name(tag.attrib["name"], False)
+
+    sequence = None
+    for child in tag:
+        if child.tag == "{http://www.w3.org/2001/XMLSchema}sequence":
+            sequence = child
+            break
+
+    if sequence is None:
+        return
+
+    entries = []
+    for child in sequence:
+        print(tag)
+        print(sequence)
+        print(child)
+        if "name" in child.attrib and "type" in child.attrib:
+            entry_name = child.attrib["name"]
+            entry_type = child.attrib["type"]
+            entry_name = convert_type_name(entry_name, False)
+            entry_type = convert_type_name(entry_type, False)
+            entries.append(f"{entry_name}({entry_type})")
+
+    entries.append("Text(String)")
+
+    entries = ",\n    ".join(entries)
+
+
+    print(
+        f"""
+#[derive(Debug, PartialEq)]
+pub enum {name} {{
+    {entries}
+}}
+""",
+        file=output
+    )
 
 def output_restriction(output, name, tag):
     """

@@ -189,26 +189,20 @@ pub struct MemberDefType {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct DescriptionType {
-    // Attributes
-
-    // Children
-    pub title: Option<String>,
-    pub para: Vec<DocParaType>,
-    pub internal: Vec<DocInternalType>,
-    pub sect1: Vec<DocSect1Type>,
+pub enum DescriptionType {
+    Title(String),
+    Para(DocParaType),
+    Internal(DocInternalType),
+    Sect1(DocSect1Type),
+    Text(String),
 }
 
 #[derive(Debug, PartialEq)]
-pub struct EnumValueType {
-    // Attributes
-    // pub id: String,
-    // pub prot: DoxProtectionKind,
-    // Children
-    pub name: String,
-    pub initializer: Option<LinkedTextType>,
-    pub brief_description: Option<DescriptionType>,
-    pub detailed_description: Option<DescriptionType>,
+pub enum EnumValueType {
+    Initializer(LinkedTextType),
+    Briefdescription(DescriptionType),
+    Detaileddescription(DescriptionType),
+    Text(String),
 }
 
 #[derive(Debug, PartialEq)]
@@ -235,11 +229,9 @@ pub struct ParamType {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct LinkedTextType {
-    // Attributes
-
-    // Children
-    pub ref_: Vec<RefTextType>,
+pub enum LinkedTextType {
+    Ref(RefTextType),
+    Text(String),
 }
 
 #[derive(Debug, PartialEq)]
@@ -297,30 +289,6 @@ pub struct CodelineType {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct HighlightType {
-    // Attributes
-    pub class: DoxHighlightClass,
-    // Children
-}
-
-#[derive(Debug, PartialEq)]
-pub struct SpType {
-    // Attributes
-    pub value: i32,
-    // Children
-}
-
-#[derive(Debug, PartialEq)]
-pub struct ReferenceType {
-    // Attributes
-    pub refid: String,
-    pub compoundref: String,
-    pub startline: i32,
-    pub endline: i32,
-    // Children
-}
-
-#[derive(Debug, PartialEq)]
 pub struct LocationType {
     // Attributes
     pub file: String,
@@ -336,121 +304,61 @@ pub struct LocationType {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct DocSect1Type {
-    // Attributes
-    pub id: String,
-    // Children
-    pub title: Option<String>,
+pub enum DocSect1Type {
+    Title(String),
+    Text(String),
 }
 
 #[derive(Debug, PartialEq)]
-pub struct DocSect2Type {
-    // Attributes
-    pub id: String,
-    // Children
-    pub title: String,
+pub enum DocSect2Type {
+    Title(String),
+    Text(String),
 }
 
 #[derive(Debug, PartialEq)]
-pub struct DocSect3Type {
-    // Attributes
-    pub id: String,
-    // Children
-    pub title: String,
+pub enum DocSect3Type {
+    Title(String),
+    Text(String),
 }
 
 #[derive(Debug, PartialEq)]
-pub struct DocSect4Type {
-    // Attributes
-    pub id: String,
-    // Children
-    pub title: String,
+pub enum DocSect4Type {
+    Title(String),
+    Text(String),
 }
 
 #[derive(Debug, PartialEq)]
-pub struct DocInternalType {
-    // Attributes
-
-    // Children
-    pub para: Vec<DocParaType>,
-    pub sect1: Vec<DocSect1Type>,
+pub enum DocInternalType {
+    Para(DocParaType),
+    Sect1(DocSect1Type),
+    Text(String),
 }
 
 #[derive(Debug, PartialEq)]
-pub struct DocInternalS1Type {
-    // Attributes
-
-    // Children
-    pub para: Vec<DocParaType>,
-    pub sect2: Vec<DocSect2Type>,
+pub enum DocInternalS1Type {
+    Para(DocParaType),
+    Sect2(DocSect2Type),
+    Text(String),
 }
 
 #[derive(Debug, PartialEq)]
-pub struct DocInternalS2Type {
-    // Attributes
-
-    // Children
-    pub para: Vec<DocParaType>,
-    pub sect3: Vec<DocSect3Type>,
+pub enum DocInternalS2Type {
+    Para(DocParaType),
+    Sect3(DocSect3Type),
+    Text(String),
 }
 
 #[derive(Debug, PartialEq)]
-pub struct DocInternalS3Type {
-    // Attributes
-
-    // Children
-    pub para: Vec<DocParaType>,
-    pub sect3: Vec<DocSect4Type>,
+pub enum DocInternalS3Type {
+    Para(DocParaType),
+    Sect3(DocSect4Type),
+    Text(String),
 }
 
 #[derive(Debug, PartialEq)]
-pub struct DocInternalS4Type {
-    // Attributes
-
-    // Children
-    pub para: Vec<DocParaType>,
-}
-
-#[derive(Debug, PartialEq)]
-pub struct DocTitleType {
-    // Attributes
-
-    // Children
-}
-
-#[derive(Debug, PartialEq)]
-pub struct DocParaType {
-    // Attributes
-
-    // Children
-}
-
-#[derive(Debug, PartialEq)]
-pub struct DocMarkupType {
-    // Attributes
-
-    // Children
-}
-
-#[derive(Debug, PartialEq)]
-pub struct DocURLLink {
-    // Attributes
-    pub url: String,
-    // Children
-}
-
-#[derive(Debug, PartialEq)]
-pub struct DocAnchorType {
-    // Attributes
-    pub id: String,
-    // Children
-}
-
-#[derive(Debug, PartialEq)]
-pub struct DocFormulaType {
-    // Attributes
-    pub id: String,
-    // Children
+pub enum DocInternalS4Type {
+    Para(DocParaType),
+    Text(String),
 }
 
 #[derive(Debug, PartialEq)]
@@ -503,15 +411,6 @@ pub struct DocVariableListType {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct DocRefTextType {
-    // Attributes
-    pub refid: String,
-    pub kindref: DoxRefKind,
-    pub external: String,
-    // Children
-}
-
-#[derive(Debug, PartialEq)]
 pub struct DocTableType {
     // Attributes
     pub rows: i32,
@@ -542,70 +441,6 @@ pub struct DocEntryType {
     pub class: String,
     // Children
     pub para: Vec<DocParaType>,
-}
-
-#[derive(Debug, PartialEq)]
-pub struct DocCaptionType {
-    // Attributes
-    pub id: String,
-    // Children
-}
-
-#[derive(Debug, PartialEq)]
-pub struct DocHeadingType {
-    // Attributes
-    pub level: i32,
-    // Children
-}
-
-#[derive(Debug, PartialEq)]
-pub struct DocImageType {
-    // Attributes
-    pub type_: DoxImageKind,
-    pub name: String,
-    pub width: String,
-    pub height: String,
-    pub alt: String,
-    pub inline: bool,
-    pub caption: String,
-    // Children
-}
-
-#[derive(Debug, PartialEq)]
-pub struct DocDotMscType {
-    // Attributes
-    pub name: String,
-    pub width: String,
-    pub height: String,
-    pub caption: String,
-    // Children
-}
-
-#[derive(Debug, PartialEq)]
-pub struct DocImageFileType {
-    // Attributes
-    pub name: String,
-    pub width: String,
-    pub height: String,
-    // Children
-}
-
-#[derive(Debug, PartialEq)]
-pub struct DocPlantumlType {
-    // Attributes
-    pub name: String,
-    pub width: String,
-    pub height: String,
-    pub caption: String,
-    pub engine: DoxPlantumlEngine,
-    // Children
-}
-
-#[derive(Debug, PartialEq)]
-pub struct DocTocItemType {
-    // Attributes
-    pub id: String,
-    // Children
 }
 
 #[derive(Debug, PartialEq)]
@@ -651,19 +486,15 @@ pub struct DocParamNameList {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct DocParamType {
-    // Attributes
-
-    // Children
-    pub ref_: Option<RefTextType>,
+pub enum DocParamType {
+    Ref(RefTextType),
+    Text(String),
 }
 
 #[derive(Debug, PartialEq)]
-pub struct DocParamName {
-    // Attributes
-    pub direction: DoxParamDir,
-    // Children
-    pub ref_: Option<RefTextType>,
+pub enum DocParamName {
+    Ref(RefTextType),
+    Text(String),
 }
 
 #[derive(Debug, PartialEq)]
