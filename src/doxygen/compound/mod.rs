@@ -157,7 +157,7 @@ fn parse_enum_member_def(
                     return Ok(MemberDefType {
                         id,
                         name,
-                        kind: MemberDefKind::Enum { values },
+                        kind: DoxMemberKind::Enum,
                         brief_description,
                         detailed_description,
                     });
@@ -174,8 +174,8 @@ fn parse_function_member_def(
 ) -> anyhow::Result<MemberDefType> {
     let id = xml::get_attribute_string(b"id", &start_tag)?;
     let mut name = String::new();
-    let mut brief_description = DescriptionType::default();
-    let mut detailed_description = DescriptionType::default();
+    let mut brief_description = None;
+    let mut detailed_description = None;
     let mut params = Vec::new();
 
     loop {
@@ -185,10 +185,10 @@ fn parse_function_member_def(
                     name = xml::parse_text(reader)?;
                 }
                 b"briefdescription" => {
-                    brief_description = parse_description(reader, tag)?;
+                    brief_description = Some(parse_description(reader, tag)?);
                 }
                 b"detaileddescription" => {
-                    detailed_description = parse_description(reader, tag)?;
+                    detailed_description = Some(parse_description(reader, tag)?);
                 }
                 b"param" => {
                     params.push(parse_param(reader, tag)?);
@@ -202,7 +202,7 @@ fn parse_function_member_def(
                         name,
                         brief_description,
                         detailed_description,
-                        kind: MemberDefKind::Function { params },
+                        kind: DoxMemberKind::Function, //::Function { params },
                     });
                 }
             }
@@ -211,9 +211,9 @@ fn parse_function_member_def(
     }
 }
 
-fn parse_param(reader: &mut Reader<&[u8]>, _tag: BytesStart<'_>) -> anyhow::Result<Param> {
+fn parse_param(reader: &mut Reader<&[u8]>, _tag: BytesStart<'_>) -> anyhow::Result<ParamType> {
     let mut type_ = None;
-    let mut declname = String::new();
+    let mut declname = None;
 
     loop {
         match reader.read_event() {
@@ -222,14 +222,14 @@ fn parse_param(reader: &mut Reader<&[u8]>, _tag: BytesStart<'_>) -> anyhow::Resu
                     type_ = Some(parse_linked_text(reader, tag)?);
                 }
                 b"declname" => {
-                    declname = xml::parse_text(reader)?;
+                    declname = Some(xml::parse_text(reader)?);
                 }
                 _ => {}
             },
             Ok(Event::End(tag)) => {
                 if tag.local_name().as_ref() == b"param" {
                     return type_
-                        .map(|type_| Param { type_, declname })
+                        .map(|type_| ParamType { type_, declname })
                         .ok_or_else(|| anyhow::anyhow!("Failed to find type for param"));
                 }
             }
@@ -244,8 +244,8 @@ fn parse_variable_member_def(
 ) -> anyhow::Result<MemberDefType> {
     let id = xml::get_attribute_string(b"id", &start_tag)?;
     let mut name = String::new();
-    let mut brief_description = DescriptionType::default();
-    let mut detailed_description = DescriptionType::default();
+    let mut brief_description = None;
+    let mut detailed_description = None;
     let mut values = Vec::new();
 
     loop {
@@ -255,10 +255,10 @@ fn parse_variable_member_def(
                     name = xml::parse_text(reader)?;
                 }
                 b"briefdescription" => {
-                    brief_description = parse_description(reader, tag)?;
+                    brief_description = Some(parse_description(reader, tag)?);
                 }
                 b"detaileddescription" => {
-                    detailed_description = parse_description(reader, tag)?;
+                    detailed_description = Some(parse_description(reader, tag)?);
                 }
                 b"enumvalue" => {
                     values.push(parse_enum_value(reader, tag)?);
@@ -272,7 +272,7 @@ fn parse_variable_member_def(
                         name,
                         brief_description,
                         detailed_description,
-                        kind: MemberDefKind::Variable,
+                        kind: DoxMemberKind::Variable,
                     });
                 }
             }
@@ -284,12 +284,12 @@ fn parse_variable_member_def(
 fn parse_enum_value(reader: &mut Reader<&[u8]>, _tag: BytesStart<'_>) -> anyhow::Result<EnumValue> {
     let mut name = String::new();
     let mut initializer = String::new();
-    let mut brief_description = DescriptionType::default();
-    let mut detailed_description = DescriptionType::default();
+    let mut brief_description = None;
+    let mut detailed_description = None;
 
     loop {
         match reader.read_event() {
-            Ok(Event::Start(tag)) => match tag.name().as_ref() {
+            Ok(Event::Start(tag)) => match tag.name().as_None {
                 b"name" => {
                     name = xml::parse_text(reader)?;
                 }
@@ -297,10 +297,10 @@ fn parse_enum_value(reader: &mut Reader<&[u8]>, _tag: BytesStart<'_>) -> anyhow:
                     initializer = xml::parse_text(reader)?;
                 }
                 b"briefdescription" => {
-                    brief_description = parse_description(reader, tag)?;
+                    brief_description = Some(parse_description(reader, tag)?);
                 }
                 b"detaileddescription" => {
-                    detailed_description = parse_description(reader, tag)?;
+                    detailed_description = Some(parse_description(reader, tag)?);
                 }
                 _ => {}
             },
@@ -326,8 +326,8 @@ fn parse_unknown_member_def(
 ) -> anyhow::Result<MemberDefType> {
     let id = xml::get_attribute_string(b"id", &start_tag)?;
     let mut name = String::new();
-    let mut brief_description = DescriptionType::default();
-    let mut detailed_description = DescriptionType::default();
+    let mut brief_description = None;
+    let mut detailed_description = None;
 
     loop {
         match reader.read_event() {
@@ -336,10 +336,10 @@ fn parse_unknown_member_def(
                     name = xml::parse_text(reader)?;
                 }
                 b"briefdescription" => {
-                    brief_description = parse_description(reader, tag)?;
+                    brief_description = Some(parse_description(reader, tag)?);
                 }
                 b"detaileddescription" => {
-                    detailed_description = parse_description(reader, tag)?;
+                    detailed_description = Some(parse_description(reader, tag)?);
                 }
                 _ => {}
             },
@@ -515,7 +515,7 @@ pub fn parse_parameter_item(
     start_tag: BytesStart<'_>,
 ) -> anyhow::Result<DocParamListItem> {
     let mut parameter_name_list = Vec::new();
-    let mut parameter_description = Description::default();
+    let mut parameter_description = None;
     loop {
         match reader.read_event() {
             Ok(Event::Start(tag)) => match tag.name().as_ref() {
@@ -523,7 +523,7 @@ pub fn parse_parameter_item(
                     parameter_name_list.push(parse_parameter_name_list(reader, tag)?);
                 }
                 b"parameterdescription" => {
-                    parameter_description = parse_description(reader, tag)?;
+                    parameter_description = Some(parse_description(reader, tag)?);
                 }
                 tag_name => {
                     return Err(anyhow!(

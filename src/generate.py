@@ -1,4 +1,5 @@
 from collections import defaultdict
+from pprint import pprint
 import xml.etree.ElementTree as ET
 import re
 import sys
@@ -43,19 +44,16 @@ def generate_comment_lookup(filepath):
     
     with open(filepath) as f:
         for line in f:
-            print(line)
             if match := struct_re.match(line):
                 # Lower case entries to make them robust to future case changes
                 key = match.group(1).lower()
             elif match := enum_re.match(line):
                 key = None
             elif match := field_re.match(line):
-                print("non comment match", match.group(1))
                 if key:
                     # Lower case entries to make them robust to future case changes
                     lookup[key][match.group(1).lower()] = False
             elif match := comment_field_re.match(line):
-                print("comment match", match.group(1))
                 if key:
                     # Lower case entries to make them robust to future case changes
                     lookup[key][match.group(1).lower()] = True
@@ -195,9 +193,6 @@ type_lookup = {
 }
 
 
-box = ["TableofcontentsType"]
-
-
 def convert_type_name(name, as_field_type):
     if name in type_lookup:
         return type_lookup[name]
@@ -207,9 +202,11 @@ def convert_type_name(name, as_field_type):
     name = name.replace("type", "Type")
     name = name.replace("kind", "Kind")
     name = name.replace("class", "Class")
-
-    if as_field_type and name in box:
-        return f"Box<{name}>"
+    name = name.replace("value", "Value")
+    name = name.replace("param", "Param")
+    name = name.replace("list", "List")
+    name = name.replace("contents", "Contents")
+    name = name.replace("ofC", "OfC")
 
     return name
 

@@ -32,9 +32,9 @@ pub struct CompoundDefType {
     // pub innernamespace: Vec<RefType>,
     // pub innerpage: Vec<RefType>,
     // pub innergroup: Vec<RefType>,
-    // pub templateparamlist: Option<TemplateparamlistType>,
+    // pub templateparamlist: Option<TemplateParamListType>,
     pub section_defs: Vec<SectionDefType>,
-    // pub tableofcontents: Option<Box<TableofcontentsType>>,
+    // pub tableofcontents: Option<TableOfContentsType>,
     // pub requiresclause: Option<LinkedTextType>,
     // pub initializer: Option<LinkedTextType>,
     pub brief_description: Option<DescriptionType>,
@@ -164,7 +164,7 @@ pub struct MemberDefType {
     // pub maybedefault: bool,
     // pub maybeambiguous: bool,
     // Children
-    // pub templateparamlist: Option<TemplateparamlistType>,
+    // pub templateparamlist: Option<TemplateParamListType>,
     // pub type_: Option<LinkedTextType>,
     // pub definition: Option<String>,
     // pub argsstring: Option<String>,
@@ -176,7 +176,7 @@ pub struct MemberDefType {
     // pub reimplements: Vec<ReimplementType>,
     // pub reimplementedby: Vec<ReimplementType>,
     // pub param: Vec<ParamType>,
-    // pub enumvalue: Vec<EnumvalueType>,
+    // pub enumvalue: Vec<EnumValueType>,
     // pub requiresclause: Option<LinkedTextType>,
     // pub initializer: Option<LinkedTextType>,
     // pub exceptions: Option<LinkedTextType>,
@@ -200,7 +200,7 @@ pub struct DescriptionType {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct EnumvalueType {
+pub struct EnumValueType {
     // Attributes
     pub id: String,
     pub prot: DoxProtectionKind,
@@ -212,7 +212,7 @@ pub struct EnumvalueType {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct TemplateparamlistType {
+pub struct TemplateParamListType {
     // Attributes
 
     // Children
@@ -226,12 +226,12 @@ pub struct ParamType {
     // Children
     // pub attributes: Option<String>,
     pub type_: Option<LinkedTextType>,
-    // pub declname: Option<String>,
+    pub declname: Option<String>,
     // pub defname: Option<String>,
     // pub array: Option<String>,
-    pub defval: Option<LinkedTextType>,
-    pub typeconstraint: Option<LinkedTextType>,
-    pub brief_description: Option<DescriptionType>,
+    // pub defval: Option<LinkedTextType>,
+    // pub typeconstraint: Option<LinkedTextType>,
+    // pub brief_description: Option<DescriptionType>
 }
 
 #[derive(Debug, PartialEq)]
@@ -717,21 +717,21 @@ pub struct DocEmptyType {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct TableofcontentsType {
+pub struct TableOfContentsType {
     // Attributes
 
     // Children
-    pub tocsect: vec1::Vec1<TableofcontentsKindType>,
+    pub tocsect: vec1::Vec1<TableOfContentsKindType>,
 }
 
 #[derive(Debug, PartialEq)]
-pub struct TableofcontentsKindType {
+pub struct TableOfContentsKindType {
     // Attributes
 
     // Children
     pub name: String,
     pub reference: String,
-    pub tableofcontents: Vec<Box<TableofcontentsType>>,
+    pub tableofcontents: Vec<TableOfContentsType>,
 }
 
 #[derive(Debug, PartialEq)]
