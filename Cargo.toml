@@ -15,6 +15,7 @@ log = "0.4.17"
 pyo3 = { version = "0.16.5", features = ["anyhow", "extension-module"] }
 quick-xml = { version = "0.27.1", features = ["serde", "serialize"] }
 serde = { version = "1.0.144", features = ["derive"] }
+strum = { version = "0.24.1", features = ["derive"] }
 vec1 = "1.10.1"
 
 [dev-dependencies]

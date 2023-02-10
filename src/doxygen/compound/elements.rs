@@ -113,7 +113,7 @@ pub struct SectionDefType {
     // Children
     pub header: Option<String>,
     pub description: Option<DescriptionType>,
-    pub memberdef: vec1::Vec1<MemberDefType>,
+    pub member_defs: vec1::Vec1<MemberDefType>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -726,7 +726,7 @@ pub struct DocEmojiType {
     // Children
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, strum::EnumString, PartialEq)]
 pub enum DoxGraphRelation {
     Include,
     Usage,
@@ -737,13 +737,13 @@ pub enum DoxGraphRelation {
     TypeConstraint,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, strum::EnumString, PartialEq)]
 pub enum DoxRefKind {
     Compound,
     Member,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, strum::EnumString, PartialEq)]
 pub enum DoxMemberKind {
     Define,
     Property,
@@ -761,7 +761,7 @@ pub enum DoxMemberKind {
     Service,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, strum::EnumString, PartialEq)]
 pub enum DoxProtectionKind {
     Public,
     Protected,
@@ -769,13 +769,13 @@ pub enum DoxProtectionKind {
     Package,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, strum::EnumString, PartialEq)]
 pub enum DoxRefQualifierKind {
     Lvalue,
     Rvalue,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, strum::EnumString, PartialEq)]
 pub enum DoxLanguage {
     Unknown,
     IDL,
@@ -796,14 +796,14 @@ pub enum DoxLanguage {
     Lex,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, strum::EnumString, PartialEq)]
 pub enum DoxVirtualKind {
     NonVirtual,
     Virtual,
     PureVirtual,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, strum::EnumString, PartialEq)]
 pub enum DoxCompoundKind {
     Class,
     Struct,
@@ -825,7 +825,7 @@ pub enum DoxCompoundKind {
     Concept,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, strum::EnumString, PartialEq)]
 pub enum DoxSectionKind {
     UserDefined,
     PublicType,
@@ -865,7 +865,7 @@ pub enum DoxSectionKind {
     Var,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, strum::EnumString, PartialEq)]
 pub enum DoxHighlightClass {
     Comment,
     Normal,
@@ -881,7 +881,7 @@ pub enum DoxHighlightClass {
     Vhdldigit,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, strum::EnumString, PartialEq)]
 pub enum DoxSimpleSectKind {
     See,
     Return,
@@ -904,7 +904,7 @@ pub enum DoxSimpleSectKind {
 
 type DoxVersionNumber = String;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, strum::EnumString, PartialEq)]
 pub enum DoxImageKind {
     Html,
     Latex,
@@ -913,7 +913,7 @@ pub enum DoxImageKind {
     Xml,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, strum::EnumString, PartialEq)]
 pub enum DoxPlantumlEngine {
     Uml,
     Bpm,
@@ -934,7 +934,7 @@ pub enum DoxPlantumlEngine {
     Git,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, strum::EnumString, PartialEq)]
 pub enum DoxParamListKind {
     Param,
     Retval,
@@ -944,14 +944,14 @@ pub enum DoxParamListKind {
 
 type DoxCharRange = String;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, strum::EnumString, PartialEq)]
 pub enum DoxParamDir {
     In,
     Out,
     Inout,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, strum::EnumString, PartialEq)]
 pub enum DoxAccessor {
     Retain,
     Copy,
@@ -961,14 +961,14 @@ pub enum DoxAccessor {
     Unretained,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, strum::EnumString, PartialEq)]
 pub enum DoxAlign {
     Left,
     Right,
     Center,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, strum::EnumString, PartialEq)]
 pub enum DoxVerticalAlign {
     Bottom,
     Top,

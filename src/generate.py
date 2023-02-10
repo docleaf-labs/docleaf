@@ -151,7 +151,7 @@ def output_restriction(output, name, tag):
 
     print(
         f"""
-#[derive(Debug, PartialEq)]
+#[derive(Debug, strum::EnumString, PartialEq)]
 pub enum {name} {{
     {entries}
 }}
@@ -214,6 +214,7 @@ field_lookup = {
     "compounddef": "compound_def",
     "compoundname": "compound_name",
     "sectiondef": "section_defs",
+    "memberdef": "member_defs",
     "briefdescription": "brief_description",
     "detaileddescription": "detailed_description",
 }

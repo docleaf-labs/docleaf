@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use anyhow::anyhow;
 use quick_xml::events::attributes::Attribute;
 use quick_xml::events::{BytesStart, Event};
@@ -29,4 +31,13 @@ pub fn get_attribute<'a>(name: &[u8], tag: &'a BytesStart<'a>) -> anyhow::Result
 pub fn get_attribute_string<'a>(name: &[u8], tag: &'a BytesStart<'a>) -> anyhow::Result<String> {
     let attr = get_attribute(name, tag)?;
     Ok(String::from_utf8(attr.value.into_owned())?)
+}
+
+pub fn get_attribute_enum<'a, T: FromStr>(
+    name: &[u8],
+    tag: &'a BytesStart<'a>,
+) -> anyhow::Result<T> {
+    let attr = get_attribute(name, tag)?;
+    let str = String::from_utf8(attr.value.into_owned())?;
+    T::from_str(&str).map_err(|_| anyhow::anyhow!("Failed to parse string '{str}'to enum"))
 }
