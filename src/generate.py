@@ -78,15 +78,18 @@ def output_struct(output, tag, comment_lookup):
                 field_name = convert_field_name(child.attrib["name"])
                 field_type = convert_type_name(child.attrib["type"], True)
 
-                comment = "// " if comment_lookup[name.lower()][field_name.lower()] else ""
+                # Robust comment lookup by using fallbacks
+                comment = "// " if comment_lookup.get(name.lower(), {}).get(field_name.lower(), True) else ""
 
                 attribute_fields.append(f"  {comment}pub {field_name}: {field_type}")
 
         if child.tag == "{http://www.w3.org/2001/XMLSchema}sequence":
             for element in child:
-                if "name" in element.attrib and "type" in element.attrib:
+                if "name" in element.attrib:
                     field_name = convert_field_name(element.attrib["name"])
-                    field_type = convert_type_name(element.attrib["type"], True)
+                    # Some elements don't have a 'type' attribute, I'm not sure if "String" is a reasonable fallback
+                    # but we'll try it until proven wrong
+                    field_type = convert_type_name(element.attrib["type"], True) if "type" in  element.attrib else "String"
 
                     min_occurs = (
                         int(element.attrib["minOccurs"]) if "minOccurs" in element.attrib else 1
@@ -94,7 +97,8 @@ def output_struct(output, tag, comment_lookup):
 
                     max_occurs = element.attrib["maxOccurs"] if "maxOccurs" in element.attrib else 1
 
-                    comment = "// " if comment_lookup[name.lower()][field_name.lower()] else ""
+                    # Robust comment lookup by using fallbacks
+                    comment = "// " if comment_lookup.get(name.lower(), {}).get(field_name.lower(), True) else ""
 
                     if min_occurs == 0 and max_occurs in [1, "1"]:
                         element_fields.append(f"    {comment}pub {field_name}: Option<{field_type}>")

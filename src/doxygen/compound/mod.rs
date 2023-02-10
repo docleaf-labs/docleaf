@@ -3,6 +3,7 @@ pub mod elements;
 use anyhow::anyhow;
 use quick_xml::events::{BytesStart, Event};
 use quick_xml::reader::Reader;
+use vec1::Vec1;
 
 use crate::doxygen::compound::elements::*;
 use crate::xml;
@@ -113,7 +114,10 @@ fn parse_section_def(
             },
             Ok(Event::End(tag)) => {
                 if tag.local_name().as_ref() == b"sectiondef" {
-                    return Ok(SectionDefType { kind, member_defs });
+                    return Ok(SectionDefType {
+                        kind,
+                        member_defs: Vec1::try_from_vec(member_defs)?,
+                    });
                 }
             }
             _ => {}
@@ -127,8 +131,8 @@ fn parse_enum_member_def(
 ) -> anyhow::Result<MemberDefType> {
     let id = xml::get_attribute_string(b"id", &start_tag)?;
     let mut name = String::new();
-    let mut brief_description = DescriptionType::default();
-    let mut detailed_description = DescriptionType::default();
+    let mut brief_description = None;
+    let mut detailed_description = None;
     let mut values = Vec::new();
 
     loop {
@@ -138,10 +142,10 @@ fn parse_enum_member_def(
                     name = xml::parse_text(reader)?;
                 }
                 b"briefdescription" => {
-                    brief_description = parse_description(reader, tag)?;
+                    brief_description = Some(parse_description(reader, tag)?);
                 }
                 b"detaileddescription" => {
-                    detailed_description = parse_description(reader, tag)?;
+                    detailed_description = Some(parse_description(reader, tag)?);
                 }
                 b"enumvalue" => {
                     values.push(parse_enum_value(reader, tag)?);
@@ -153,9 +157,9 @@ fn parse_enum_member_def(
                     return Ok(MemberDefType {
                         id,
                         name,
+                        kind: MemberDefKind::Enum { values },
                         brief_description,
                         detailed_description,
-                        kind: MemberDefKind::Enum { values },
                     });
                 }
             }
