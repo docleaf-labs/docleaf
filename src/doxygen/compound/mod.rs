@@ -394,12 +394,12 @@ pub fn parse_description(
 fn parse_linked_text(
     reader: &mut Reader<&[u8]>,
     _tag: BytesStart<'_>,
-) -> anyhow::Result<LinkedText> {
+) -> anyhow::Result<LinkedTextType> {
     match reader.read_event() {
         Ok(Event::Start(tag)) => match tag.name().as_ref() {
             b"ref" => {
                 let id = xml::get_attribute_string(b"refid", &tag)?;
-                Ok(LinkedText::Ref(RefText {
+                Ok(LinkedTextType::Ref(RefTextType {
                     id,
                     text: xml::parse_text(reader)?,
                 }))
@@ -408,7 +408,7 @@ fn parse_linked_text(
                 "unexpected tag when parsing linked text: {tag_name:?}"
             )),
         },
-        Ok(Event::Text(text)) => Ok(LinkedText::Text(
+        Ok(Event::Text(text)) => Ok(LinkedTextType::Text(
             String::from_utf8(text.to_vec()).map_err(|err| anyhow!("{:?}", err))?,
         )),
         event => {
