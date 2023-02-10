@@ -202,10 +202,10 @@ pub struct DescriptionType {
 #[derive(Debug, PartialEq)]
 pub struct EnumValueType {
     // Attributes
-    pub id: String,
-    pub prot: DoxProtectionKind,
+    // pub id: String,
+    // pub prot: DoxProtectionKind,
     // Children
-    // pub name: String,
+    pub name: String,
     pub initializer: Option<LinkedTextType>,
     pub brief_description: Option<DescriptionType>,
     pub detailed_description: Option<DescriptionType>,

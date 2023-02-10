@@ -281,20 +281,23 @@ fn parse_variable_member_def(
     }
 }
 
-fn parse_enum_value(reader: &mut Reader<&[u8]>, _tag: BytesStart<'_>) -> anyhow::Result<EnumValue> {
+fn parse_enum_value(
+    reader: &mut Reader<&[u8]>,
+    _tag: BytesStart<'_>,
+) -> anyhow::Result<EnumValueType> {
     let mut name = String::new();
-    let mut initializer = String::new();
+    let mut initializer = None;
     let mut brief_description = None;
     let mut detailed_description = None;
 
     loop {
         match reader.read_event() {
-            Ok(Event::Start(tag)) => match tag.name().as_None {
+            Ok(Event::Start(tag)) => match tag.name().as_ref() {
                 b"name" => {
                     name = xml::parse_text(reader)?;
                 }
                 b"initializer" => {
-                    initializer = xml::parse_text(reader)?;
+                    initializer = Some(xml::parse_text(reader)?);
                 }
                 b"briefdescription" => {
                     brief_description = Some(parse_description(reader, tag)?);
@@ -306,7 +309,7 @@ fn parse_enum_value(reader: &mut Reader<&[u8]>, _tag: BytesStart<'_>) -> anyhow:
             },
             Ok(Event::End(tag)) => {
                 if tag.local_name().as_ref() == b"enumvalue" {
-                    return Ok(EnumValue {
+                    return Ok(EnumValueType {
                         name,
                         initializer,
                         brief_description,
