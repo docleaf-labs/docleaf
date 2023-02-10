@@ -79,7 +79,7 @@ def output_restriction(name, tag):
         return
 
     # Skip weird type until we need it
-    if name == "DoxOlType":
+    if name in ["DoxOlType", "DoxBool"]:
         return
 
     name = convert_type_name(name, False)

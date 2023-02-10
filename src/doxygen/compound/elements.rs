@@ -1,7 +1,7 @@
 #[derive(Debug, PartialEq)]
 pub struct DoxygenType {
     // Attributes
-    pub version: DoxVersionNumber,
+    // pub version: DoxVersionNumber,
     // Children
     pub compound_def: Option<CompoundDefType>,
 }
@@ -10,40 +10,40 @@ pub struct DoxygenType {
 pub struct CompoundDefType {
     // Attributes
     pub id: String,
-    pub kind: DoxCompoundKind,
-    pub language: DoxLanguage,
-    pub prot: DoxProtectionKind,
-    pub final_: bool,
-    pub inline: bool,
-    pub sealed: bool,
-    pub abstract_: bool,
+    // pub kind: DoxCompoundKind,
+    // pub language: DoxLanguage,
+    // pub prot: DoxProtectionKind,
+    // pub final_: bool,
+    // pub inline: bool,
+    // pub sealed: bool,
+    // pub abstract_: bool,
     // Children
-    pub compoundname: String,
-    pub title: Option<String>,
-    pub basecompoundref: Vec<CompoundRefType>,
-    pub derivedcompoundref: Vec<CompoundRefType>,
-    pub includes: Vec<IncType>,
-    pub includedby: Vec<IncType>,
-    pub incdepgraph: Option<GraphType>,
-    pub invincdepgraph: Option<GraphType>,
-    pub innerdir: Vec<RefType>,
-    pub innerfile: Vec<RefType>,
-    pub innerclass: Vec<RefType>,
-    pub innernamespace: Vec<RefType>,
-    pub innerpage: Vec<RefType>,
-    pub innergroup: Vec<RefType>,
-    pub templateparamlist: Option<TemplateparamlistType>,
-    pub sectiondef: Vec<SectionDefType>,
-    pub tableofcontents: Option<Box<TableofcontentsType>>,
-    pub requiresclause: Option<LinkedTextType>,
-    pub initializer: Option<LinkedTextType>,
-    pub briefdescription: Option<DescriptionType>,
-    pub detaileddescription: Option<DescriptionType>,
-    pub inheritancegraph: Option<GraphType>,
-    pub collaborationgraph: Option<GraphType>,
-    pub programlisting: Option<ListingType>,
-    pub location: Option<LocationType>,
-    pub listofallmembers: Option<ListofallmembersType>,
+    pub compound_name: String,
+    // pub title: Option<String>,
+    // pub basecompoundref: Vec<CompoundRefType>,
+    // pub derivedcompoundref: Vec<CompoundRefType>,
+    // pub includes: Vec<IncType>,
+    // pub includedby: Vec<IncType>,
+    // pub incdepgraph: Option<GraphType>,
+    // pub invincdepgraph: Option<GraphType>,
+    // pub innerdir: Vec<RefType>,
+    // pub innerfile: Vec<RefType>,
+    // pub innerclass: Vec<RefType>,
+    // pub innernamespace: Vec<RefType>,
+    // pub innerpage: Vec<RefType>,
+    // pub innergroup: Vec<RefType>,
+    // pub templateparamlist: Option<TemplateparamlistType>,
+    pub section_defs: Vec<SectionDefType>,
+    // pub tableofcontents: Option<Box<TableofcontentsType>>,
+    // pub requiresclause: Option<LinkedTextType>,
+    // pub initializer: Option<LinkedTextType>,
+    pub brief_description: Option<DescriptionType>,
+    pub detailed_description: Option<DescriptionType>,
+    // pub inheritancegraph: Option<GraphType>,
+    // pub collaborationgraph: Option<GraphType>,
+    // pub programlisting: Option<ListingType>,
+    // pub location: Option<LocationType>,
+    // pub listofallmembers: Option<ListofallmembersType>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -724,12 +724,6 @@ pub struct DocEmojiType {
     pub name: String,
     pub unicode: String,
     // Children
-}
-
-#[derive(Debug, PartialEq)]
-pub enum bool {
-    Yes,
-    No,
 }
 
 #[derive(Debug, PartialEq)]

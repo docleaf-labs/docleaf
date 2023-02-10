@@ -25,7 +25,9 @@ pub fn parse(xml: &str) -> anyhow::Result<DoxygenType> {
             Ok(Event::Start(tag)) => {
                 if let b"compounddef" = tag.name().as_ref() {
                     let compound_def = parse_compound_def(&mut reader, tag)?;
-                    return Ok(DoxygenType { compound_def });
+                    return Ok(DoxygenType {
+                        compound_def: Some(compound_def),
+                    });
                 }
             }
 
@@ -37,11 +39,11 @@ pub fn parse(xml: &str) -> anyhow::Result<DoxygenType> {
 fn parse_compound_def(
     reader: &mut Reader<&[u8]>,
     start_tag: BytesStart<'_>,
-) -> anyhow::Result<CompoundDef> {
+) -> anyhow::Result<CompoundDefType> {
     let id = xml::get_attribute_string(b"id", &start_tag)?;
     let mut compound_name = String::new();
-    let mut brief_description = Description::default();
-    let mut detailed_description = Description::default();
+    let mut brief_description = None;
+    let mut detailed_description = None;
     let mut section_defs = Vec::new();
 
     loop {
@@ -51,10 +53,10 @@ fn parse_compound_def(
                     compound_name = xml::parse_text(reader)?;
                 }
                 b"briefdescription" => {
-                    brief_description = parse_description(reader, tag)?;
+                    brief_description = Some(parse_description(reader, tag)?);
                 }
                 b"detaileddescription" => {
-                    detailed_description = parse_description(reader, tag)?;
+                    detailed_description = Some(parse_description(reader, tag)?);
                 }
                 b"sectiondef" => {
                     section_defs.push(parse_section_def(reader, tag)?);
@@ -63,7 +65,7 @@ fn parse_compound_def(
             },
             Ok(Event::End(tag)) => {
                 if tag.local_name().as_ref() == b"compounddef" {
-                    return Ok(CompoundDef {
+                    return Ok(CompoundDefType {
                         id,
                         compound_name,
                         brief_description,
@@ -656,7 +658,7 @@ mod test {
         assert_eq!(
             result.unwrap(),
             DoxygenType {
-                compound_def: CompoundDef {
+                compound_def: CompoundDefType {
                     id: "class_nutshell".to_string(),
                     compound_name: "Nutshell".to_string(),
                     brief_description: Description::default(),
