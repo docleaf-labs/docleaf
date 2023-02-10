@@ -210,12 +210,20 @@ def convert_type_name(name, as_field_type):
     return name
 
 
+field_lookup = {
+    "compounddef": "compound_def",
+    "compoundname": "compound_name",
+    "sectiondef": "section_defs",
+    "briefdescription": "brief_description",
+    "detaileddescription": "detailed_description",
+}
+
 def convert_field_name(name):
     keywords = ["ref", "type", "static", "const", "final", "abstract"]
     if name in keywords:
         return f"{name}_"
 
-    name = name.replace("ddef", "d_def")
+    name = field_lookup.get(name.lower(), name)
     return name
 
 

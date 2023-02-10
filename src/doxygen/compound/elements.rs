@@ -18,7 +18,7 @@ pub struct CompoundDefType {
     // pub sealed: bool,
     // pub abstract_: bool,
     // Children
-    pub compoundname: String,
+    pub compound_name: String,
     // pub title: Option<String>,
     // pub basecompoundref: Vec<CompoundRefType>,
     // pub derivedcompoundref: Vec<CompoundRefType>,
@@ -33,12 +33,12 @@ pub struct CompoundDefType {
     // pub innerpage: Vec<RefType>,
     // pub innergroup: Vec<RefType>,
     // pub templateparamlist: Option<TemplateparamlistType>,
-    pub sectiondef: Vec<SectionDefType>,
+    pub section_defs: Vec<SectionDefType>,
     // pub tableofcontents: Option<Box<TableofcontentsType>>,
     // pub requiresclause: Option<LinkedTextType>,
     // pub initializer: Option<LinkedTextType>,
-    pub briefdescription: Option<DescriptionType>,
-    pub detaileddescription: Option<DescriptionType>,
+    pub brief_description: Option<DescriptionType>,
+    pub detailed_description: Option<DescriptionType>,
     // pub inheritancegraph: Option<GraphType>,
     // pub collaborationgraph: Option<GraphType>,
     // pub programlisting: Option<ListingType>,
@@ -171,8 +171,8 @@ pub struct MemberDefType {
     pub requiresclause: Option<LinkedTextType>,
     pub initializer: Option<LinkedTextType>,
     pub exceptions: Option<LinkedTextType>,
-    pub briefdescription: Option<DescriptionType>,
-    pub detaileddescription: Option<DescriptionType>,
+    pub brief_description: Option<DescriptionType>,
+    pub detailed_description: Option<DescriptionType>,
     pub inbodydescription: Option<DescriptionType>,
     pub location: LocationType,
     pub references: Vec<ReferenceType>,
@@ -197,8 +197,8 @@ pub struct EnumvalueType {
     pub prot: DoxProtectionKind,
     // Children
     pub initializer: Option<LinkedTextType>,
-    pub briefdescription: Option<DescriptionType>,
-    pub detaileddescription: Option<DescriptionType>,
+    pub brief_description: Option<DescriptionType>,
+    pub detailed_description: Option<DescriptionType>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -217,7 +217,7 @@ pub struct ParamType {
     pub type_: Option<LinkedTextType>,
     pub defval: Option<LinkedTextType>,
     pub typeconstraint: Option<LinkedTextType>,
-    pub briefdescription: Option<DescriptionType>,
+    pub brief_description: Option<DescriptionType>,
 }
 
 #[derive(Debug, PartialEq)]
