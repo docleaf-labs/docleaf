@@ -1,24 +1,73 @@
+from collections import defaultdict
 import xml.etree.ElementTree as ET
 import re
 import sys
 
 
-def main():
-    tree = ET.parse("examples/nutshell/xml/compound.xsd")
+def main(args):
+    target_xsd_file = args[0]
+    target_rs_file = args[1]
+
+    comment_lookup = generate_comment_lookup(target_rs_file)
+
+    tree = ET.parse(target_xsd_file)
     root = tree.getroot()
 
-    for child in root:
-        if "name" in child.attrib:
-            if child.tag == "{http://www.w3.org/2001/XMLSchema}complexType":
-                output_struct(child)
-            elif child.tag == "{http://www.w3.org/2001/XMLSchema}simpleType":
-                for grandchild in child:
-                    if grandchild.tag == "{http://www.w3.org/2001/XMLSchema}restriction":
-                        name = child.attrib["name"]
-                        output_restriction(name, grandchild)
+    with open(target_rs_file, "w") as output:
+        for child in root:
+            if "name" in child.attrib:
+                if child.tag == "{http://www.w3.org/2001/XMLSchema}complexType":
+                    output_struct(output, child, comment_lookup)
+                elif child.tag == "{http://www.w3.org/2001/XMLSchema}simpleType":
+                    for grandchild in child:
+                        if grandchild.tag == "{http://www.w3.org/2001/XMLSchema}restriction":
+                            name = child.attrib["name"]
+                            output_restriction(output, name, grandchild)
 
 
-def output_struct(tag):
+def generate_comment_lookup(filepath):
+    """
+    Parses the current rust file with regexes to track which fields in which structs have
+    been commented out so we can put those comments in when re-creating the file. This means
+    that we're free to comment fields during development and not have to deal with them
+    being uncommented by the script if we need to regenerate anything.
+    """
+    
+    lookup = defaultdict(dict)
+    key = None
+
+    struct_re = re.compile(r"pub struct (.*) \{")
+    enum_re = re.compile(r"pub enum (.*) \{")
+    field_re = re.compile(r"    pub (.*): .*")
+    comment_field_re = re.compile(r"    // pub (.*): .*")
+    
+    with open(filepath) as f:
+        for line in f:
+            print(line)
+            if match := struct_re.match(line):
+                # Lower case entries to make them robust to future case changes
+                key = match.group(1).lower()
+            elif match := enum_re.match(line):
+                key = None
+            elif match := field_re.match(line):
+                print("non comment match", match.group(1))
+                if key:
+                    # Lower case entries to make them robust to future case changes
+                    lookup[key][match.group(1).lower()] = False
+            elif match := comment_field_re.match(line):
+                print("comment match", match.group(1))
+                if key:
+                    # Lower case entries to make them robust to future case changes
+                    lookup[key][match.group(1).lower()] = True
+
+    return lookup
+
+
+def output_struct(output, tag, comment_lookup):
+    """
+    Output a rust struct for a given xsd tag
+    """
+
     name = convert_type_name(tag.attrib["name"], False)
 
     attribute_fields = []
@@ -29,7 +78,9 @@ def output_struct(tag):
                 field_name = convert_field_name(child.attrib["name"])
                 field_type = convert_type_name(child.attrib["type"], True)
 
-                attribute_fields.append(f"  pub {field_name}: {field_type}")
+                comment = "// " if comment_lookup[name.lower()][field_name.lower()] else ""
+
+                attribute_fields.append(f"  {comment}pub {field_name}: {field_type}")
 
         if child.tag == "{http://www.w3.org/2001/XMLSchema}sequence":
             for element in child:
@@ -43,14 +94,16 @@ def output_struct(tag):
 
                     max_occurs = element.attrib["maxOccurs"] if "maxOccurs" in element.attrib else 1
 
+                    comment = "// " if comment_lookup[name.lower()][field_name.lower()] else ""
+
                     if min_occurs == 0 and max_occurs in [1, "1"]:
-                        element_fields.append(f"    pub {field_name}: Option<{field_type}>")
+                        element_fields.append(f"    {comment}pub {field_name}: Option<{field_type}>")
                     elif min_occurs == 0 and max_occurs == "unbounded":
-                        element_fields.append(f"    pub {field_name}: Vec<{field_type}>")
+                        element_fields.append(f"    {comment}pub {field_name}: Vec<{field_type}>")
                     elif min_occurs == 1 and max_occurs == "unbounded":
-                        element_fields.append(f"    pub {field_name}: vec1::Vec1<{field_type}>")
+                        element_fields.append(f"    {comment}pub {field_name}: vec1::Vec1<{field_type}>")
                     elif min_occurs == 1 and max_occurs in [1, "1"]:
-                        element_fields.append(f"    pub {field_name}: {field_type}")
+                        element_fields.append(f"    {comment}pub {field_name}: {field_type}")
                     else:
                         raise Exception(f"min:{repr(min_occurs)} max:{repr(max_occurs)}")
 
@@ -67,15 +120,19 @@ pub struct {name} {{
 // Children
 {element_fields}
 }}
-"""
+""",
+    file=output
     )
 
 
-def output_restriction(name, tag):
+def output_restriction(output, name, tag):
+    """
+    Output a rust enum for a given xsd tag
+    """
 
     # Handle special cases which are patterns rather than enums
     if name in ["DoxVersionNumber", "DoxCharRange"]:
-        print(f"type {name} = String;")
+        print(f"type {name} = String;", file=output)
         return
 
     # Skip weird type until we need it
@@ -98,7 +155,8 @@ def output_restriction(name, tag):
 pub enum {name} {{
     {entries}
 }}
-"""
+""",
+        file=output
     )
 
 
@@ -162,4 +220,4 @@ def convert_field_name(name):
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1:])

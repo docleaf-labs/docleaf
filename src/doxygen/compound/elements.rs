@@ -18,7 +18,7 @@ pub struct CompoundDefType {
     // pub sealed: bool,
     // pub abstract_: bool,
     // Children
-    pub compound_name: String,
+    pub compoundname: String,
     // pub title: Option<String>,
     // pub basecompoundref: Vec<CompoundRefType>,
     // pub derivedcompoundref: Vec<CompoundRefType>,
@@ -33,17 +33,17 @@ pub struct CompoundDefType {
     // pub innerpage: Vec<RefType>,
     // pub innergroup: Vec<RefType>,
     // pub templateparamlist: Option<TemplateparamlistType>,
-    pub section_defs: Vec<SectionDefType>,
+    pub sectiondef: Vec<SectionDefType>,
     // pub tableofcontents: Option<Box<TableofcontentsType>>,
     // pub requiresclause: Option<LinkedTextType>,
     // pub initializer: Option<LinkedTextType>,
-    pub brief_description: Option<DescriptionType>,
-    pub detailed_description: Option<DescriptionType>,
+    pub briefdescription: Option<DescriptionType>,
+    pub detaileddescription: Option<DescriptionType>,
     // pub inheritancegraph: Option<GraphType>,
     // pub collaborationgraph: Option<GraphType>,
     // pub programlisting: Option<ListingType>,
     // pub location: Option<LocationType>,
-    // pub listofallmembers: Option<ListofallmembersType>,
+    // pub listofallmembers: Option<ListofallmembersType>
 }
 
 #[derive(Debug, PartialEq)]
