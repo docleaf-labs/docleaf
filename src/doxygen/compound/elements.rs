@@ -74,43 +74,57 @@ pub struct MemberRefType {
 #[derive(Debug, PartialEq)]
 pub struct DocHtmlOnlyType {
     // Attributes
-
-    // Elements
+    // pub block: String,
+    // Content
+    content: String,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct CompoundRefType {
     // Attributes
-
-    // Elements
+    // pub refid: String,
+    // pub prot: DoxProtectionKind,
+    // pub virt: DoxVirtualKind,
+    // Content
+    content: String,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct ReimplementType {
     // Attributes
-
-    // Elements
+    // pub refid: String,
+    // Content
+    content: String,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct IncType {
     // Attributes
-
-    // Elements
+    // pub refid: String,
+    // pub local: bool,
+    // Content
+    content: String,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct RefType {
     // Attributes
-
-    // Elements
+    // pub refid: String,
+    // pub prot: DoxProtectionKind,
+    // pub inline: bool,
+    // Content
+    content: String,
 }
 
 #[derive(Debug, PartialEq)]
 pub struct RefTextType {
     // Attributes
-
-    // Elements
+    // pub refid: String,
+    // pub kindref: DoxRefKind,
+    // pub external: String,
+    // pub tooltip: String,
+    // Content
+    content: String,
 }
 
 #[derive(Debug, PartialEq)]

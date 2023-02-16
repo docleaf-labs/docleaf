@@ -114,8 +114,8 @@ def main(args):
             if "name" in child.attrib:
                 if child.tag == "{http://www.w3.org/2001/XMLSchema}complexType":
                     if is_simple_content(child):
-                        entries.extend(create_simple_content(child))
-                    if "mixed" in child.attrib:
+                        entries.extend(create_simple_content(child, comment_lookup))
+                    elif "mixed" in child.attrib:
                         mixed = create_mixed(output, child)
                         if mixed:
                             entries.extend(mixed)
@@ -134,7 +134,36 @@ def main(args):
 
 
 def is_simple_content(tag) -> bool:
+    for child in tag:
+        # print(child)
+        if child.tag == "{http://www.w3.org/2001/XMLSchema}simpleContent":
+            return True
+
     return False
+
+
+def create_simple_content(tag, comment_lookup):
+    name = convert_type_name(tag.attrib["name"], False)
+
+    simple_content = None
+    for child in tag:
+        if child.tag == "{http://www.w3.org/2001/XMLSchema}simpleContent":
+            simple_content = child
+
+    if not simple_content:
+        return []
+
+    for child in simple_content:
+        if child.tag == "{http://www.w3.org/2001/XMLSchema}extension":
+            type = child.attrib["base"]
+            attribute_fields = get_attribute_fields(child, name, comment_lookup)
+
+            type = convert_type_name(type, True)
+            fields = {"Attributes": attribute_fields, "Content": [f"content: {type}"]}
+
+            return [Struct(name, fields)]
+
+    return []
 
 
 def create_struct(output, tag, comment_lookup):
@@ -144,22 +173,9 @@ def create_struct(output, tag, comment_lookup):
 
     name = convert_type_name(tag.attrib["name"], False)
 
-    attribute_fields = []
+    attribute_fields = get_attribute_fields(tag, name, comment_lookup)
     element_fields = []
     for child in tag:
-        if child.tag == "{http://www.w3.org/2001/XMLSchema}attribute":
-            if "name" in child.attrib:
-                field_name = convert_field_name(child.attrib["name"])
-                field_type = convert_type_name(child.attrib["type"], True)
-
-                # Robust comment lookup by using fallbacks
-                comment = (
-                    "// "
-                    if comment_lookup.get(name.lower(), {}).get(field_name.lower(), True)
-                    else ""
-                )
-
-                attribute_fields.append(f"  {comment}pub {field_name}: {field_type}")
 
         if child.tag == "{http://www.w3.org/2001/XMLSchema}sequence":
             for element in child:
@@ -215,8 +231,8 @@ def create_mixed(output, tag):
     for child in tag:
         if child.tag == "{http://www.w3.org/2001/XMLSchema}sequence":
             for grandchild in child:
-                print(child)
-                print(grandchild)
+                # print(child)
+                # print(grandchild)
                 if "name" in grandchild.attrib and "type" in grandchild.attrib:
                     entry_name = grandchild.attrib["name"]
                     entry_type = grandchild.attrib["type"]
@@ -283,6 +299,28 @@ def convert_enum_name(name):
     name = name.replace("+", "Plus")
 
     return name
+
+
+def get_attribute_fields(element, name, comment_lookup):
+
+    fields = []
+
+    for child in element:
+        if child.tag == "{http://www.w3.org/2001/XMLSchema}attribute":
+            if "name" in child.attrib:
+                field_name = convert_field_name(child.attrib["name"])
+                field_type = convert_type_name(child.attrib["type"], True)
+
+                # Robust comment lookup by using fallbacks
+                comment = (
+                    "// "
+                    if comment_lookup.get(name.lower(), {}).get(field_name.lower(), True)
+                    else ""
+                )
+
+                fields.append(f"  {comment}pub {field_name}: {field_type}")
+
+    return fields
 
 
 def capitalize(name):
