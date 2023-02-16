@@ -66,13 +66,15 @@ pub struct {self.name} {{
 
 
 class Enum:
-    def __init__(self, name, entries):
+    def __init__(self, name, simple, entries):
         self.name = name
         self.entries = entries
+        self.simple = simple
 
     def to_string(self):
+        enum_string = "strum::EnumString, " if self.simple else ""
         return f"""
-#[derive(Debug, strum::EnumString, PartialEq)]
+#[derive(Debug, {enum_string}PartialEq)]
 pub enum {self.name} {{
     {self.entries}
 }}
@@ -253,7 +255,7 @@ def create_mixed(output, tag):
 
     item_name = name + "Item"
 
-    return [Struct(name, {"": [f"contents: {item_name}"]}), Enum(item_name, entries)]
+    return [Struct(name, {"": [f"contents: {item_name}"]}), Enum(item_name, False, entries)]
 
 
 def create_restriction(output, name, tag):
@@ -279,7 +281,7 @@ def create_restriction(output, name, tag):
 
     entries = ",\n    ".join(entries)
 
-    return [Enum(name, entries)]
+    return [Enum(name, True, entries)]
 
 
 def convert_enum_name(name):

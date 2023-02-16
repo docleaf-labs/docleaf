@@ -212,7 +212,7 @@ pub struct DescriptionType {
     contents: DescriptionTypeItem,
 }
 
-#[derive(Debug, strum::EnumString, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum DescriptionTypeItem {
     Title(String),
     Para(DocParaType),
@@ -226,7 +226,7 @@ pub struct EnumValueType {
     contents: EnumValueTypeItem,
 }
 
-#[derive(Debug, strum::EnumString, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum EnumValueTypeItem {
     Initializer(LinkedTextType),
     Briefdescription(DescriptionType),
@@ -262,7 +262,7 @@ pub struct LinkedTextType {
     contents: LinkedTextTypeItem,
 }
 
-#[derive(Debug, strum::EnumString, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum LinkedTextTypeItem {
     Ref(RefTextType),
     Text(String),
@@ -342,7 +342,7 @@ pub struct DocSect1Type {
     contents: DocSect1TypeItem,
 }
 
-#[derive(Debug, strum::EnumString, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum DocSect1TypeItem {
     Title(String),
     Text(String),
@@ -353,7 +353,7 @@ pub struct DocSect2Type {
     contents: DocSect2TypeItem,
 }
 
-#[derive(Debug, strum::EnumString, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum DocSect2TypeItem {
     Title(String),
     Text(String),
@@ -364,7 +364,7 @@ pub struct DocSect3Type {
     contents: DocSect3TypeItem,
 }
 
-#[derive(Debug, strum::EnumString, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum DocSect3TypeItem {
     Title(String),
     Text(String),
@@ -375,7 +375,7 @@ pub struct DocSect4Type {
     contents: DocSect4TypeItem,
 }
 
-#[derive(Debug, strum::EnumString, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum DocSect4TypeItem {
     Title(String),
     Text(String),
@@ -386,7 +386,7 @@ pub struct DocInternalType {
     contents: DocInternalTypeItem,
 }
 
-#[derive(Debug, strum::EnumString, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum DocInternalTypeItem {
     Para(DocParaType),
     Sect1(DocSect1Type),
@@ -398,7 +398,7 @@ pub struct DocInternalS1Type {
     contents: DocInternalS1TypeItem,
 }
 
-#[derive(Debug, strum::EnumString, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum DocInternalS1TypeItem {
     Para(DocParaType),
     Sect2(DocSect2Type),
@@ -410,7 +410,7 @@ pub struct DocInternalS2Type {
     contents: DocInternalS2TypeItem,
 }
 
-#[derive(Debug, strum::EnumString, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum DocInternalS2TypeItem {
     Para(DocParaType),
     Sect3(DocSect3Type),
@@ -422,7 +422,7 @@ pub struct DocInternalS3Type {
     contents: DocInternalS3TypeItem,
 }
 
-#[derive(Debug, strum::EnumString, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum DocInternalS3TypeItem {
     Para(DocParaType),
     Sect3(DocSect4Type),
@@ -434,7 +434,7 @@ pub struct DocInternalS4Type {
     contents: DocInternalS4TypeItem,
 }
 
-#[derive(Debug, strum::EnumString, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum DocInternalS4TypeItem {
     Para(DocParaType),
     Text(String),
@@ -569,7 +569,7 @@ pub struct DocParamType {
     contents: DocParamTypeItem,
 }
 
-#[derive(Debug, strum::EnumString, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum DocParamTypeItem {
     Ref(RefTextType),
     Text(String),
@@ -580,7 +580,7 @@ pub struct DocParamName {
     contents: DocParamNameItem,
 }
 
-#[derive(Debug, strum::EnumString, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum DocParamNameItem {
     Ref(RefTextType),
     Text(String),
