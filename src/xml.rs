@@ -39,5 +39,5 @@ pub fn get_attribute_enum<'a, T: FromStr>(
 ) -> anyhow::Result<T> {
     let attr = get_attribute(name, tag)?;
     let str = String::from_utf8(attr.value.into_owned())?;
-    T::from_str(&str).map_err(|_| anyhow::anyhow!("Failed to parse string '{str}'to enum"))
+    T::from_str(&str).map_err(|_| anyhow::anyhow!("Failed to parse string '{str}' to enum"))
 }

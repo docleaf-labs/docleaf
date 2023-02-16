@@ -62,7 +62,7 @@ fn section_title(section_kind: &e::DoxSectionKind) -> String {
     match section_kind {
         e::DoxSectionKind::UserDefined => "UserDefined".to_string(),
         e::DoxSectionKind::PublicType => "PublicType".to_string(),
-        e::DoxSectionKind::PublicFunc => "PublicFunc".to_string(),
+        e::DoxSectionKind::PublicFunc => "Public Functions".to_string(),
         e::DoxSectionKind::PublicAttrib => "PublicAttrib".to_string(),
         e::DoxSectionKind::PublicSlot => "PublicSlot".to_string(),
         e::DoxSectionKind::Signal => "Signal".to_string(),
@@ -121,41 +121,42 @@ pub fn render_member_def(member_def: e::MemberDefType) -> Node {
     ];
 
     match member_def.kind {
-        /*
-            DoxMemberKind::Enum => {
-                content_nodes.append(
-                    &mut member_def
-                        .values
-                        .into_iter()
-                        .map(render_enum_value)
-                        .collect(),
-                );
-            }
-            DoxMemberKind::Function => {
-                let parameter_list_items = member_def
-                    .params
+        e::DoxMemberKind::Enum => {
+            content_nodes.append(
+                &mut member_def
+                    .enumvalue
                     .into_iter()
-                    .map(|param| {
-                        let type_ = match param.type_ {
-                            LinkedTextType::Ref(ref_text) => Node::Reference {
-                                internal: true,
-                                refid: ref_text.id,
-                                children: vec![Node::DescSignatureName(ref_text.text)],
-                            },
-                            LinkedTextType::Text(text_) => Node::DescSignatureName(text_),
-                        };
+                    .map(render_enum_value)
+                    .collect(),
+            );
+        }
+        e::DoxMemberKind::Function => {
+            let parameter_list_items = member_def
+                .param
+                .into_iter()
+                .map(|param| {
+                    let mut param_contents = Vec::new();
 
-                        Node::DescParameter(vec![
-                            type_,
-                            Node::DescSignatureSpace,
-                            Node::DescSignatureName(param.declname),
-                        ])
-                    })
-                    .collect();
-                signature_line.push(Node::DescParameterList(parameter_list_items));
-            }
-            DoxMemberKind::Variable => {}
-        */
+                    match (param.type_, param.declname) {
+                        (Some(type_), Some(declname)) => {
+                            param_contents.append(&mut render_linked_text_type(&type_));
+                            param_contents.push(Node::DescSignatureSpace);
+                            param_contents.push(Node::DescSignatureName(declname));
+                        }
+                        (Some(type_), None) => {
+                            param_contents.append(&mut render_linked_text_type(&type_));
+                        }
+                        (None, Some(declname)) => {
+                            param_contents.push(Node::DescSignatureName(declname));
+                        }
+                        (None, None) => {}
+                    };
+
+                    Node::DescParameter(param_contents)
+                })
+                .collect();
+            signature_line.push(Node::DescParameterList(parameter_list_items));
+        }
         _ => {}
     };
 
@@ -168,6 +169,27 @@ pub fn render_member_def(member_def: e::MemberDefType) -> Node {
         )],
         Box::new(content),
     )
+}
+
+fn render_linked_text_type(linked_text_type: &e::LinkedTextType) -> Vec<Node> {
+    let mut nodes = Vec::new();
+
+    for entry in &linked_text_type.content {
+        match entry {
+            e::LinkedTextTypeItem::Ref(content) => nodes.push(render_ref_text_type(&content)),
+            e::LinkedTextTypeItem::Text(text) => nodes.push(Node::Text(text.clone())),
+        }
+    }
+
+    nodes
+}
+
+fn render_ref_text_type(ref_text_type: &e::RefTextType) -> Node {
+    Node::Reference {
+        internal: true,
+        refid: ref_text_type.ref_id.clone(),
+        children: vec![Node::DescSignatureName(ref_text_type.content.clone())],
+    }
 }
 
 fn member_kind_name(member_kind: &e::DoxMemberKind) -> String {
