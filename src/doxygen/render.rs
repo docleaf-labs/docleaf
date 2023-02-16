@@ -139,12 +139,12 @@ pub fn render_member_def(member_def: e::MemberDefType) -> Node {
 
                     match (param.type_, param.declname) {
                         (Some(type_), Some(declname)) => {
-                            param_contents.append(&mut render_linked_text_type(&type_));
+                            param_contents.append(&mut render_linked_text_type(type_));
                             param_contents.push(Node::DescSignatureSpace);
                             param_contents.push(Node::DescSignatureName(declname));
                         }
                         (Some(type_), None) => {
-                            param_contents.append(&mut render_linked_text_type(&type_));
+                            param_contents.append(&mut render_linked_text_type(type_));
                         }
                         (None, Some(declname)) => {
                             param_contents.push(Node::DescSignatureName(declname));
@@ -169,27 +169,6 @@ pub fn render_member_def(member_def: e::MemberDefType) -> Node {
         )],
         Box::new(content),
     )
-}
-
-fn render_linked_text_type(linked_text_type: &e::LinkedTextType) -> Vec<Node> {
-    let mut nodes = Vec::new();
-
-    for entry in &linked_text_type.content {
-        match entry {
-            e::LinkedTextTypeItem::Ref(content) => nodes.push(render_ref_text_type(&content)),
-            e::LinkedTextTypeItem::Text(text) => nodes.push(Node::Text(text.clone())),
-        }
-    }
-
-    nodes
-}
-
-fn render_ref_text_type(ref_text_type: &e::RefTextType) -> Node {
-    Node::Reference {
-        internal: true,
-        refid: ref_text_type.ref_id.clone(),
-        children: vec![Node::DescSignatureName(ref_text_type.content.clone())],
-    }
 }
 
 fn member_kind_name(member_kind: &e::DoxMemberKind) -> String {
@@ -258,17 +237,72 @@ pub fn render_para(element: e::DocParaType) -> Vec<Node> {
             e::DocParaTypeItem::DocCmdGroup(e::DocCmdGroup::ParameterList(_)) => {}
             // TODO: Handle title & paragraph block
             e::DocParaTypeItem::DocCmdGroup(e::DocCmdGroup::Simplesect(e::DocSimpleSectType {
-                para: _,
-            })) => {} // nodes.extend(render_para(para)),
-            e::DocParaTypeItem::DocCmdGroup(e::DocCmdGroup::DocTitleCmdGroup(
-                e::DocTitleCmdGroup::Ref(_ref_text),
-            )) => nodes.push(Node::Text(
-                /*ref_text.content*/ "ref text content".to_string(),
-            )),
+                para,
+            })) => nodes.append(
+                &mut para
+                    .into_iter()
+                    .flat_map(|para| render_para(para))
+                    .collect(),
+            ),
+            e::DocParaTypeItem::DocCmdGroup(element) => {
+                nodes.append(&mut render_doc_cmd_group(element))
+            }
             e::DocParaTypeItem::Text(text) => nodes.push(Node::Text(text)),
             _ => {}
         }
     }
 
     nodes
+}
+
+fn render_doc_cmd_group(element: e::DocCmdGroup) -> Vec<Node> {
+    match element {
+        e::DocCmdGroup::DocTitleCmdGroup(element) => render_doc_title_cmd_group(element),
+        // TODO: Change to panic
+        _ => vec![],
+    }
+}
+
+fn render_linked_text_type(linked_text_type: e::LinkedTextType) -> Vec<Node> {
+    let mut nodes = Vec::new();
+
+    for entry in linked_text_type.content {
+        match entry {
+            e::LinkedTextTypeItem::Ref(content) => nodes.push(render_ref_text_type(content)),
+            e::LinkedTextTypeItem::Text(text) => nodes.push(Node::Text(text)),
+        }
+    }
+
+    nodes
+}
+
+fn render_ref_text_type(ref_text_type: e::RefTextType) -> Node {
+    Node::Reference {
+        internal: true,
+        refid: ref_text_type.ref_id,
+        children: vec![Node::DescSignatureName(ref_text_type.content)],
+    }
+}
+
+fn render_doc_ref_text_type(doc_ref_text_type: e::DocRefTextType) -> Vec<Node> {
+    let mut nodes = Vec::new();
+
+    for entry in doc_ref_text_type.content {
+        match entry {
+            e::DocRefTextTypeItem::DocTitleCmdGroup(content) => {
+                nodes.append(&mut render_doc_title_cmd_group(content))
+            }
+            e::DocRefTextTypeItem::Text(text) => nodes.push(Node::Text(text)),
+        }
+    }
+
+    nodes
+}
+
+fn render_doc_title_cmd_group(element: e::DocTitleCmdGroup) -> Vec<Node> {
+    match element {
+        e::DocTitleCmdGroup::Ref(element) => render_doc_ref_text_type(element),
+        // TODO: Change to panic
+        _ => Vec::new(),
+    }
 }
