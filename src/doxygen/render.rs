@@ -61,7 +61,7 @@ pub fn render_section_def(section_def: e::SectionDefType) -> Node {
 fn section_title(section_kind: &e::DoxSectionKind) -> String {
     match section_kind {
         e::DoxSectionKind::UserDefined => "UserDefined".to_string(),
-        e::DoxSectionKind::PublicType => "PublicType".to_string(),
+        e::DoxSectionKind::PublicType => "Public Types".to_string(),
         e::DoxSectionKind::PublicFunc => "Public Functions".to_string(),
         e::DoxSectionKind::PublicAttrib => "PublicAttrib".to_string(),
         e::DoxSectionKind::PublicSlot => "PublicSlot".to_string(),
@@ -178,8 +178,8 @@ fn member_kind_name(member_kind: &e::DoxMemberKind) -> String {
         e::DoxMemberKind::Event => "Event".to_string(),
         e::DoxMemberKind::Variable => "Variable".to_string(),
         e::DoxMemberKind::Typedef => "Typedef".to_string(),
-        e::DoxMemberKind::Enum => "Enum".to_string(),
-        e::DoxMemberKind::Function => "Function".to_string(),
+        e::DoxMemberKind::Enum => "enum".to_string(),
+        e::DoxMemberKind::Function => "function".to_string(),
         e::DoxMemberKind::Signal => "Signal".to_string(),
         e::DoxMemberKind::Prototype => "Prototype".to_string(),
         e::DoxMemberKind::Friend => "Friend".to_string(),
