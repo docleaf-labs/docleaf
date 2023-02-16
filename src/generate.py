@@ -36,7 +36,7 @@ class DocComment:
     def __init__(self, content: List[str]):
         self.content = content
 
-    def to_string(self):
+    def __str__(self):
         return "//! " + "\n//! ".join(self.content)
 
 
@@ -45,13 +45,13 @@ class Struct:
         self.name = name
         self.field_groups = field_groups
 
-    def to_string(self):
+    def __str__(self):
         field_groups_text = []
         for group, fields in self.field_groups.items():
             if group:
                 field_groups_text.append(f"// {group}")
 
-            fields = ",\n".join(fields)
+            fields = ",\n".join(str(field) for field in fields)
             fields = f"{fields}," if fields else fields
 
             field_groups_text.append(fields)
@@ -65,13 +65,24 @@ pub struct {self.name} {{
 """
 
 
+class Field:
+    def __init__(self, name, type, comment: bool):
+        self.name = name
+        self.type = type
+        self.comment = comment
+
+    def __str__(self):
+        comment = "// " if self.comment else ""
+        return f"    {comment}pub {self.name}: {self.type}"
+
+
 class Enum:
     def __init__(self, name, simple, entries):
         self.name = name
         self.entries = entries
         self.simple = simple
 
-    def to_string(self):
+    def __str__(self):
         enum_string = "strum::EnumString, " if self.simple else ""
         return f"""
 #[derive(Debug, {enum_string}PartialEq)]
@@ -81,11 +92,43 @@ pub enum {self.name} {{
 """
 
 
+class Option:
+    def __init__(self, inner):
+        self.inner = inner
+
+    def __str__(self):
+        return f"Option<{self.inner}>"
+
+
+class Vec:
+    def __init__(self, inner):
+        self.inner = inner
+
+    def __str__(self):
+        return f"Vec<{self.inner}>"
+
+
+class Vec1:
+    def __init__(self, inner):
+        self.inner = inner
+
+    def __str__(self):
+        return f"vec1::Vec1<{self.inner}>"
+
+
+class PassThrough:
+    def __init__(self, inner):
+        self.inner = inner
+
+    def __str__(self):
+        return self.inner
+
+
 class Text:
     def __init__(self, content):
         self.content = content
 
-    def to_string(self):
+    def __str__(self):
         return self.content
 
 
@@ -132,7 +175,7 @@ def main(args):
                                 entries.extend(restriction)
 
         for entry in entries:
-            print(entry.to_string(), file=output)
+            print(str(entry), file=output)
 
 
 # Types that are listed as mixed but that we don't really believe should be
@@ -200,35 +243,28 @@ def create_struct(output, tag, comment_lookup):
                         else "String"
                     )
 
-                    min_occurs = (
-                        int(element.attrib["minOccurs"]) if "minOccurs" in element.attrib else 1
-                    )
-
-                    max_occurs = element.attrib["maxOccurs"] if "maxOccurs" in element.attrib else 1
-
-                    # Robust comment lookup by using fallbacks
-                    comment = (
-                        "// "
-                        if comment_lookup.get(name.lower(), {}).get(field_name.lower(), True)
-                        else ""
-                    )
-
-                    if min_occurs == 0 and max_occurs in [1, "1"]:
-                        element_fields.append(
-                            f"    {comment}pub {field_name}: Option<{field_type}>"
-                        )
-                    elif min_occurs == 0 and max_occurs == "unbounded":
-                        element_fields.append(f"    {comment}pub {field_name}: Vec<{field_type}>")
-                    elif min_occurs == 1 and max_occurs == "unbounded":
-                        element_fields.append(
-                            f"    {comment}pub {field_name}: vec1::Vec1<{field_type}>"
-                        )
-                    elif min_occurs == 1 and max_occurs in [1, "1"]:
-                        element_fields.append(f"    {comment}pub {field_name}: {field_type}")
-                    else:
-                        raise Exception(f"min:{repr(min_occurs)} max:{repr(max_occurs)}")
+                    comment_out = comment_lookup.get(name.lower(), {}).get(field_name.lower(), True)
+                    Wrapper = count_based_wrapper(element)
+                    element_fields.append(Field(field_name, Wrapper(field_type), comment_out))
 
     return [Struct(name, {"Attributes": attribute_fields, "Elements": element_fields})]
+
+
+def count_based_wrapper(element):
+
+    min_occurs = int(element.attrib["minOccurs"]) if "minOccurs" in element.attrib else 1
+    max_occurs = element.attrib["maxOccurs"] if "maxOccurs" in element.attrib else 1
+
+    if min_occurs == 0 and max_occurs in [1, "1"]:
+        return Option
+    elif min_occurs == 0 and max_occurs == "unbounded":
+        return Vec
+    elif min_occurs == 1 and max_occurs == "unbounded":
+        return Vec1
+    elif min_occurs == 1 and max_occurs in [1, "1"]:
+        return PassThrough
+    else:
+        raise Exception(f"min:{repr(min_occurs)} max:{repr(max_occurs)}")
 
 
 def create_mixed(output, tag, comment_lookup):
