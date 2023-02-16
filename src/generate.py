@@ -118,7 +118,7 @@ def main(args):
                     if is_simple_content(child):
                         entries.extend(create_simple_content(child, comment_lookup))
                     elif "mixed" in child.attrib:
-                        mixed = create_mixed(output, child)
+                        mixed = create_mixed(output, child, comment_lookup)
                         if mixed:
                             entries.extend(mixed)
                     else:
@@ -137,7 +137,6 @@ def main(args):
 
 def is_simple_content(tag) -> bool:
     for child in tag:
-        # print(child)
         if child.tag == "{http://www.w3.org/2001/XMLSchema}simpleContent":
             return True
 
@@ -174,8 +173,8 @@ def create_struct(output, tag, comment_lookup):
     """
 
     name = convert_type_name(tag.attrib["name"], False)
-
     attribute_fields = get_attribute_fields(tag, name, comment_lookup)
+
     element_fields = []
     for child in tag:
 
@@ -222,19 +221,18 @@ def create_struct(output, tag, comment_lookup):
     return [Struct(name, {"Attributes": attribute_fields, "Elements": element_fields})]
 
 
-def create_mixed(output, tag):
+def create_mixed(output, tag, comment_lookup):
     """
     Output a rust enum for a mixed complex type
     """
 
     name = convert_type_name(tag.attrib["name"], False)
+    attribute_fields = get_attribute_fields(tag, name, comment_lookup)
 
     entries = []
     for child in tag:
         if child.tag == "{http://www.w3.org/2001/XMLSchema}sequence":
             for grandchild in child:
-                # print(child)
-                # print(grandchild)
                 if "name" in grandchild.attrib and "type" in grandchild.attrib:
                     entry_name = grandchild.attrib["name"]
                     entry_type = grandchild.attrib["type"]
@@ -246,16 +244,36 @@ def create_mixed(output, tag):
 
             entries = ",\n    ".join(entries)
 
-        if child.tag == "{http://www.w3.org/2001/XMLSchema}group":
-            if "name" in child.attrib:
-                entries.append(child.attrib["name"])
+        elif child.tag == "{http://www.w3.org/2001/XMLSchema}group":
+            if "ref" in child.attrib:
+                type_name = convert_type_name(child.attrib["ref"], False)
+                entries.append(type_name)
+                entries = ",\n    ".join(entries)
 
-    if not entries:
-        return
+        elif child.tag == "{http://www.w3.org/2001/XMLSchema}choice":
+            for grandchild in child:
+                if "name" in grandchild.attrib and "type" in grandchild.attrib:
+                    entry_name = grandchild.attrib["name"]
+                    entry_type = grandchild.attrib["type"]
+                    entry_name = convert_type_name(entry_name, False)
+                    entry_type = convert_type_name(entry_type, False)
+                    entries.append(f"{entry_name}({entry_type})")
+
+            entries.append("Text(String)")
+
+            entries = ",\n    ".join(entries)
 
     item_name = name + "Item"
 
-    return [Struct(name, {"": [f"contents: {item_name}"]}), Enum(item_name, False, entries)]
+    if entries:
+        return [
+            Struct(
+                name, {"Attributes": attribute_fields, "Contents": [f"contents: Vec<{item_name}>"]}
+            ),
+            Enum(item_name, False, entries),
+        ]
+    else:
+        return [Struct(name, {"Attributes": attribute_fields, "Contents": [f"contents: String"]})]
 
 
 def create_restriction(output, name, tag):
@@ -286,14 +304,11 @@ def create_restriction(output, name, tag):
 
 def convert_enum_name(name):
     name = capitalize(name)
-    # print(name, file=sys.stderr)
     while True:
         match = re.search("-[A-Za-z]", name)
         if match:
             span = match.span()
-            # print(match.group(), file=sys.stderr)
             name = name[: span[0]] + match.group()[1:].upper() + name[span[1] :]
-            # print(name, file=sys.stderr)
         else:
             break
 
