@@ -84,8 +84,9 @@ class Enum:
 
     def __str__(self):
         enum_string = "strum::EnumString, " if self.simple else ""
+        strum_setting = '\n#[strum(serialize_all = "kebab-case")]' if self.simple else ""
         return f"""
-#[derive(Debug, {enum_string}PartialEq)]
+#[derive(Debug, {enum_string}PartialEq)]{strum_setting}
 pub enum {self.name} {{
     {self.entries}
 }}

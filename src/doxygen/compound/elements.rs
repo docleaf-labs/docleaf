@@ -1195,6 +1195,7 @@ pub struct DocEmojiType {
 }
 
 #[derive(Debug, strum::EnumString, PartialEq)]
+#[strum(serialize_all = "kebab-case")]
 pub enum DoxGraphRelation {
     Include,
     Usage,
@@ -1206,12 +1207,14 @@ pub enum DoxGraphRelation {
 }
 
 #[derive(Debug, strum::EnumString, PartialEq)]
+#[strum(serialize_all = "kebab-case")]
 pub enum DoxRefKind {
     Compound,
     Member,
 }
 
 #[derive(Debug, strum::EnumString, PartialEq)]
+#[strum(serialize_all = "kebab-case")]
 pub enum DoxMemberKind {
     Define,
     Property,
@@ -1230,6 +1233,7 @@ pub enum DoxMemberKind {
 }
 
 #[derive(Debug, strum::EnumString, PartialEq)]
+#[strum(serialize_all = "kebab-case")]
 pub enum DoxProtectionKind {
     Public,
     Protected,
@@ -1238,12 +1242,14 @@ pub enum DoxProtectionKind {
 }
 
 #[derive(Debug, strum::EnumString, PartialEq)]
+#[strum(serialize_all = "kebab-case")]
 pub enum DoxRefQualifierKind {
     Lvalue,
     Rvalue,
 }
 
 #[derive(Debug, strum::EnumString, PartialEq)]
+#[strum(serialize_all = "kebab-case")]
 pub enum DoxLanguage {
     Unknown,
     IDL,
@@ -1265,6 +1271,7 @@ pub enum DoxLanguage {
 }
 
 #[derive(Debug, strum::EnumString, PartialEq)]
+#[strum(serialize_all = "kebab-case")]
 pub enum DoxVirtualKind {
     NonVirtual,
     Virtual,
@@ -1272,6 +1279,7 @@ pub enum DoxVirtualKind {
 }
 
 #[derive(Debug, strum::EnumString, PartialEq)]
+#[strum(serialize_all = "kebab-case")]
 pub enum DoxCompoundKind {
     Class,
     Struct,
@@ -1294,6 +1302,7 @@ pub enum DoxCompoundKind {
 }
 
 #[derive(Debug, strum::EnumString, PartialEq)]
+#[strum(serialize_all = "kebab-case")]
 pub enum DoxSectionKind {
     UserDefined,
     PublicType,
@@ -1334,6 +1343,7 @@ pub enum DoxSectionKind {
 }
 
 #[derive(Debug, strum::EnumString, PartialEq)]
+#[strum(serialize_all = "kebab-case")]
 pub enum DoxHighlightClass {
     Comment,
     Normal,
@@ -1350,6 +1360,7 @@ pub enum DoxHighlightClass {
 }
 
 #[derive(Debug, strum::EnumString, PartialEq)]
+#[strum(serialize_all = "kebab-case")]
 pub enum DoxSimpleSectKind {
     See,
     Return,
@@ -1373,6 +1384,7 @@ pub enum DoxSimpleSectKind {
 type DoxVersionNumber = String;
 
 #[derive(Debug, strum::EnumString, PartialEq)]
+#[strum(serialize_all = "kebab-case")]
 pub enum DoxImageKind {
     Html,
     Latex,
@@ -1382,6 +1394,7 @@ pub enum DoxImageKind {
 }
 
 #[derive(Debug, strum::EnumString, PartialEq)]
+#[strum(serialize_all = "kebab-case")]
 pub enum DoxPlantumlEngine {
     Uml,
     Bpm,
@@ -1403,6 +1416,7 @@ pub enum DoxPlantumlEngine {
 }
 
 #[derive(Debug, strum::EnumString, PartialEq)]
+#[strum(serialize_all = "kebab-case")]
 pub enum DoxParamListKind {
     Param,
     Retval,
@@ -1413,6 +1427,7 @@ pub enum DoxParamListKind {
 type DoxCharRange = String;
 
 #[derive(Debug, strum::EnumString, PartialEq)]
+#[strum(serialize_all = "kebab-case")]
 pub enum DoxParamDir {
     In,
     Out,
@@ -1420,6 +1435,7 @@ pub enum DoxParamDir {
 }
 
 #[derive(Debug, strum::EnumString, PartialEq)]
+#[strum(serialize_all = "kebab-case")]
 pub enum DoxAccessor {
     Retain,
     Copy,
@@ -1430,6 +1446,7 @@ pub enum DoxAccessor {
 }
 
 #[derive(Debug, strum::EnumString, PartialEq)]
+#[strum(serialize_all = "kebab-case")]
 pub enum DoxAlign {
     Left,
     Right,
@@ -1437,6 +1454,7 @@ pub enum DoxAlign {
 }
 
 #[derive(Debug, strum::EnumString, PartialEq)]
+#[strum(serialize_all = "kebab-case")]
 pub enum DoxVerticalAlign {
     Bottom,
     Top,
