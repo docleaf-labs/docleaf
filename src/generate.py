@@ -247,7 +247,7 @@ def create_simple_content(tag, comment_lookup):
             attribute_fields = get_attribute_fields(child, name, comment_lookup)
 
             type = convert_type_name(type, True)
-            fields = {"Attributes": attribute_fields, "Content": [f"content: {type}"]}
+            fields = {"Attributes": attribute_fields, "Content": [f"pub content: {type}"]}
 
             return [Struct(name, fields)]
 
@@ -361,12 +361,15 @@ def create_mixed(output, tag, comment_lookup):
     if entries:
         return [
             Struct(
-                name, {"Attributes": attribute_fields, "Contents": [f"content: Vec<{item_name}>"]}
+                name,
+                {"Attributes": attribute_fields, "Contents": [f"pub content: Vec<{item_name}>"]},
             ),
             Enum(item_name, False, entries),
         ]
     else:
-        return [Struct(name, {"Attributes": attribute_fields, "Contents": [f"content: String"]})]
+        return [
+            Struct(name, {"Attributes": attribute_fields, "Contents": [f"pub content: String"]})
+        ]
 
 
 def create_restriction(output, name, tag):

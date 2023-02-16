@@ -76,7 +76,7 @@ pub struct DocHtmlOnlyType {
     // Attributes
     // pub block: String,
     // Content
-    content: String,
+    pub content: String,
 }
 
 #[derive(Debug, PartialEq)]
@@ -86,7 +86,7 @@ pub struct CompoundRefType {
     // pub prot: DoxProtectionKind,
     // pub virt: DoxVirtualKind,
     // Content
-    content: String,
+    pub content: String,
 }
 
 #[derive(Debug, PartialEq)]
@@ -94,7 +94,7 @@ pub struct ReimplementType {
     // Attributes
     // pub ref_id: String,
     // Content
-    content: String,
+    pub content: String,
 }
 
 #[derive(Debug, PartialEq)]
@@ -103,7 +103,7 @@ pub struct IncType {
     // pub ref_id: String,
     // pub local: bool,
     // Content
-    content: String,
+    pub content: String,
 }
 
 #[derive(Debug, PartialEq)]
@@ -113,7 +113,7 @@ pub struct RefType {
     // pub prot: DoxProtectionKind,
     // pub inline: bool,
     // Content
-    content: String,
+    pub content: String,
 }
 
 #[derive(Debug, PartialEq)]
@@ -124,7 +124,7 @@ pub struct RefTextType {
     // pub external: String,
     // pub tooltip: String,
     // Content
-    content: String,
+    pub content: String,
 }
 
 #[derive(Debug, PartialEq)]
@@ -212,7 +212,7 @@ pub struct DescriptionType {
     // Attributes
 
     // Contents
-    content: Vec<DescriptionTypeItem>,
+    pub content: Vec<DescriptionTypeItem>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -264,7 +264,7 @@ pub struct LinkedTextType {
     // Attributes
 
     // Contents
-    content: Vec<LinkedTextTypeItem>,
+    pub content: Vec<LinkedTextTypeItem>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -332,7 +332,7 @@ pub struct HighlightType {
     // Attributes
     // pub class: DoxHighlightClass,
     // Contents
-    content: Vec<HighlightTypeItem>,
+    pub content: Vec<HighlightTypeItem>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -347,7 +347,7 @@ pub struct SpType {
     // Attributes
     // pub value: i32,
     // Contents
-    content: String,
+    pub content: String,
 }
 
 #[derive(Debug, PartialEq)]
@@ -358,7 +358,7 @@ pub struct ReferenceType {
     // pub startline: i32,
     // pub endline: i32,
     // Contents
-    content: String,
+    pub content: String,
 }
 
 #[derive(Debug, PartialEq)]
@@ -381,7 +381,7 @@ pub struct DocSect1Type {
     // Attributes
     // pub id: String,
     // Contents
-    content: Vec<DocSect1TypeItem>,
+    pub content: Vec<DocSect1TypeItem>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -395,7 +395,7 @@ pub struct DocSect2Type {
     // Attributes
     // pub id: String,
     // Contents
-    content: Vec<DocSect2TypeItem>,
+    pub content: Vec<DocSect2TypeItem>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -409,7 +409,7 @@ pub struct DocSect3Type {
     // Attributes
     // pub id: String,
     // Contents
-    content: Vec<DocSect3TypeItem>,
+    pub content: Vec<DocSect3TypeItem>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -423,7 +423,7 @@ pub struct DocSect4Type {
     // Attributes
     // pub id: String,
     // Contents
-    content: Vec<DocSect4TypeItem>,
+    pub content: Vec<DocSect4TypeItem>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -437,7 +437,7 @@ pub struct DocInternalType {
     // Attributes
 
     // Contents
-    content: Vec<DocInternalTypeItem>,
+    pub content: Vec<DocInternalTypeItem>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -452,7 +452,7 @@ pub struct DocInternalS1Type {
     // Attributes
 
     // Contents
-    content: Vec<DocInternalS1TypeItem>,
+    pub content: Vec<DocInternalS1TypeItem>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -467,7 +467,7 @@ pub struct DocInternalS2Type {
     // Attributes
 
     // Contents
-    content: Vec<DocInternalS2TypeItem>,
+    pub content: Vec<DocInternalS2TypeItem>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -482,7 +482,7 @@ pub struct DocInternalS3Type {
     // Attributes
 
     // Contents
-    content: Vec<DocInternalS3TypeItem>,
+    pub content: Vec<DocInternalS3TypeItem>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -497,7 +497,7 @@ pub struct DocInternalS4Type {
     // Attributes
 
     // Contents
-    content: Vec<DocInternalS4TypeItem>,
+    pub content: Vec<DocInternalS4TypeItem>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -739,7 +739,7 @@ pub struct DocTitleType {
     // Attributes
 
     // Contents
-    content: Vec<DocTitleTypeItem>,
+    pub content: Vec<DocTitleTypeItem>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -783,7 +783,7 @@ pub struct DocParaType {
     // Attributes
 
     // Contents
-    content: Vec<DocParaTypeItem>,
+    pub content: Vec<DocParaTypeItem>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -797,7 +797,7 @@ pub struct DocMarkupType {
     // Attributes
 
     // Contents
-    content: Vec<DocMarkupTypeItem>,
+    pub content: Vec<DocMarkupTypeItem>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -811,7 +811,7 @@ pub struct DocURLLink {
     // Attributes
     // pub url: String,
     // Contents
-    content: Vec<DocURLLinkItem>,
+    pub content: Vec<DocURLLinkItem>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -825,7 +825,7 @@ pub struct DocAnchorType {
     // Attributes
     // pub id: String,
     // Contents
-    content: String,
+    pub content: String,
 }
 
 #[derive(Debug, PartialEq)]
@@ -833,7 +833,7 @@ pub struct DocFormulaType {
     // Attributes
     // pub id: String,
     // Contents
-    content: String,
+    pub content: String,
 }
 
 #[derive(Debug, PartialEq)]
@@ -893,7 +893,7 @@ pub struct DocRefTextType {
     // pub kindref: DoxRefKind,
     // pub external: String,
     // Contents
-    content: Vec<DocRefTextTypeItem>,
+    pub content: Vec<DocRefTextTypeItem>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -940,7 +940,7 @@ pub struct DocCaptionType {
     // Attributes
     // pub id: String,
     // Contents
-    content: Vec<DocCaptionTypeItem>,
+    pub content: Vec<DocCaptionTypeItem>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -954,7 +954,7 @@ pub struct DocHeadingType {
     // Attributes
     // pub level: i32,
     // Contents
-    content: Vec<DocHeadingTypeItem>,
+    pub content: Vec<DocHeadingTypeItem>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -974,7 +974,7 @@ pub struct DocImageType {
     // pub inline: bool,
     // pub caption: String,
     // Contents
-    content: Vec<DocImageTypeItem>,
+    pub content: Vec<DocImageTypeItem>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -991,7 +991,7 @@ pub struct DocDotMscType {
     // pub height: String,
     // pub caption: String,
     // Contents
-    content: Vec<DocDotMscTypeItem>,
+    pub content: Vec<DocDotMscTypeItem>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -1007,7 +1007,7 @@ pub struct DocImageFileType {
     // pub width: String,
     // pub height: String,
     // Contents
-    content: Vec<DocImageFileTypeItem>,
+    pub content: Vec<DocImageFileTypeItem>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -1025,7 +1025,7 @@ pub struct DocPlantumlType {
     // pub caption: String,
     // pub engine: DoxPlantumlEngine,
     // Contents
-    content: Vec<DocPlantumlTypeItem>,
+    pub content: Vec<DocPlantumlTypeItem>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -1039,7 +1039,7 @@ pub struct DocTocItemType {
     // Attributes
     // pub id: String,
     // Contents
-    content: Vec<DocTocItemTypeItem>,
+    pub content: Vec<DocTocItemTypeItem>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -1095,7 +1095,7 @@ pub struct DocParamType {
     // Attributes
 
     // Contents
-    content: Vec<DocParamTypeItem>,
+    pub content: Vec<DocParamTypeItem>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -1109,7 +1109,7 @@ pub struct DocParamName {
     // Attributes
     // pub direction: DoxParamDir,
     // Contents
-    content: Vec<DocParamNameItem>,
+    pub content: Vec<DocParamNameItem>,
 }
 
 #[derive(Debug, PartialEq)]

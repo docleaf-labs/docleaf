@@ -412,10 +412,14 @@ pub fn parse_parameter_item(
             },
             Ok(Event::End(tag)) => {
                 if tag.name() == start_tag.name() {
-                    return Ok(DocParamListItem {
-                        parameter_name_list,
-                        parameter_description,
-                    });
+                    return parameter_description
+                        .map(|parameter_description| DocParamListItem {
+                            parameter_name_list,
+                            parameter_description,
+                        })
+                        .ok_or_else(|| {
+                            anyhow!("Parameter description not found for docParamListItem")
+                        });
                 }
             }
             event => return Err(anyhow!("unexpected event: {:?}", event)),
@@ -427,16 +431,16 @@ pub fn parse_parameter_name_list(
     reader: &mut Reader<&[u8]>,
     start_tag: BytesStart<'_>,
 ) -> anyhow::Result<DocParamNameList> {
-    let mut parameter_type = None;
-    let mut parameter_name = None;
+    let mut parameter_type = Vec::new();
+    let mut parameter_name = Vec::new();
     loop {
         match reader.read_event() {
             Ok(Event::Start(tag)) => match tag.name().as_ref() {
                 b"parametertype" => {
-                    parameter_type = Some(parse_parameter_type(reader, tag)?);
+                    parameter_type.push(parse_parameter_type(reader, tag)?);
                 }
                 b"parametername" => {
-                    parameter_name = Some(parse_parameter_name(reader, tag)?);
+                    parameter_name.push(parse_parameter_name(reader, tag)?);
                 }
                 tag_name => {
                     return Err(anyhow!(
@@ -461,58 +465,78 @@ pub fn parse_parameter_name_list(
 
 fn parse_parameter_type(
     reader: &mut Reader<&[u8]>,
-    _start_tag: BytesStart<'_>,
+    start_tag: BytesStart<'_>,
 ) -> anyhow::Result<DocParamType> {
-    match reader.read_event() {
-        Ok(Event::Start(tag)) => match tag.name().as_ref() {
-            b"ref" => {
-                let id = xml::get_attribute_string(b"refid", &tag)?;
-                Ok(DocParamType::Ref(RefText {
-                    id,
-                    text: xml::parse_text(reader)?,
-                }))
-            }
-            tag_name => Err(anyhow!(
-                "unexpected tag when parsing linked text: {tag_name:?}"
+    let mut content = Vec::new();
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(tag)) => match tag.name().as_ref() {
+                b"ref" => {
+                    let ref_id = xml::get_attribute_string(b"refid", &tag)?;
+                    content.push(DocParamTypeItem::Ref(RefTextType {
+                        ref_id,
+                        content: xml::parse_text(reader)?,
+                    }));
+                }
+                tag_name => {
+                    return Err(anyhow!(
+                        "unexpected tag when parsing linked text: {tag_name:?}"
+                    ))
+                }
+            },
+            Ok(Event::Text(text)) => content.push(DocParamTypeItem::Text(
+                String::from_utf8(text.to_vec()).map_err(|err| anyhow!("{:?}", err))?,
             )),
-        },
-        Ok(Event::Text(text)) => Ok(DocParamType::Text(
-            String::from_utf8(text.to_vec()).map_err(|err| anyhow!("{:?}", err))?,
-        )),
-        event => {
-            return Err(anyhow!(
-                "unexpected event when parsing linked text: {:?}",
-                event
-            ))
+            Ok(Event::End(tag)) => {
+                if tag.name() == start_tag.name() {
+                    return Ok(DocParamType { content });
+                }
+            }
+            event => {
+                return Err(anyhow!(
+                    "unexpected event when parsing linked text: {:?}",
+                    event
+                ))
+            }
         }
     }
 }
 
 fn parse_parameter_name(
     reader: &mut Reader<&[u8]>,
-    _start_tag: BytesStart<'_>,
+    start_tag: BytesStart<'_>,
 ) -> anyhow::Result<DocParamName> {
-    match reader.read_event() {
-        Ok(Event::Start(tag)) => match tag.name().as_ref() {
-            b"ref" => {
-                let id = xml::get_attribute_string(b"refid", &tag)?;
-                Ok(DocParamName::Ref(RefText {
-                    id,
-                    text: xml::parse_text(reader)?,
-                }))
-            }
-            tag_name => Err(anyhow!(
-                "unexpected tag when parsing linked text: {tag_name:?}"
+    let mut content = Vec::new();
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(tag)) => match tag.name().as_ref() {
+                b"ref" => {
+                    let ref_id = xml::get_attribute_string(b"refid", &tag)?;
+                    content.push(DocParamNameItem::Ref(RefTextType {
+                        ref_id,
+                        content: xml::parse_text(reader)?,
+                    }));
+                }
+                tag_name => {
+                    return Err(anyhow!(
+                        "unexpected tag when parsing linked text: {tag_name:?}"
+                    ))
+                }
+            },
+            Ok(Event::Text(text)) => content.push(DocParamNameItem::Text(
+                String::from_utf8(text.to_vec()).map_err(|err| anyhow!("{:?}", err))?,
             )),
-        },
-        Ok(Event::Text(text)) => Ok(DocParamName::Text(
-            String::from_utf8(text.to_vec()).map_err(|err| anyhow!("{:?}", err))?,
-        )),
-        event => {
-            return Err(anyhow!(
-                "unexpected event when parsing linked text: {:?}",
-                event
-            ))
+            Ok(Event::End(tag)) => {
+                if tag.name() == start_tag.name() {
+                    return Ok(DocParamName { content });
+                }
+            }
+            event => {
+                return Err(anyhow!(
+                    "unexpected event when parsing linked text: {:?}",
+                    event
+                ))
+            }
         }
     }
 }
