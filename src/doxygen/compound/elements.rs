@@ -507,6 +507,234 @@ pub enum DocInternalS4TypeItem {
 }
 
 #[derive(Debug, PartialEq)]
+pub enum DocTitleCmdGroup {
+    Ulink(DocURLLink),
+    Bold(DocMarkupType),
+    S(DocMarkupType),
+    Strike(DocMarkupType),
+    Underline(DocMarkupType),
+    Emphasis(DocMarkupType),
+    Computeroutput(DocMarkupType),
+    Subscript(DocMarkupType),
+    Superscript(DocMarkupType),
+    Center(DocMarkupType),
+    Small(DocMarkupType),
+    Cite(DocMarkupType),
+    Del(DocMarkupType),
+    Ins(DocMarkupType),
+    Summary(DocMarkupType),
+    Htmlonly(DocHtmlOnlyType),
+    Manonly(String),
+    Xmlonly(String),
+    Rtfonly(String),
+    Latexonly(String),
+    Docbookonly(String),
+    Image(DocImageType),
+    Dot(DocDotMscType),
+    Msc(DocDotMscType),
+    Plantuml(DocPlantumlType),
+    Anchor(DocAnchorType),
+    Formula(DocFormulaType),
+    Ref(DocRefTextType),
+    Emoji(DocEmojiType),
+    Linebreak(DocEmptyType),
+    Nonbreakablespace(DocEmptyType),
+    Iexcl(DocEmptyType),
+    Cent(DocEmptyType),
+    Pound(DocEmptyType),
+    Curren(DocEmptyType),
+    Yen(DocEmptyType),
+    Brvbar(DocEmptyType),
+    Sect(DocEmptyType),
+    Umlaut(DocEmptyType),
+    Copy(DocEmptyType),
+    Ordf(DocEmptyType),
+    Laquo(DocEmptyType),
+    Not(DocEmptyType),
+    Shy(DocEmptyType),
+    Registered(DocEmptyType),
+    Macr(DocEmptyType),
+    Deg(DocEmptyType),
+    Plusmn(DocEmptyType),
+    Sup2(DocEmptyType),
+    Sup3(DocEmptyType),
+    Acute(DocEmptyType),
+    Micro(DocEmptyType),
+    Para(DocEmptyType),
+    Middot(DocEmptyType),
+    Cedil(DocEmptyType),
+    Sup1(DocEmptyType),
+    Ordm(DocEmptyType),
+    Raquo(DocEmptyType),
+    Frac14(DocEmptyType),
+    Frac12(DocEmptyType),
+    Frac34(DocEmptyType),
+    Iquest(DocEmptyType),
+    Agrave(DocEmptyType),
+    Aacute(DocEmptyType),
+    Acirc(DocEmptyType),
+    Atilde(DocEmptyType),
+    Aumlaut(DocEmptyType),
+    Aring(DocEmptyType),
+    AElig(DocEmptyType),
+    Ccedil(DocEmptyType),
+    Egrave(DocEmptyType),
+    Eacute(DocEmptyType),
+    Ecirc(DocEmptyType),
+    Eumlaut(DocEmptyType),
+    Igrave(DocEmptyType),
+    Iacute(DocEmptyType),
+    Icirc(DocEmptyType),
+    Iumlaut(DocEmptyType),
+    ETH(DocEmptyType),
+    Ntilde(DocEmptyType),
+    Ograve(DocEmptyType),
+    Oacute(DocEmptyType),
+    Ocirc(DocEmptyType),
+    Otilde(DocEmptyType),
+    Oumlaut(DocEmptyType),
+    Times(DocEmptyType),
+    Oslash(DocEmptyType),
+    Ugrave(DocEmptyType),
+    Uacute(DocEmptyType),
+    Ucirc(DocEmptyType),
+    Uumlaut(DocEmptyType),
+    Yacute(DocEmptyType),
+    THORN(DocEmptyType),
+    Szlig(DocEmptyType),
+    Aelig(DocEmptyType),
+    Eth(DocEmptyType),
+    Divide(DocEmptyType),
+    Thorn(DocEmptyType),
+    Yumlaut(DocEmptyType),
+    Fnof(DocEmptyType),
+    Alpha(DocEmptyType),
+    Beta(DocEmptyType),
+    Gamma(DocEmptyType),
+    Delta(DocEmptyType),
+    Epsilon(DocEmptyType),
+    Zeta(DocEmptyType),
+    Eta(DocEmptyType),
+    Theta(DocEmptyType),
+    Iota(DocEmptyType),
+    Kappa(DocEmptyType),
+    Lambda(DocEmptyType),
+    Mu(DocEmptyType),
+    Nu(DocEmptyType),
+    Xi(DocEmptyType),
+    Omicron(DocEmptyType),
+    Pi(DocEmptyType),
+    Rho(DocEmptyType),
+    Sigma(DocEmptyType),
+    Tau(DocEmptyType),
+    Upsilon(DocEmptyType),
+    Phi(DocEmptyType),
+    Chi(DocEmptyType),
+    Psi(DocEmptyType),
+    Omega(DocEmptyType),
+    Sigmaf(DocEmptyType),
+    Thetasym(DocEmptyType),
+    Upsih(DocEmptyType),
+    Piv(DocEmptyType),
+    Bull(DocEmptyType),
+    Hellip(DocEmptyType),
+    Prime(DocEmptyType),
+    Oline(DocEmptyType),
+    Frasl(DocEmptyType),
+    Weierp(DocEmptyType),
+    Imaginary(DocEmptyType),
+    Real(DocEmptyType),
+    Trademark(DocEmptyType),
+    Alefsym(DocEmptyType),
+    Larr(DocEmptyType),
+    Uarr(DocEmptyType),
+    Rarr(DocEmptyType),
+    Darr(DocEmptyType),
+    Harr(DocEmptyType),
+    Crarr(DocEmptyType),
+    LArr(DocEmptyType),
+    UArr(DocEmptyType),
+    RArr(DocEmptyType),
+    DArr(DocEmptyType),
+    HArr(DocEmptyType),
+    Forall(DocEmptyType),
+    Part(DocEmptyType),
+    Exist(DocEmptyType),
+    Empty(DocEmptyType),
+    Nabla(DocEmptyType),
+    Isin(DocEmptyType),
+    Notin(DocEmptyType),
+    Ni(DocEmptyType),
+    Prod(DocEmptyType),
+    Sum(DocEmptyType),
+    Minus(DocEmptyType),
+    Lowast(DocEmptyType),
+    Radic(DocEmptyType),
+    Prop(DocEmptyType),
+    Infin(DocEmptyType),
+    Ang(DocEmptyType),
+    And(DocEmptyType),
+    Or(DocEmptyType),
+    Cap(DocEmptyType),
+    Cup(DocEmptyType),
+    Int(DocEmptyType),
+    There4(DocEmptyType),
+    Sim(DocEmptyType),
+    Cong(DocEmptyType),
+    Asymp(DocEmptyType),
+    Ne(DocEmptyType),
+    Equiv(DocEmptyType),
+    Le(DocEmptyType),
+    Ge(DocEmptyType),
+    Sub(DocEmptyType),
+    Sup(DocEmptyType),
+    Nsub(DocEmptyType),
+    Sube(DocEmptyType),
+    Supe(DocEmptyType),
+    Oplus(DocEmptyType),
+    Otimes(DocEmptyType),
+    Perp(DocEmptyType),
+    Sdot(DocEmptyType),
+    Lceil(DocEmptyType),
+    Rceil(DocEmptyType),
+    Lfloor(DocEmptyType),
+    Rfloor(DocEmptyType),
+    Lang(DocEmptyType),
+    Rang(DocEmptyType),
+    Loz(DocEmptyType),
+    Spades(DocEmptyType),
+    Clubs(DocEmptyType),
+    Hearts(DocEmptyType),
+    Diams(DocEmptyType),
+    OElig(DocEmptyType),
+    Oelig(DocEmptyType),
+    Scaron(DocEmptyType),
+    Circ(DocEmptyType),
+    Tilde(DocEmptyType),
+    Ensp(DocEmptyType),
+    Emsp(DocEmptyType),
+    Thinsp(DocEmptyType),
+    Zwnj(DocEmptyType),
+    Zwj(DocEmptyType),
+    Lrm(DocEmptyType),
+    Rlm(DocEmptyType),
+    Ndash(DocEmptyType),
+    Mdash(DocEmptyType),
+    Lsquo(DocEmptyType),
+    Rsquo(DocEmptyType),
+    Sbquo(DocEmptyType),
+    Ldquo(DocEmptyType),
+    Rdquo(DocEmptyType),
+    Bdquo(DocEmptyType),
+    Dagger(DocEmptyType),
+    Permil(DocEmptyType),
+    Lsaquo(DocEmptyType),
+    Rsaquo(DocEmptyType),
+    Euro(DocEmptyType),
+    Tm(DocEmptyType),
+}
+
+#[derive(Debug, PartialEq)]
 pub struct DocTitleType {
     // Attributes
 
@@ -516,7 +744,38 @@ pub struct DocTitleType {
 
 #[derive(Debug, PartialEq)]
 pub enum DocTitleTypeItem {
-    DocTitleCmdGroup,
+    DocTitleCmdGroup(DocTitleCmdGroup),
+    Text(String),
+}
+
+#[derive(Debug, PartialEq)]
+pub enum DocCmdGroup {
+    DocTitleCmdGroup(DocTitleCmdGroup),
+    Hruler(DocEmptyType),
+    Preformatted(DocMarkupType),
+    ProgramListing(ListingType),
+    Verbatim(String),
+    Javadocliteral(String),
+    Javadoccode(String),
+    Indexentry(DocIndexEntryType),
+    OrderedList(DocListType),
+    ItemizedList(DocListType),
+    Simplesect(DocSimpleSectType),
+    Title(DocTitleType),
+    VariableList(DocVariableListType),
+    Table(DocTableType),
+    Heading(DocHeadingType),
+    Dotfile(DocImageFileType),
+    Mscfile(DocImageFileType),
+    Diafile(DocImageFileType),
+    TocList(DocTocListType),
+    Language(DocLanguageType),
+    ParameterList(DocParamListType),
+    Xrefsect(DocXRefSectType),
+    Copydoc(DocCopyType),
+    Details(DocDetailsType),
+    Blockquote(DocBlockQuoteType),
+    Parblock(DocParBlockType),
 }
 
 #[derive(Debug, PartialEq)]
@@ -529,7 +788,8 @@ pub struct DocParaType {
 
 #[derive(Debug, PartialEq)]
 pub enum DocParaTypeItem {
-    DocCmdGroup,
+    DocCmdGroup(DocCmdGroup),
+    Text(String),
 }
 
 #[derive(Debug, PartialEq)]
@@ -542,7 +802,8 @@ pub struct DocMarkupType {
 
 #[derive(Debug, PartialEq)]
 pub enum DocMarkupTypeItem {
-    DocCmdGroup,
+    DocCmdGroup(DocCmdGroup),
+    Text(String),
 }
 
 #[derive(Debug, PartialEq)]
@@ -555,7 +816,8 @@ pub struct DocURLLink {
 
 #[derive(Debug, PartialEq)]
 pub enum DocURLLinkItem {
-    DocTitleCmdGroup,
+    DocTitleCmdGroup(DocTitleCmdGroup),
+    Text(String),
 }
 
 #[derive(Debug, PartialEq)]
@@ -603,9 +865,10 @@ pub struct DocListItemType {
 #[derive(Debug, PartialEq)]
 pub struct DocSimpleSectType {
     // Attributes
-    pub kind: DoxSimpleSectKind,
+    // pub kind: DoxSimpleSectKind,
     // Elements
-    pub title: Option<DocTitleType>,
+    // pub title: Option<DocTitleType>,
+    pub para: vec1::Vec1<DocParaType>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -626,7 +889,7 @@ pub struct DocVariableListType {
 #[derive(Debug, PartialEq)]
 pub struct DocRefTextType {
     // Attributes
-    // pub ref_id: String,
+    pub ref_id: String,
     // pub kindref: DoxRefKind,
     // pub external: String,
     // Contents
@@ -635,7 +898,8 @@ pub struct DocRefTextType {
 
 #[derive(Debug, PartialEq)]
 pub enum DocRefTextTypeItem {
-    DocTitleCmdGroup,
+    DocTitleCmdGroup(DocTitleCmdGroup),
+    Text(String),
 }
 
 #[derive(Debug, PartialEq)]
@@ -681,7 +945,8 @@ pub struct DocCaptionType {
 
 #[derive(Debug, PartialEq)]
 pub enum DocCaptionTypeItem {
-    DocTitleCmdGroup,
+    DocTitleCmdGroup(DocTitleCmdGroup),
+    Text(String),
 }
 
 #[derive(Debug, PartialEq)]
@@ -694,7 +959,8 @@ pub struct DocHeadingType {
 
 #[derive(Debug, PartialEq)]
 pub enum DocHeadingTypeItem {
-    DocTitleCmdGroup,
+    DocTitleCmdGroup(DocTitleCmdGroup),
+    Text(String),
 }
 
 #[derive(Debug, PartialEq)]
@@ -713,7 +979,8 @@ pub struct DocImageType {
 
 #[derive(Debug, PartialEq)]
 pub enum DocImageTypeItem {
-    DocTitleCmdGroup,
+    DocTitleCmdGroup(DocTitleCmdGroup),
+    Text(String),
 }
 
 #[derive(Debug, PartialEq)]
@@ -729,7 +996,8 @@ pub struct DocDotMscType {
 
 #[derive(Debug, PartialEq)]
 pub enum DocDotMscTypeItem {
-    DocTitleCmdGroup,
+    DocTitleCmdGroup(DocTitleCmdGroup),
+    Text(String),
 }
 
 #[derive(Debug, PartialEq)]
@@ -744,7 +1012,8 @@ pub struct DocImageFileType {
 
 #[derive(Debug, PartialEq)]
 pub enum DocImageFileTypeItem {
-    DocTitleCmdGroup,
+    DocTitleCmdGroup(DocTitleCmdGroup),
+    Text(String),
 }
 
 #[derive(Debug, PartialEq)]
@@ -761,7 +1030,8 @@ pub struct DocPlantumlType {
 
 #[derive(Debug, PartialEq)]
 pub enum DocPlantumlTypeItem {
-    DocTitleCmdGroup,
+    DocTitleCmdGroup(DocTitleCmdGroup),
+    Text(String),
 }
 
 #[derive(Debug, PartialEq)]
@@ -774,7 +1044,8 @@ pub struct DocTocItemType {
 
 #[derive(Debug, PartialEq)]
 pub enum DocTocItemTypeItem {
-    DocTitleCmdGroup,
+    DocTitleCmdGroup(DocTitleCmdGroup),
+    Text(String),
 }
 
 #[derive(Debug, PartialEq)]
@@ -796,9 +1067,9 @@ pub struct DocLanguageType {
 #[derive(Debug, PartialEq)]
 pub struct DocParamListType {
     // Attributes
-    pub kind: DoxParamListKind,
+    // pub kind: DoxParamListKind,
     // Elements
-    pub parameteritem: Vec<DocParamListItem>,
+    pub parameter_item: Vec<DocParamListItem>,
 }
 
 #[derive(Debug, PartialEq)]
@@ -806,8 +1077,8 @@ pub struct DocParamListItem {
     // Attributes
 
     // Elements
-    pub parameternamelist: Vec<DocParamNameList>,
-    pub parameterdescription: DescriptionType,
+    pub parameter_name_list: Vec<DocParamNameList>,
+    pub parameter_description: DescriptionType,
 }
 
 #[derive(Debug, PartialEq)]
@@ -815,8 +1086,8 @@ pub struct DocParamNameList {
     // Attributes
 
     // Elements
-    pub parametertype: Vec<DocParamType>,
-    pub parametername: Vec<DocParamName>,
+    pub parameter_type: Vec<DocParamType>,
+    pub parameter_name: Vec<DocParamName>,
 }
 
 #[derive(Debug, PartialEq)]

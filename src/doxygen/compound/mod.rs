@@ -291,24 +291,26 @@ fn parse_linked_text(
 pub fn parse_para(
     reader: &mut Reader<&[u8]>,
     start_tag: BytesStart<'_>,
-) -> anyhow::Result<Vec<DocParaType>> {
+) -> anyhow::Result<DocParaType> {
     let mut content = Vec::new();
     loop {
         match reader.read_event() {
             Ok(Event::Start(tag)) => match tag.name().as_ref() {
                 b"ref" => {
-                    let id = xml::get_attribute_string(b"refid", &tag)?;
-                    content.push(DocParaTypeItem::Ref(RefText {
-                        id,
-                        text: xml::parse_text(reader)?,
-                    }))
+                    let ref_id = xml::get_attribute_string(b"refid", &tag)?;
+                    content.push(DocParaTypeItem::DocCmdGroup(DocCmdGroup::DocTitleCmdGroup(
+                        DocTitleCmdGroup::Ref(DocRefTextType {
+                            ref_id,
+                            content: Vec::new(),
+                        }),
+                    )))
                 }
-                b"parameterlist" => content.push(DocParaTypeItem::ParameterList(
-                    parse_parameter_list(reader, tag)?,
+                b"parameterlist" => content.push(DocParaTypeItem::DocCmdGroup(
+                    DocCmdGroup::ParameterList(parse_parameter_list(reader, tag)?),
                 )),
-                b"simplesect" => {
-                    content.push(DocParaTypeItem::SimpleSect(parse_simple_sect(reader, tag)?))
-                }
+                b"simplesect" => content.push(DocParaTypeItem::DocCmdGroup(
+                    DocCmdGroup::Simplesect(parse_simple_sect(reader, tag)?),
+                )),
                 tag_name => {
                     return Err(anyhow!(
                         "unexpected tag when parsing para: {:?}",
@@ -321,7 +323,7 @@ pub fn parse_para(
             )),
             Ok(Event::End(tag)) => {
                 if tag.name() == start_tag.name() {
-                    return Ok(content);
+                    return Ok(DocParaType { content });
                 }
             }
             event => return Err(anyhow!("unexpected event: {:?}", event)),
@@ -332,12 +334,12 @@ pub fn parse_para(
 pub fn parse_simple_sect(
     reader: &mut Reader<&[u8]>,
     start_tag: BytesStart<'_>,
-) -> anyhow::Result<DocSimpleSect> {
-    let mut paras = Vec::new();
+) -> anyhow::Result<DocSimpleSectType> {
+    let mut para = Vec::new();
     loop {
         match reader.read_event() {
             Ok(Event::Start(tag)) => match tag.name().as_ref() {
-                b"para" => paras.extend(parse_para(reader, tag)?),
+                b"para" => para.push(parse_para(reader, tag)?),
                 tag_name => {
                     return Err(anyhow!(
                         "unexpected tag when parsing {}: {:?}",
@@ -348,7 +350,9 @@ pub fn parse_simple_sect(
             },
             Ok(Event::End(tag)) => {
                 if tag.name() == start_tag.name() {
-                    return Ok(DocSimpleSect { paras });
+                    return Ok(DocSimpleSectType {
+                        para: Vec1::try_from_vec(para)?,
+                    });
                 }
             }
             event => return Err(anyhow!("unexpected event: {:?}", event)),
@@ -359,12 +363,12 @@ pub fn parse_simple_sect(
 pub fn parse_parameter_list(
     reader: &mut Reader<&[u8]>,
     start_tag: BytesStart<'_>,
-) -> anyhow::Result<DocParamList> {
-    let mut parameter_items = Vec::new();
+) -> anyhow::Result<DocParamListType> {
+    let mut parameter_item = Vec::new();
     loop {
         match reader.read_event() {
             Ok(Event::Start(tag)) => match tag.name().as_ref() {
-                b"parameteritem" => parameter_items.push(parse_parameter_item(reader, tag)?),
+                b"parameteritem" => parameter_item.push(parse_parameter_item(reader, tag)?),
                 tag_name => {
                     return Err(anyhow!(
                         "unexpected tag when parsing {}: {:?}",
@@ -375,7 +379,7 @@ pub fn parse_parameter_list(
             },
             Ok(Event::End(tag)) => {
                 if tag.name() == start_tag.name() {
-                    return Ok(DocParamList { parameter_items });
+                    return Ok(DocParamListType { parameter_item });
                 }
             }
             event => return Err(anyhow!("unexpected event: {:?}", event)),

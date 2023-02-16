@@ -173,6 +173,10 @@ def main(args):
                             restriction = create_restriction(output, name, grandchild)
                             if restriction:
                                 entries.extend(restriction)
+                elif child.tag == "{http://www.w3.org/2001/XMLSchema}group":
+                    group = create_group(child)
+                    if group:
+                        entries.extend(group)
 
         for entry in entries:
             print(str(entry), file=output)
@@ -194,6 +198,36 @@ def is_simple_content(tag) -> bool:
             return True
 
     return False
+
+
+def create_group(element):
+
+    name = convert_type_name(element.attrib["name"], False)
+
+    for child in element:
+        if child.tag == "{http://www.w3.org/2001/XMLSchema}choice":
+
+            entries = []
+            names = []
+            for grandchild in child:
+                if grandchild.tag == "{http://www.w3.org/2001/XMLSchema}group":
+                    type_name = convert_type_name(grandchild.attrib["ref"], False)
+                    entries.append(f"{type_name}({type_name})")
+
+                if "name" in grandchild.attrib and "type" in grandchild.attrib:
+                    entry_name = grandchild.attrib["name"]
+                    entry_type = grandchild.attrib["type"]
+                    entry_name = convert_type_name(entry_name, False)
+                    entry_type = convert_type_name(entry_type, False)
+                    if entry_name not in names:
+                        names.append(entry_name)
+                        entries.append(f"{entry_name}({entry_type})")
+
+            entries = ",\n    ".join(entries)
+
+            return [Enum(name, False, entries)]
+
+    return []
 
 
 def create_simple_content(tag, comment_lookup):
@@ -230,24 +264,36 @@ def create_struct(output, tag, comment_lookup):
 
     element_fields = []
     for child in tag:
-
         if child.tag == "{http://www.w3.org/2001/XMLSchema}sequence":
-            for element in child:
-                if "name" in element.attrib:
-                    field_name = convert_field_name(element.attrib["name"])
-                    # Some elements don't have a 'type' attribute, I'm not sure if "String" is a reasonable fallback
-                    # but we'll try it until proven wrong
-                    field_type = (
-                        convert_type_name(element.attrib["type"], True)
-                        if "type" in element.attrib
-                        else "String"
-                    )
+            element_fields.extend(get_element_fields(child, name, comment_lookup))
 
-                    comment_out = comment_lookup.get(name.lower(), {}).get(field_name.lower(), True)
-                    Wrapper = count_based_wrapper(element)
-                    element_fields.append(Field(field_name, Wrapper(field_type), comment_out))
+            for grandchild in child:
+                if grandchild.tag == "{http://www.w3.org/2001/XMLSchema}sequence":
+                    element_fields.extend(get_element_fields(grandchild, name, comment_lookup))
 
     return [Struct(name, {"Attributes": attribute_fields, "Elements": element_fields})]
+
+
+def get_element_fields(element, name, comment_lookup):
+
+    element_fields = []
+
+    for child in element:
+        if "name" in child.attrib:
+            field_name = convert_field_name(child.attrib["name"])
+            # Some childs don't have a 'type' attribute, I'm not sure if "String" is a reasonable fallback
+            # but we'll try it until proven wrong
+            field_type = (
+                convert_type_name(child.attrib["type"], True)
+                if "type" in child.attrib
+                else "String"
+            )
+
+            comment_out = comment_lookup.get(name.lower(), {}).get(field_name.lower(), True)
+            Wrapper = count_based_wrapper(child)
+            element_fields.append(Field(field_name, Wrapper(field_type), comment_out))
+
+    return element_fields
 
 
 def count_based_wrapper(element):
@@ -293,7 +339,8 @@ def create_mixed(output, tag, comment_lookup):
         elif child.tag == "{http://www.w3.org/2001/XMLSchema}group":
             if "ref" in child.attrib:
                 type_name = convert_type_name(child.attrib["ref"], False)
-                entries.append(type_name)
+                entries.append(f"{type_name}({type_name})")
+                entries.append("Text(String)")
                 entries = ",\n    ".join(entries)
 
         elif child.tag == "{http://www.w3.org/2001/XMLSchema}choice":
@@ -374,14 +421,8 @@ def get_attribute_fields(element, name, comment_lookup):
                 field_name = convert_field_name(child.attrib["name"])
                 field_type = convert_type_name(child.attrib["type"], True)
 
-                # Robust comment lookup by using fallbacks
-                comment = (
-                    "// "
-                    if comment_lookup.get(name.lower(), {}).get(field_name.lower(), True)
-                    else ""
-                )
-
-                fields.append(f"  {comment}pub {field_name}: {field_type}")
+                comment_out = comment_lookup.get(name.lower(), {}).get(field_name.lower(), True)
+                fields.append(Field(field_name, field_type, comment_out))
 
     return fields
 
@@ -424,6 +465,11 @@ field_lookup = {
     "briefdescription": "brief_description",
     "detaileddescription": "detailed_description",
     "refid": "ref_id",
+    "parameteritem": "parameter_item",
+    "parametername": "parameter_name",
+    "parametertype": "parameter_type",
+    "parameterdescription": "parameter_description",
+    "parameternamelist": "parameter_name_list",
 }
 
 
