@@ -30,7 +30,6 @@ pub fn parse_file(index_xml_path: &std::path::Path) -> anyhow::Result<Root> {
 
 pub fn parse(xml: &str) -> anyhow::Result<Root> {
     let mut reader = Reader::from_str(xml);
-    reader.trim_text(true);
 
     let mut compounds = Vec::new();
 
@@ -91,6 +90,7 @@ fn parse_compound(reader: &mut Reader<&[u8]>) -> anyhow::Result<CompoundContents
                     return Ok(CompoundContents { name, members });
                 }
             }
+            Ok(Event::Text(_)) => {}
             _ => return Err(anyhow!("Expected Event::Start")),
         }
     }
@@ -101,18 +101,20 @@ struct MemberContents {
 }
 
 fn parse_member(reader: &mut Reader<&[u8]>) -> anyhow::Result<MemberContents> {
-    let name;
+    let mut name = None;
     match reader.read_event() {
         Ok(Event::Start(tag)) => match tag.name().as_ref() {
             b"name" => {
-                name = xml::parse_text(reader)?;
+                name = Some(xml::parse_text(reader)?);
             }
             _ => return Err(anyhow!("unrecognised element in member")),
         },
+        Ok(Event::Text(_)) => {}
         _ => return Err(anyhow!("Expected Event::Start")),
     }
 
-    Ok(MemberContents { name })
+    name.map(|name| MemberContents { name })
+        .ok_or_else(|| anyhow!("Failed to find name for member"))
 }
 
 #[cfg(test)]

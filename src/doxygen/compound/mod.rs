@@ -15,7 +15,6 @@ pub fn parse_file(compound_xml_path: &std::path::Path) -> anyhow::Result<Doxygen
 
 pub fn parse(xml: &str) -> anyhow::Result<DoxygenType> {
     let mut reader = Reader::from_str(xml);
-    reader.trim_text(true);
 
     loop {
         match reader.read_event() {
@@ -96,6 +95,7 @@ fn parse_section_def(
                     ))
                 }
             },
+            Ok(Event::Text(_)) => {}
             Ok(Event::End(tag)) => {
                 if tag.local_name().as_ref() == b"sectiondef" {
                     return Ok(SectionDefType {
@@ -354,6 +354,7 @@ pub fn parse_simple_sect(
                     ))
                 }
             },
+            Ok(Event::Text(_)) => {}
             Ok(Event::End(tag)) => {
                 if tag.name() == start_tag.name() {
                     return Ok(DocSimpleSectType {
@@ -383,6 +384,7 @@ pub fn parse_parameter_list(
                     ))
                 }
             },
+            Ok(Event::Text(_)) => {}
             Ok(Event::End(tag)) => {
                 if tag.name() == start_tag.name() {
                     return Ok(DocParamListType { parameter_item });
@@ -416,6 +418,7 @@ pub fn parse_parameter_item(
                     ))
                 }
             },
+            Ok(Event::Text(_)) => {}
             Ok(Event::End(tag)) => {
                 if tag.name() == start_tag.name() {
                     return parameter_description
@@ -456,6 +459,7 @@ pub fn parse_parameter_name_list(
                     ))
                 }
             },
+            Ok(Event::Text(_)) => {}
             Ok(Event::End(tag)) => {
                 if tag.name() == start_tag.name() {
                     return Ok(DocParamNameList {

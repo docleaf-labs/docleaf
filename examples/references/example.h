@@ -33,7 +33,7 @@ class DocReferenceExample
 {
 public:
 
-    /*! The refers to OtherReferenceExample in its docs
+    /*! This refers to OtherReferenceExample in its docs
 
       \param reference the first arg
     */
