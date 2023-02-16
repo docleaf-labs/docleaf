@@ -89,23 +89,7 @@ fn parse_section_def(
     loop {
         match reader.read_event() {
             Ok(Event::Start(tag)) => match tag.name().as_ref() {
-                b"memberdef" => {
-                    let kind = xml::get_attribute_string(b"kind", &tag)?;
-                    match kind.as_str() {
-                        "enum" => {
-                            member_defs.push(parse_enum_member_def(reader, tag)?);
-                        }
-                        "function" => {
-                            member_defs.push(parse_function_member_def(reader, tag)?);
-                        }
-                        "variable" => {
-                            member_defs.push(parse_variable_member_def(reader, tag)?);
-                        }
-                        _ => {
-                            member_defs.push(parse_unknown_member_def(reader, tag, &kind)?);
-                        }
-                    }
-                }
+                b"memberdef" => member_defs.push(parse_member_def(reader, tag)?),
                 tag_name => {
                     return Err(anyhow!(
                         "unexpected tag when parsing sectiondef: {tag_name:?}"
@@ -125,11 +109,13 @@ fn parse_section_def(
     }
 }
 
-fn parse_enum_member_def(
+fn parse_member_def(
     reader: &mut Reader<&[u8]>,
     start_tag: BytesStart<'_>,
 ) -> anyhow::Result<MemberDefType> {
     let id = xml::get_attribute_string(b"id", &start_tag)?;
+    let kind = xml::get_attribute_enum::<DoxMemberKind>(b"kind", &start_tag)?;
+
     let mut name = String::new();
     let mut brief_description = None;
     let mut detailed_description = None;
@@ -157,52 +143,9 @@ fn parse_enum_member_def(
                     return Ok(MemberDefType {
                         id,
                         name,
-                        kind: DoxMemberKind::Enum,
+                        kind,
                         brief_description,
                         detailed_description,
-                    });
-                }
-            }
-            _ => {}
-        }
-    }
-}
-
-fn parse_function_member_def(
-    reader: &mut Reader<&[u8]>,
-    start_tag: BytesStart<'_>,
-) -> anyhow::Result<MemberDefType> {
-    let id = xml::get_attribute_string(b"id", &start_tag)?;
-    let mut name = String::new();
-    let mut brief_description = None;
-    let mut detailed_description = None;
-    let mut params = Vec::new();
-
-    loop {
-        match reader.read_event() {
-            Ok(Event::Start(tag)) => match tag.name().as_ref() {
-                b"name" => {
-                    name = xml::parse_text(reader)?;
-                }
-                b"briefdescription" => {
-                    brief_description = Some(parse_description(reader, tag)?);
-                }
-                b"detaileddescription" => {
-                    detailed_description = Some(parse_description(reader, tag)?);
-                }
-                b"param" => {
-                    params.push(parse_param(reader, tag)?);
-                }
-                _ => {}
-            },
-            Ok(Event::End(tag)) => {
-                if tag.local_name().as_ref() == b"memberdef" {
-                    return Ok(MemberDefType {
-                        id,
-                        name,
-                        brief_description,
-                        detailed_description,
-                        kind: DoxMemberKind::Function, //::Function { params },
                     });
                 }
             }
@@ -228,52 +171,7 @@ fn parse_param(reader: &mut Reader<&[u8]>, _tag: BytesStart<'_>) -> anyhow::Resu
             },
             Ok(Event::End(tag)) => {
                 if tag.local_name().as_ref() == b"param" {
-                    return type_
-                        .map(|type_| ParamType { type_, declname })
-                        .ok_or_else(|| anyhow::anyhow!("Failed to find type for param"));
-                }
-            }
-            _ => {}
-        }
-    }
-}
-
-fn parse_variable_member_def(
-    reader: &mut Reader<&[u8]>,
-    start_tag: BytesStart<'_>,
-) -> anyhow::Result<MemberDefType> {
-    let id = xml::get_attribute_string(b"id", &start_tag)?;
-    let mut name = String::new();
-    let mut brief_description = None;
-    let mut detailed_description = None;
-    let mut values = Vec::new();
-
-    loop {
-        match reader.read_event() {
-            Ok(Event::Start(tag)) => match tag.name().as_ref() {
-                b"name" => {
-                    name = xml::parse_text(reader)?;
-                }
-                b"briefdescription" => {
-                    brief_description = Some(parse_description(reader, tag)?);
-                }
-                b"detaileddescription" => {
-                    detailed_description = Some(parse_description(reader, tag)?);
-                }
-                b"enumvalue" => {
-                    values.push(parse_enum_value(reader, tag)?);
-                }
-                _ => {}
-            },
-            Ok(Event::End(tag)) => {
-                if tag.local_name().as_ref() == b"memberdef" {
-                    return Ok(MemberDefType {
-                        id,
-                        name,
-                        brief_description,
-                        detailed_description,
-                        kind: DoxMemberKind::Variable,
-                    });
+                    return Ok(ParamType { type_, declname });
                 }
             }
             _ => {}
@@ -297,7 +195,7 @@ fn parse_enum_value(
                     name = xml::parse_text(reader)?;
                 }
                 b"initializer" => {
-                    initializer = Some(xml::parse_text(reader)?);
+                    initializer = Some(parse_linked_text(reader, tag)?);
                 }
                 b"briefdescription" => {
                     brief_description = Some(parse_description(reader, tag)?);
@@ -322,46 +220,6 @@ fn parse_enum_value(
     }
 }
 
-fn parse_unknown_member_def(
-    reader: &mut Reader<&[u8]>,
-    start_tag: BytesStart<'_>,
-    kind: &str,
-) -> anyhow::Result<MemberDefType> {
-    let id = xml::get_attribute_string(b"id", &start_tag)?;
-    let mut name = String::new();
-    let mut brief_description = None;
-    let mut detailed_description = None;
-
-    loop {
-        match reader.read_event() {
-            Ok(Event::Start(tag)) => match tag.name().as_ref() {
-                b"name" => {
-                    name = xml::parse_text(reader)?;
-                }
-                b"briefdescription" => {
-                    brief_description = Some(parse_description(reader, tag)?);
-                }
-                b"detaileddescription" => {
-                    detailed_description = Some(parse_description(reader, tag)?);
-                }
-                _ => {}
-            },
-            Ok(Event::End(tag)) => {
-                if tag.local_name().as_ref() == b"memberdef" {
-                    return Ok(MemberDefType {
-                        id,
-                        name,
-                        brief_description,
-                        detailed_description,
-                        kind: MemberDefKind::Unknown(kind.to_string()),
-                    });
-                }
-            }
-            _ => {}
-        }
-    }
-}
-
 pub fn parse_description(
     reader: &mut Reader<&[u8]>,
     start_tag: BytesStart<'_>,
@@ -370,7 +228,7 @@ pub fn parse_description(
     loop {
         match reader.read_event() {
             Ok(Event::Start(tag)) => match tag.name().as_ref() {
-                b"para" => content.push(DescriptionType::Para(parse_para(reader, tag)?)),
+                b"para" => content.push(DescriptionTypeItem::Para(parse_para(reader, tag)?)),
                 tag_name => {
                     return Err(anyhow!(
                         "unexpected tag when parsing description: {:?}",
@@ -378,7 +236,7 @@ pub fn parse_description(
                     ))
                 }
             },
-            Ok(Event::Text(text)) => content.push(DescriptionType::Text(
+            Ok(Event::Text(text)) => content.push(DescriptionTypeItem::Text(
                 String::from_utf8(text.to_vec()).map_err(|err| anyhow!("{:?}", err))?,
             )),
             Ok(Event::End(tag)) => {
@@ -393,29 +251,39 @@ pub fn parse_description(
 
 fn parse_linked_text(
     reader: &mut Reader<&[u8]>,
-    _tag: BytesStart<'_>,
+    start_tag: BytesStart<'_>,
 ) -> anyhow::Result<LinkedTextType> {
-    match reader.read_event() {
-        Ok(Event::Start(tag)) => match tag.name().as_ref() {
-            b"ref" => {
-                let id = xml::get_attribute_string(b"refid", &tag)?;
-                Ok(LinkedTextType::Ref(RefTextType {
-                    id,
-                    text: xml::parse_text(reader)?,
-                }))
-            }
-            tag_name => Err(anyhow!(
-                "unexpected tag when parsing linked text: {tag_name:?}"
+    let mut content = Vec::new();
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(tag)) => match tag.name().as_ref() {
+                b"ref" => {
+                    let ref_id = xml::get_attribute_string(b"refid", &tag)?;
+                    content.push(LinkedTextTypeItem::Ref(RefTextType {
+                        ref_id,
+                        content: xml::parse_text(reader)?,
+                    }))
+                }
+                tag_name => {
+                    return Err(anyhow!(
+                        "unexpected tag when parsing linked text: {tag_name:?}"
+                    ))
+                }
+            },
+            Ok(Event::Text(text)) => content.push(LinkedTextTypeItem::Text(
+                String::from_utf8(text.to_vec()).map_err(|err| anyhow!("{:?}", err))?,
             )),
-        },
-        Ok(Event::Text(text)) => Ok(LinkedTextType::Text(
-            String::from_utf8(text.to_vec()).map_err(|err| anyhow!("{:?}", err))?,
-        )),
-        event => {
-            return Err(anyhow!(
-                "unexpected event when parsing linked text: {:?}",
-                event
-            ))
+            Ok(Event::End(tag)) => {
+                if tag.name() == start_tag.name() {
+                    return Ok(LinkedTextType { content });
+                }
+            }
+            event => {
+                return Err(anyhow!(
+                    "unexpected event when parsing linked text: {:?}",
+                    event
+                ))
+            }
         }
     }
 }
@@ -423,22 +291,24 @@ fn parse_linked_text(
 pub fn parse_para(
     reader: &mut Reader<&[u8]>,
     start_tag: BytesStart<'_>,
-) -> anyhow::Result<Vec<DocPara>> {
+) -> anyhow::Result<Vec<DocParaType>> {
     let mut content = Vec::new();
     loop {
         match reader.read_event() {
             Ok(Event::Start(tag)) => match tag.name().as_ref() {
                 b"ref" => {
                     let id = xml::get_attribute_string(b"refid", &tag)?;
-                    content.push(DocPara::Ref(RefText {
+                    content.push(DocParaTypeItem::Ref(RefText {
                         id,
                         text: xml::parse_text(reader)?,
                     }))
                 }
-                b"parameterlist" => {
-                    content.push(DocPara::ParameterList(parse_parameter_list(reader, tag)?))
+                b"parameterlist" => content.push(DocParaTypeItem::ParameterList(
+                    parse_parameter_list(reader, tag)?,
+                )),
+                b"simplesect" => {
+                    content.push(DocParaTypeItem::SimpleSect(parse_simple_sect(reader, tag)?))
                 }
-                b"simplesect" => content.push(DocPara::SimpleSect(parse_simple_sect(reader, tag)?)),
                 tag_name => {
                     return Err(anyhow!(
                         "unexpected tag when parsing para: {:?}",
@@ -446,7 +316,7 @@ pub fn parse_para(
                     ))
                 }
             },
-            Ok(Event::Text(text)) => content.push(DocPara::Text(
+            Ok(Event::Text(text)) => content.push(DocParaTypeItem::Text(
                 String::from_utf8(text.to_vec()).map_err(|err| anyhow!("{:?}", err))?,
             )),
             Ok(Event::End(tag)) => {

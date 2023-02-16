@@ -278,12 +278,12 @@ def create_mixed(output, tag, comment_lookup):
     if entries:
         return [
             Struct(
-                name, {"Attributes": attribute_fields, "Contents": [f"contents: Vec<{item_name}>"]}
+                name, {"Attributes": attribute_fields, "Contents": [f"content: Vec<{item_name}>"]}
             ),
             Enum(item_name, False, entries),
         ]
     else:
-        return [Struct(name, {"Attributes": attribute_fields, "Contents": [f"contents: String"]})]
+        return [Struct(name, {"Attributes": attribute_fields, "Contents": [f"content: String"]})]
 
 
 def create_restriction(output, name, tag):
@@ -387,6 +387,7 @@ field_lookup = {
     "memberdef": "member_defs",
     "briefdescription": "brief_description",
     "detaileddescription": "detailed_description",
+    "refid": "ref_id",
 }
 
 
