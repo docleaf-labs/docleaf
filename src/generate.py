@@ -117,7 +117,7 @@ def main(args):
                 if child.tag == "{http://www.w3.org/2001/XMLSchema}complexType":
                     if is_simple_content(child):
                         entries.extend(create_simple_content(child, comment_lookup))
-                    elif "mixed" in child.attrib:
+                    elif is_mixed(child):
                         mixed = create_mixed(output, child, comment_lookup)
                         if mixed:
                             entries.extend(mixed)
@@ -133,6 +133,16 @@ def main(args):
 
         for entry in entries:
             print(entry.to_string(), file=output)
+
+
+# Types that are listed as mixed but that we don't really believe should be
+mixed_exceptions = ["enumvalueType"]
+
+
+def is_mixed(element) -> bool:
+    if element.attrib["name"] in mixed_exceptions:
+        return False
+    return "mixed" in element.attrib
 
 
 def is_simple_content(tag) -> bool:

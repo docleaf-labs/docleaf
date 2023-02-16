@@ -229,16 +229,11 @@ pub struct EnumValueType {
     // Attributes
     // pub id: String,
     // pub prot: DoxProtectionKind,
-    // Contents
-    contents: Vec<EnumValueTypeItem>,
-}
-
-#[derive(Debug, PartialEq)]
-pub enum EnumValueTypeItem {
-    Initializer(LinkedTextType),
-    Briefdescription(DescriptionType),
-    Detaileddescription(DescriptionType),
-    Text(String),
+    // Elements
+    pub name: String,
+    pub initializer: Option<LinkedTextType>,
+    pub brief_description: Option<DescriptionType>,
+    pub detailed_description: Option<DescriptionType>,
 }
 
 #[derive(Debug, PartialEq)]
