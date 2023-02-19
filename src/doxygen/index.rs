@@ -119,7 +119,7 @@ fn parse_member(reader: &mut Reader<&[u8]>) -> anyhow::Result<MemberContents> {
 
 #[cfg(test)]
 mod test {
-    use pretty_assertions::{assert_eq, assert_ne};
+    use pretty_assertions::assert_eq;
 
     use super::*;
 
