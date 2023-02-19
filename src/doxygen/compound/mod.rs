@@ -13,7 +13,7 @@ pub fn parse_file(compound_xml_path: &std::path::Path) -> anyhow::Result<Doxygen
     parse(&xml)
 }
 
-pub fn parse(xml: &str) -> anyhow::Result<DoxygenType> {
+fn parse(xml: &str) -> anyhow::Result<DoxygenType> {
     let mut reader = Reader::from_str(xml);
 
     loop {
@@ -226,7 +226,7 @@ fn parse_enum_value(
     }
 }
 
-pub fn parse_description(
+fn parse_description(
     reader: &mut Reader<&[u8]>,
     start_tag: BytesStart<'_>,
 ) -> anyhow::Result<DescriptionType> {
@@ -294,36 +294,16 @@ fn parse_linked_text(
     }
 }
 
-pub fn parse_para(
+fn parse_para(
     reader: &mut Reader<&[u8]>,
     start_tag: BytesStart<'_>,
 ) -> anyhow::Result<DocParaType> {
     let mut content = Vec::new();
     loop {
         match reader.read_event() {
-            Ok(Event::Start(tag)) => match tag.name().as_ref() {
-                b"ref" => {
-                    let ref_id = xml::get_attribute_string(b"refid", &tag)?;
-                    content.push(DocParaTypeItem::DocCmdGroup(DocCmdGroup::DocTitleCmdGroup(
-                        DocTitleCmdGroup::Ref(DocRefTextType {
-                            ref_id,
-                            content: Vec::new(),
-                        }),
-                    )))
-                }
-                b"parameterlist" => content.push(DocParaTypeItem::DocCmdGroup(
-                    DocCmdGroup::ParameterList(parse_parameter_list(reader, tag)?),
-                )),
-                b"simplesect" => content.push(DocParaTypeItem::DocCmdGroup(
-                    DocCmdGroup::Simplesect(parse_simple_sect(reader, tag)?),
-                )),
-                tag_name => {
-                    return Err(anyhow!(
-                        "unexpected tag when parsing para: {:?}",
-                        String::from_utf8_lossy(tag_name),
-                    ))
-                }
-            },
+            Ok(Event::Start(tag)) => content.push(DocParaTypeItem::DocCmdGroup(
+                parse_doc_cmd_group_item(reader, tag)?,
+            )),
             Ok(Event::Text(text)) => content.push(DocParaTypeItem::Text(
                 String::from_utf8(text.to_vec()).map_err(|err| anyhow!("{:?}", err))?,
             )),
@@ -337,7 +317,80 @@ pub fn parse_para(
     }
 }
 
-pub fn parse_simple_sect(
+enum Match<Item, Tag> {
+    Found(Item),
+    NotFound(Tag),
+}
+
+fn parse_doc_cmd_group_item(
+    reader: &mut Reader<&[u8]>,
+    start_tag: BytesStart<'_>,
+) -> anyhow::Result<DocCmdGroup> {
+    match optional_parse_doc_title_cmd_group_item(reader, start_tag) {
+        Err(err) => Err(err),
+        Ok(Match::Found(item)) => Ok(DocCmdGroup::DocTitleCmdGroup(item)),
+        Ok(Match::NotFound(tag)) => match tag.name().as_ref() {
+            b"parameterlist" => Ok(DocCmdGroup::ParameterList(parse_parameter_list(
+                reader, tag,
+            )?)),
+            b"simplesect" => Ok(DocCmdGroup::Simplesect(parse_simple_sect(reader, tag)?)),
+            name => return Err(anyhow!("unexpected tag: {:?}", name)),
+        },
+    }
+}
+
+fn parse_doc_title_cmd_group_item(
+    reader: &mut Reader<&[u8]>,
+    start_tag: BytesStart<'_>,
+) -> anyhow::Result<DocTitleCmdGroup> {
+    match optional_parse_doc_title_cmd_group_item(reader, start_tag)? {
+        Match::Found(item) => Ok(item),
+        Match::NotFound(tag) => {
+            return Err(anyhow!(
+                "failed to parse tag as doc_title_cmd_group_item as: {:?}",
+                tag
+            ))
+        }
+    }
+}
+
+fn optional_parse_doc_title_cmd_group_item<'b>(
+    reader: &mut Reader<&[u8]>,
+    start_tag: BytesStart<'b>,
+) -> anyhow::Result<Match<DocTitleCmdGroup, BytesStart<'b>>> {
+    match start_tag.name().as_ref() {
+        b"ref" => Ok(Match::Found(DocTitleCmdGroup::Ref(
+            parse_doc_ref_text_type(reader, start_tag)?,
+        ))),
+        _ => Ok(Match::NotFound(start_tag)),
+    }
+}
+
+fn parse_doc_ref_text_type(
+    reader: &mut Reader<&[u8]>,
+    start_tag: BytesStart<'_>,
+) -> anyhow::Result<DocRefTextType> {
+    let ref_id = xml::get_attribute_string(b"refid", &start_tag)?;
+    let mut content = Vec::new();
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(tag)) => content.push(DocRefTextTypeItem::DocTitleCmdGroup(
+                parse_doc_title_cmd_group_item(reader, tag)?,
+            )),
+            Ok(Event::Text(text)) => content.push(DocRefTextTypeItem::Text(
+                String::from_utf8(text.to_vec()).map_err(|err| anyhow!("{:?}", err))?,
+            )),
+            Ok(Event::End(tag)) => {
+                if tag.name() == start_tag.name() {
+                    return Ok(DocRefTextType { ref_id, content });
+                }
+            }
+            event => return Err(anyhow!("unexpected event: {:?}", event)),
+        }
+    }
+}
+
+fn parse_simple_sect(
     reader: &mut Reader<&[u8]>,
     start_tag: BytesStart<'_>,
 ) -> anyhow::Result<DocSimpleSectType> {
@@ -367,7 +420,7 @@ pub fn parse_simple_sect(
     }
 }
 
-pub fn parse_parameter_list(
+fn parse_parameter_list(
     reader: &mut Reader<&[u8]>,
     start_tag: BytesStart<'_>,
 ) -> anyhow::Result<DocParamListType> {
@@ -395,7 +448,7 @@ pub fn parse_parameter_list(
     }
 }
 
-pub fn parse_parameter_item(
+fn parse_parameter_item(
     reader: &mut Reader<&[u8]>,
     start_tag: BytesStart<'_>,
 ) -> anyhow::Result<DocParamListItem> {
@@ -436,7 +489,7 @@ pub fn parse_parameter_item(
     }
 }
 
-pub fn parse_parameter_name_list(
+fn parse_parameter_name_list(
     reader: &mut Reader<&[u8]>,
     start_tag: BytesStart<'_>,
 ) -> anyhow::Result<DocParamNameList> {

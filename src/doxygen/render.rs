@@ -231,6 +231,8 @@ pub fn render_description(description: e::DescriptionType) -> Vec<Node> {
 pub fn render_para(element: e::DocParaType) -> Vec<Node> {
     let mut nodes = Vec::new();
 
+    println!("{:?}", element);
+
     for entry in element.content {
         match entry {
             // TODO: Render list
@@ -283,7 +285,7 @@ fn render_ref_text_type(ref_text_type: e::RefTextType) -> Node {
     }
 }
 
-fn render_doc_ref_text_type(doc_ref_text_type: e::DocRefTextType) -> Vec<Node> {
+fn render_doc_ref_text_type(doc_ref_text_type: e::DocRefTextType) -> Node {
     let mut nodes = Vec::new();
 
     for entry in doc_ref_text_type.content {
@@ -295,12 +297,16 @@ fn render_doc_ref_text_type(doc_ref_text_type: e::DocRefTextType) -> Vec<Node> {
         }
     }
 
-    nodes
+    Node::Reference {
+        internal: true,
+        refid: doc_ref_text_type.ref_id,
+        children: nodes,
+    }
 }
 
 fn render_doc_title_cmd_group(element: e::DocTitleCmdGroup) -> Vec<Node> {
     match element {
-        e::DocTitleCmdGroup::Ref(element) => render_doc_ref_text_type(element),
+        e::DocTitleCmdGroup::Ref(element) => vec![render_doc_ref_text_type(element)],
         // TODO: Change to panic
         _ => Vec::new(),
     }
