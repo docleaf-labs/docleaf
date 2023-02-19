@@ -606,7 +606,7 @@ fn parse_parameter_name(
 
 #[cfg(test)]
 mod test {
-    use pretty_assertions::{assert_eq, assert_ne};
+    use pretty_assertions::assert_eq;
 
     use super::*;
 
@@ -626,20 +626,20 @@ mod test {
         assert_eq!(
             result.unwrap(),
             DoxygenType {
-                compound_def: CompoundDefType {
+                compound_def: Some(CompoundDefType {
                     id: "class_nutshell".to_string(),
                     compound_name: "Nutshell".to_string(),
-                    brief_description: Description::default(),
-                    detailed_description: Description::default(),
+                    brief_description: None,
+                    detailed_description: None,
                     section_defs: Vec::new(),
-                },
+                }),
             }
         );
     }
 
     #[test]
     fn test_parse_nutshell() {
-        let result = parse(include_str!("compound/class_nutshell.xml"));
+        let result = parse(include_str!("./class_nutshell.xml"));
         insta::assert_debug_snapshot!(result.unwrap());
     }
 }

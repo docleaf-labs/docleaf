@@ -1,0 +1,520 @@
+---
+source: src/doxygen/compound/mod.rs
+expression: result.unwrap()
+---
+DoxygenType {
+    compound_def: Some(
+        CompoundDefType {
+            id: "class_nutshell",
+            compound_name: "Nutshell",
+            section_defs: [
+                SectionDefType {
+                    kind: PublicType,
+                    member_defs: [
+                        MemberDefType {
+                            kind: Enum,
+                            id: "class_nutshell_1ae42034231cf912d095d57cbeed6cda79",
+                            name: "Tool",
+                            param: [],
+                            enumvalue: [
+                                EnumValueType {
+                                    name: "kHammer",
+                                    initializer: Some(
+                                        LinkedTextType {
+                                            content: [
+                                                Text(
+                                                    "= 0",
+                                                ),
+                                            ],
+                                        },
+                                    ),
+                                    brief_description: Some(
+                                        DescriptionType {
+                                            content: [
+                                                Text(
+                                                    "\n",
+                                                ),
+                                                Para(
+                                                    DocParaType {
+                                                        content: [
+                                                            Text(
+                                                                "What? It does the job. ",
+                                                            ),
+                                                        ],
+                                                    },
+                                                ),
+                                                Text(
+                                                    "\n          ",
+                                                ),
+                                            ],
+                                        },
+                                    ),
+                                    detailed_description: Some(
+                                        DescriptionType {
+                                            content: [
+                                                Text(
+                                                    "\n          ",
+                                                ),
+                                            ],
+                                        },
+                                    ),
+                                },
+                                EnumValueType {
+                                    name: "kNutCrackers",
+                                    initializer: None,
+                                    brief_description: Some(
+                                        DescriptionType {
+                                            content: [
+                                                Text(
+                                                    "\n",
+                                                ),
+                                                Para(
+                                                    DocParaType {
+                                                        content: [
+                                                            Text(
+                                                                "Boring. ",
+                                                            ),
+                                                        ],
+                                                    },
+                                                ),
+                                                Text(
+                                                    "\n          ",
+                                                ),
+                                            ],
+                                        },
+                                    ),
+                                    detailed_description: Some(
+                                        DescriptionType {
+                                            content: [
+                                                Text(
+                                                    "\n          ",
+                                                ),
+                                            ],
+                                        },
+                                    ),
+                                },
+                                EnumValueType {
+                                    name: "kNinjaThrowingStars",
+                                    initializer: None,
+                                    brief_description: Some(
+                                        DescriptionType {
+                                            content: [
+                                                Text(
+                                                    "\n",
+                                                ),
+                                                Para(
+                                                    DocParaType {
+                                                        content: [
+                                                            Text(
+                                                                "Stealthy. ",
+                                                            ),
+                                                        ],
+                                                    },
+                                                ),
+                                                Text(
+                                                    "\n          ",
+                                                ),
+                                            ],
+                                        },
+                                    ),
+                                    detailed_description: Some(
+                                        DescriptionType {
+                                            content: [
+                                                Text(
+                                                    "\n          ",
+                                                ),
+                                            ],
+                                        },
+                                    ),
+                                },
+                            ],
+                            brief_description: Some(
+                                DescriptionType {
+                                    content: [
+                                        Text(
+                                            "\n",
+                                        ),
+                                        Para(
+                                            DocParaType {
+                                                content: [
+                                                    Text(
+                                                        "Our tool set. ",
+                                                    ),
+                                                ],
+                                            },
+                                        ),
+                                        Text(
+                                            "\n        ",
+                                        ),
+                                    ],
+                                },
+                            ),
+                            detailed_description: Some(
+                                DescriptionType {
+                                    content: [
+                                        Text(
+                                            "\n",
+                                        ),
+                                        Para(
+                                            DocParaType {
+                                                content: [
+                                                    Text(
+                                                        "The various tools we can opt to use to crack this particular nut ",
+                                                    ),
+                                                ],
+                                            },
+                                        ),
+                                        Text(
+                                            "\n        ",
+                                        ),
+                                    ],
+                                },
+                            ),
+                        },
+                    ],
+                },
+                SectionDefType {
+                    kind: PrivateAttrib,
+                    member_defs: [
+                        MemberDefType {
+                            kind: Variable,
+                            id: "class_nutshell_1a144928f8a485dbe64a4db63c2ca5a200",
+                            name: "m_isCracked",
+                            param: [],
+                            enumvalue: [],
+                            brief_description: Some(
+                                DescriptionType {
+                                    content: [
+                                        Text(
+                                            "\n",
+                                        ),
+                                        Para(
+                                            DocParaType {
+                                                content: [
+                                                    Text(
+                                                        "Our cracked state. ",
+                                                    ),
+                                                ],
+                                            },
+                                        ),
+                                        Text(
+                                            "\n        ",
+                                        ),
+                                    ],
+                                },
+                            ),
+                            detailed_description: Some(
+                                DescriptionType {
+                                    content: [
+                                        Text(
+                                            "\n        ",
+                                        ),
+                                    ],
+                                },
+                            ),
+                        },
+                    ],
+                },
+                SectionDefType {
+                    kind: PublicFunc,
+                    member_defs: [
+                        MemberDefType {
+                            kind: Function,
+                            id: "class_nutshell_1a68edae1c44c7a85b889b0cf88e79939f",
+                            name: "Nutshell",
+                            param: [],
+                            enumvalue: [],
+                            brief_description: Some(
+                                DescriptionType {
+                                    content: [
+                                        Text(
+                                            "\n",
+                                        ),
+                                        Para(
+                                            DocParaType {
+                                                content: [
+                                                    DocCmdGroup(
+                                                        DocTitleCmdGroup(
+                                                            Ref(
+                                                                DocRefTextType {
+                                                                    ref_id: "class_nutshell",
+                                                                    content: [
+                                                                        Text(
+                                                                            "Nutshell",
+                                                                        ),
+                                                                    ],
+                                                                },
+                                                            ),
+                                                        ),
+                                                    ),
+                                                    Text(
+                                                        " constructor. ",
+                                                    ),
+                                                ],
+                                            },
+                                        ),
+                                        Text(
+                                            "\n        ",
+                                        ),
+                                    ],
+                                },
+                            ),
+                            detailed_description: Some(
+                                DescriptionType {
+                                    content: [
+                                        Text(
+                                            "\n        ",
+                                        ),
+                                    ],
+                                },
+                            ),
+                        },
+                        MemberDefType {
+                            kind: Function,
+                            id: "class_nutshell_1aa7e84b812e4489584093a76da864297e",
+                            name: "~Nutshell",
+                            param: [],
+                            enumvalue: [],
+                            brief_description: Some(
+                                DescriptionType {
+                                    content: [
+                                        Text(
+                                            "\n",
+                                        ),
+                                        Para(
+                                            DocParaType {
+                                                content: [
+                                                    DocCmdGroup(
+                                                        DocTitleCmdGroup(
+                                                            Ref(
+                                                                DocRefTextType {
+                                                                    ref_id: "class_nutshell",
+                                                                    content: [
+                                                                        Text(
+                                                                            "Nutshell",
+                                                                        ),
+                                                                    ],
+                                                                },
+                                                            ),
+                                                        ),
+                                                    ),
+                                                    Text(
+                                                        " destructor. ",
+                                                    ),
+                                                ],
+                                            },
+                                        ),
+                                        Text(
+                                            "\n        ",
+                                        ),
+                                    ],
+                                },
+                            ),
+                            detailed_description: Some(
+                                DescriptionType {
+                                    content: [
+                                        Text(
+                                            "\n        ",
+                                        ),
+                                    ],
+                                },
+                            ),
+                        },
+                        MemberDefType {
+                            kind: Function,
+                            id: "class_nutshell_1a57fc2641156575ef8d655b6c90a1a17d",
+                            name: "crack",
+                            param: [
+                                ParamType {
+                                    type_: Some(
+                                        LinkedTextType {
+                                            content: [
+                                                Ref(
+                                                    RefTextType {
+                                                        ref_id: "class_nutshell_1ae42034231cf912d095d57cbeed6cda79",
+                                                        content: "Tool",
+                                                    },
+                                                ),
+                                            ],
+                                        },
+                                    ),
+                                    declname: Some(
+                                        "tool",
+                                    ),
+                                },
+                            ],
+                            enumvalue: [],
+                            brief_description: Some(
+                                DescriptionType {
+                                    content: [
+                                        Text(
+                                            "\n        ",
+                                        ),
+                                    ],
+                                },
+                            ),
+                            detailed_description: Some(
+                                DescriptionType {
+                                    content: [
+                                        Text(
+                                            "\n",
+                                        ),
+                                        Para(
+                                            DocParaType {
+                                                content: [
+                                                    Text(
+                                                        "Crack that shell with specified tool",
+                                                    ),
+                                                ],
+                                            },
+                                        ),
+                                        Text(
+                                            "\n",
+                                        ),
+                                        Para(
+                                            DocParaType {
+                                                content: [
+                                                    DocCmdGroup(
+                                                        ParameterList(
+                                                            DocParamListType {
+                                                                parameter_item: [
+                                                                    DocParamListItem {
+                                                                        parameter_name_list: [
+                                                                            DocParamNameList {
+                                                                                parameter_type: [],
+                                                                                parameter_name: [
+                                                                                    DocParamName {
+                                                                                        content: [
+                                                                                            Text(
+                                                                                                "tool",
+                                                                                            ),
+                                                                                        ],
+                                                                                    },
+                                                                                ],
+                                                                            },
+                                                                        ],
+                                                                        parameter_description: DescriptionType {
+                                                                            content: [
+                                                                                Text(
+                                                                                    "\n",
+                                                                                ),
+                                                                                Para(
+                                                                                    DocParaType {
+                                                                                        content: [
+                                                                                            Text(
+                                                                                                "the tool with which to crack the nut ",
+                                                                                            ),
+                                                                                        ],
+                                                                                    },
+                                                                                ),
+                                                                                Text(
+                                                                                    "\n",
+                                                                                ),
+                                                                            ],
+                                                                        },
+                                                                    },
+                                                                ],
+                                                            },
+                                                        ),
+                                                    ),
+                                                    Text(
+                                                        "\n",
+                                                    ),
+                                                ],
+                                            },
+                                        ),
+                                        Text(
+                                            "\n        ",
+                                        ),
+                                    ],
+                                },
+                            ),
+                        },
+                        MemberDefType {
+                            kind: Function,
+                            id: "class_nutshell_1a510c746ef3f7c1b54139124afa657b66",
+                            name: "isCracked",
+                            param: [],
+                            enumvalue: [],
+                            brief_description: Some(
+                                DescriptionType {
+                                    content: [
+                                        Text(
+                                            "\n        ",
+                                        ),
+                                    ],
+                                },
+                            ),
+                            detailed_description: Some(
+                                DescriptionType {
+                                    content: [
+                                        Text(
+                                            "\n",
+                                        ),
+                                        Para(
+                                            DocParaType {
+                                                content: [
+                                                    DocCmdGroup(
+                                                        Simplesect(
+                                                            DocSimpleSectType {
+                                                                para: [
+                                                                    DocParaType {
+                                                                        content: [
+                                                                            Text(
+                                                                                "Whether or not the nut is cracked ",
+                                                                            ),
+                                                                        ],
+                                                                    },
+                                                                ],
+                                                            },
+                                                        ),
+                                                    ),
+                                                    Text(
+                                                        "\n",
+                                                    ),
+                                                ],
+                                            },
+                                        ),
+                                        Text(
+                                            "\n        ",
+                                        ),
+                                    ],
+                                },
+                            ),
+                        },
+                    ],
+                },
+            ],
+            brief_description: Some(
+                DescriptionType {
+                    content: [
+                        Text(
+                            "\n    ",
+                        ),
+                    ],
+                },
+            ),
+            detailed_description: Some(
+                DescriptionType {
+                    content: [
+                        Text(
+                            "\n",
+                        ),
+                        Para(
+                            DocParaType {
+                                content: [
+                                    Text(
+                                        "With a little bit of a elaboration, should you feel it necessary. ",
+                                    ),
+                                ],
+                            },
+                        ),
+                        Text(
+                            "\n    ",
+                        ),
+                    ],
+                },
+            ),
+        },
+    ),
+}
