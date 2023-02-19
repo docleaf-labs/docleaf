@@ -38,5 +38,6 @@ breathe_projects = {
     "nutshell": "../../examples/nutshell/xml/",
     "class_methods": "../../examples/class_methods/xml/",
     "references": "../../examples/references/xml/",
+    "paragraphs": "../../examples/paragraphs/xml/",
 }
 breathe_default_project = "nutshell"

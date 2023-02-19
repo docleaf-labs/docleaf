@@ -34,6 +34,13 @@ References
    :project: references
 
 
+Paragraphs
+----------
+
+.. doxygenclass:: ParagraphExample
+   :project: paragraphs
+
+
 Indices and tables
 ==================
 
