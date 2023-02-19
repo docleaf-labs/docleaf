@@ -5,4 +5,4 @@
 # achieve that with maturin.
 
 cargo build
-cp target/debug/libbackend.so breathe/backend.cpython-38-x86_64-linux-gnu.so
+cp target/debug/libbackend.so breathe/backend.cpython-310-x86_64-linux-gnu.so
