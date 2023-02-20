@@ -1,5 +1,5 @@
 [package]
-name = "breathe-plus"
+name = "breathe_plus"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,6 +7,9 @@ edition = "2021"
 [lib]
 name = "backend"
 crate-type = ["cdylib"]
+
+[package.metadata.maturin]
+name = "breathe_plus.backend"
 
 [dependencies]
 anyhow = "1.0.65"
