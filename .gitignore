@@ -1,9 +1,9 @@
 # Python related
-/breathe/*.so
+/src/breathe_plus/*.so
 __pycache__
 
 # Rust related
-/target
+/rust/target
 
 # Sphinx related
 /documentation/build
