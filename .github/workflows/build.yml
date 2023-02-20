@@ -79,12 +79,12 @@ jobs:
       with:
         target: ${{ matrix.target }}
         manylinux: auto
-        args: --release --out dist -m Cargo.toml
+        args: --release --out dist
     - name: Install built wheel
       if: matrix.target == 'x86_64'
       run: |
         pip install breathe-plus --no-index --find-links dist --force-reinstall
-        python -c "import breathe-plus"
+        python -c "import breathe_plus"
     - name: Upload wheels
       uses: actions/upload-artifact@v3
       with:
