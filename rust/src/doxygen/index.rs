@@ -129,18 +129,19 @@ mod test {
             DoxygenType {
                 compound: vec![
                     CompoundType {
-                        refid: "class_nutshell".to_string(),
+                        ref_id: "class_nutshell".to_string(),
                         name: "Nutshell".to_string(),
-                        kind: "class".to_string(),
+                        kind: CompoundKind::Class,
                         member: vec![MemberType {
-                            refid: "class_nutshell_1ae42034231cf912d095d57cbeed6cda79".to_string(),
+                            ref_id: "class_nutshell_1ae42034231cf912d095d57cbeed6cda79".to_string(),
                             name: "Tool".to_string(),
+                            kind: MemberKind::Enum,
                         }]
                     },
                     CompoundType {
-                        refid: "nutshell_8h".to_string(),
+                        ref_id: "nutshell_8h".to_string(),
                         name: "nutshell.h".to_string(),
-                        kind: "file".to_string(),
+                        kind: CompoundKind::File,
                         member: vec![]
                     }
                 ]

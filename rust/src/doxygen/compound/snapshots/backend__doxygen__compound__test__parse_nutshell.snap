@@ -6,6 +6,7 @@ DoxygenType {
     compound_def: Some(
         CompoundDefType {
             id: "class_nutshell",
+            kind: Class,
             compound_name: "Nutshell",
             section_defs: [
                 SectionDefType {

@@ -630,6 +630,7 @@ mod test {
             DoxygenType {
                 compound_def: Some(CompoundDefType {
                     id: "class_nutshell".to_string(),
+                    kind: DoxCompoundKind::Class,
                     compound_name: "Nutshell".to_string(),
                     brief_description: None,
                     detailed_description: None,
