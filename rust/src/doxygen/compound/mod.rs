@@ -9,6 +9,7 @@ use crate::doxygen::compound::elements::*;
 use crate::xml;
 
 pub fn parse_file(compound_xml_path: &std::path::Path) -> anyhow::Result<DoxygenType> {
+    tracing::info!("Reading {}", compound_xml_path.display());
     let xml = std::fs::read_to_string(compound_xml_path)?;
     parse(&xml)
 }
