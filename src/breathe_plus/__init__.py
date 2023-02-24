@@ -83,9 +83,57 @@ class ClassDirective(Directive):
         return render_node_list(node_list, node_builder)
 
 
+class StructDirective(Directive):
+    has_content = True
+    required_arguments = 1
+    optional_arguments = 0
+    final_argument_whitespace = True
+    option_spec = {
+        "project": directives.unchanged,
+    }
+
+    def run(self) -> List[Node]:
+        name = self.arguments[0]
+        project = self.options["project"] or self.app.config.breathe_default_project
+        path = self.app.config.breathe_projects[project]
+        node_list = backend.render_struct(name, path)
+        document = self.state.document
+
+        node_builder = NodeManager(document)
+        return render_node_list(node_list, node_builder)
+
+
+class FunctionDirective(Directive):
+    has_content = True
+    required_arguments = 1
+    optional_arguments = 0
+    final_argument_whitespace = True
+    option_spec = {
+        "project": directives.unchanged,
+    }
+
+    def run(self) -> List[Node]:
+        name = self.arguments[0]
+        project = self.options["project"] or self.app.config.breathe_default_project
+        path = self.app.config.breathe_projects[project]
+        node_list = backend.render_function(name, path)
+        document = self.state.document
+
+        node_builder = NodeManager(document)
+        return render_node_list(node_list, node_builder)
+
+
 def setup(app: Sphinx):
     ClassDirective.app = app
     app.add_directive("doxygenclass", ClassDirective)
+
+    StructDirective.app = app
+    app.add_directive("doxygenstruct", StructDirective)
+
+    FunctionDirective.app = app
+    app.add_directive("doxygenfunction", FunctionDirective)
+
     app.add_config_value("breathe_projects", {}, "env")
     app.add_config_value("breathe_default_project", None, "env")
+
     return {"version": __version__}

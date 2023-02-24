@@ -11,8 +11,23 @@ Welcome to Breathe Plus' documentation!
    :caption: Contents:
 
 
+Class
+-----
+
 .. doxygenclass:: Nutshell
    :project: nutshell
+
+Struct
+------
+
+.. doxygenstruct:: ExampleStruct
+   :project: structs
+
+Function
+--------
+
+.. doxygenfunction:: example_function
+   :project: functions
 
 Methods
 -------
@@ -39,6 +54,8 @@ Paragraphs
 
 .. doxygenclass:: ParagraphExample
    :project: paragraphs
+
+
 
 
 Indices and tables

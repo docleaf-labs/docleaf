@@ -2,8 +2,8 @@ use crate::nodes::{Node, SignatureType};
 
 use crate::doxygen::compound::elements as e;
 
-pub fn render_class_compound(compound: e::DoxygenType) -> Vec<Node> {
-    let Some(compound_def) = compound.compound_def else {
+pub fn render_compound(root: e::DoxygenType) -> Vec<Node> {
+    let Some(compound_def) = root.compound_def else {
         return Vec::new();
     };
 
@@ -12,9 +12,11 @@ pub fn render_class_compound(compound: e::DoxygenType) -> Vec<Node> {
     if let Some(description) = compound_def.brief_description {
         content_nodes.append(&mut render_description(description));
     }
+
     if let Some(description) = compound_def.detailed_description {
         content_nodes.append(&mut render_description(description));
     }
+
     content_nodes.append(
         &mut compound_def
             .section_defs
@@ -22,17 +24,20 @@ pub fn render_class_compound(compound: e::DoxygenType) -> Vec<Node> {
             .map(render_section_def)
             .collect(),
     );
+
     let content = Node::DescContent(content_nodes);
 
     let ids = compound_def.id.clone();
     let names = compound_def.id;
+
+    let kind = render_compound_kind(compound_def.kind);
 
     vec![Node::Desc(
         vec![Node::DescSignature(
             SignatureType::MultiLine,
             vec![Node::DescSignatureLine(vec![
                 Node::Target { ids, names },
-                Node::DescSignatureKeyword("class".to_string()),
+                Node::DescSignatureKeyword(kind.to_string()),
                 Node::DescSignatureSpace,
                 Node::DescName(Box::new(Node::DescSignatureName(
                     compound_def.compound_name,
@@ -43,7 +48,55 @@ pub fn render_class_compound(compound: e::DoxygenType) -> Vec<Node> {
     )]
 }
 
-pub fn render_section_def(section_def: e::SectionDefType) -> Node {
+fn render_compound_kind(kind: e::DoxCompoundKind) -> &'static str {
+    match kind {
+        e::DoxCompoundKind::Class => "class",
+        e::DoxCompoundKind::Struct => "struct",
+        e::DoxCompoundKind::Union => "union",
+        e::DoxCompoundKind::Interface => "interface",
+        e::DoxCompoundKind::Protocol => "protocol",
+        e::DoxCompoundKind::Category => "category",
+        e::DoxCompoundKind::Exception => "exception",
+        e::DoxCompoundKind::Service => "service",
+        e::DoxCompoundKind::Singleton => "singleton",
+        e::DoxCompoundKind::Module => "module",
+        e::DoxCompoundKind::Type => "type",
+        e::DoxCompoundKind::File => "file",
+        e::DoxCompoundKind::Namespace => "namespace",
+        e::DoxCompoundKind::Group => "group",
+        e::DoxCompoundKind::Page => "page",
+        e::DoxCompoundKind::Example => "example",
+        e::DoxCompoundKind::Dir => "dir",
+        e::DoxCompoundKind::Concept => "concept",
+    }
+}
+
+pub fn render_member(root: e::DoxygenType, member_ref_id: &str) -> Vec<Node> {
+    let Some(compound_def) = root.compound_def else {
+        return Vec::new();
+    };
+
+    let member_def = compound_def
+        .section_defs
+        .into_iter()
+        .find_map(|section_def| {
+            section_def
+                .member_defs
+                .into_iter()
+                .find(|member_def| member_def.id == member_ref_id)
+        });
+
+    match member_def {
+        Some(member_def) => {
+            vec![render_member_def(member_def)]
+        }
+        None => {
+            vec![]
+        }
+    }
+}
+
+fn render_section_def(section_def: e::SectionDefType) -> Node {
     let mut content_nodes = vec![Node::Rubric(vec![Node::Text(section_title(
         &section_def.kind,
     ))])];
@@ -230,8 +283,6 @@ pub fn render_description(description: e::DescriptionType) -> Vec<Node> {
 
 pub fn render_para(element: e::DocParaType) -> Vec<Node> {
     let mut nodes = Vec::new();
-
-    println!("{:?}", element);
 
     for entry in element.content {
         match entry {

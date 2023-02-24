@@ -1,37 +1,22 @@
+pub mod elements;
+
 use anyhow::anyhow;
-use quick_xml::events::Event;
+use quick_xml::events::{BytesStart, Event};
 use quick_xml::reader::Reader;
 
 use crate::xml;
 
-#[derive(Debug, PartialEq)]
-pub struct Root {
-    pub compounds: Vec<Compound>,
-}
+use elements::*;
 
-#[derive(Debug, PartialEq)]
-pub struct Compound {
-    pub refid: String,
-    pub name: String,
-    pub kind: String,
-    pub members: Vec<Member>,
-}
-
-#[derive(Debug, PartialEq)]
-pub struct Member {
-    refid: String,
-    name: String,
-}
-
-pub fn parse_file(index_xml_path: &std::path::Path) -> anyhow::Result<Root> {
+pub fn parse_file(index_xml_path: &std::path::Path) -> anyhow::Result<DoxygenType> {
     let xml = std::fs::read_to_string(index_xml_path)?;
     parse(&xml)
 }
 
-pub fn parse(xml: &str) -> anyhow::Result<Root> {
+pub fn parse(xml: &str) -> anyhow::Result<DoxygenType> {
     let mut reader = Reader::from_str(xml);
 
-    let mut compounds = Vec::new();
+    let mut compound = Vec::new();
 
     loop {
         match reader.read_event() {
@@ -41,34 +26,26 @@ pub fn parse(xml: &str) -> anyhow::Result<Root> {
 
             Ok(Event::Start(tag)) => {
                 if let b"compound" = tag.name().as_ref() {
-                    let refid_attr = xml::get_attribute(b"refid", &tag)?;
-                    let kind_attr = xml::get_attribute(b"kind", &tag)?;
-
-                    let compound_contents = parse_compound(&mut reader)?;
-
-                    compounds.push(Compound {
-                        refid: String::from_utf8(refid_attr.value.into_owned())?,
-                        name: compound_contents.name,
-                        kind: String::from_utf8(kind_attr.value.into_owned())?,
-                        members: compound_contents.members,
-                    })
+                    compound.push(parse_compound(&mut reader, tag)?);
                 }
             }
             _ => (),
         }
     }
 
-    Ok(Root { compounds })
+    Ok(DoxygenType { compound })
 }
 
-struct CompoundContents {
-    name: String,
-    members: Vec<Member>,
-}
+fn parse_compound(
+    reader: &mut Reader<&[u8]>,
+    start_tag: BytesStart<'_>,
+) -> anyhow::Result<CompoundType> {
+    let ref_id = xml::get_attribute_string(b"refid", &start_tag)?;
+    let kind = xml::get_attribute_enum::<CompoundKind>(b"kind", &start_tag)?;
 
-fn parse_compound(reader: &mut Reader<&[u8]>) -> anyhow::Result<CompoundContents> {
     let mut name = String::new();
-    let mut members = Vec::new();
+    let mut member = Vec::new();
+
     loop {
         match reader.read_event() {
             Ok(Event::Start(tag)) => match tag.name().as_ref() {
@@ -76,18 +53,18 @@ fn parse_compound(reader: &mut Reader<&[u8]>) -> anyhow::Result<CompoundContents
                     name = xml::parse_text(reader)?;
                 }
                 b"member" => {
-                    let member_contents = parse_member(reader)?;
-                    let refid_attr = xml::get_attribute(b"refid", &tag)?;
-                    members.push(Member {
-                        refid: String::from_utf8(refid_attr.value.into_owned())?,
-                        name: member_contents.name,
-                    });
+                    member.push(parse_member(reader, tag)?);
                 }
                 _ => return Err(anyhow!("unrecognised element in compound")),
             },
             Ok(Event::End(tag)) => {
                 if tag.local_name().as_ref() == b"compound" {
-                    return Ok(CompoundContents { name, members });
+                    return Ok(CompoundType {
+                        ref_id,
+                        name,
+                        kind,
+                        member,
+                    });
                 }
             }
             Ok(Event::Text(_)) => {}
@@ -96,25 +73,36 @@ fn parse_compound(reader: &mut Reader<&[u8]>) -> anyhow::Result<CompoundContents
     }
 }
 
-struct MemberContents {
-    name: String,
-}
-
-fn parse_member(reader: &mut Reader<&[u8]>) -> anyhow::Result<MemberContents> {
-    let mut name = None;
-    match reader.read_event() {
-        Ok(Event::Start(tag)) => match tag.name().as_ref() {
-            b"name" => {
-                name = Some(xml::parse_text(reader)?);
+fn parse_member(
+    reader: &mut Reader<&[u8]>,
+    start_tag: BytesStart<'_>,
+) -> anyhow::Result<MemberType> {
+    let ref_id = xml::get_attribute_string(b"refid", &start_tag)?;
+    let kind = xml::get_attribute_enum::<MemberKind>(b"kind", &start_tag)?;
+    let mut name = String::new();
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(tag)) => match tag.name().as_ref() {
+                b"name" => {
+                    name = xml::parse_text(reader)?;
+                }
+                element => {
+                    return Err(anyhow!(
+                        "unrecognised element in member: {}",
+                        String::from_utf8_lossy(element)
+                    ))
+                }
+            },
+            Ok(Event::Text(_)) => {}
+            Ok(Event::End(tag)) => {
+                if tag.local_name().as_ref() == b"member" {
+                    return Ok(MemberType { ref_id, kind, name });
+                }
             }
-            _ => return Err(anyhow!("unrecognised element in member")),
-        },
-        Ok(Event::Text(_)) => {}
-        _ => return Err(anyhow!("Expected Event::Start")),
-    }
 
-    name.map(|name| MemberContents { name })
-        .ok_or_else(|| anyhow!("Failed to find name for member"))
+            _ => return Err(anyhow!("Expected Event::Start")),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -138,22 +126,22 @@ mod test {
 
         assert_eq!(
             result.unwrap(),
-            Root {
-                compounds: vec![
-                    Compound {
+            DoxygenType {
+                compound: vec![
+                    CompoundType {
                         refid: "class_nutshell".to_string(),
                         name: "Nutshell".to_string(),
                         kind: "class".to_string(),
-                        members: vec![Member {
+                        member: vec![MemberType {
                             refid: "class_nutshell_1ae42034231cf912d095d57cbeed6cda79".to_string(),
                             name: "Tool".to_string(),
                         }]
                     },
-                    Compound {
+                    CompoundType {
                         refid: "nutshell_8h".to_string(),
                         name: "nutshell.h".to_string(),
                         kind: "file".to_string(),
-                        members: vec![]
+                        member: vec![]
                     }
                 ]
             }

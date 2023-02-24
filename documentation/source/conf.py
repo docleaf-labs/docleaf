@@ -18,11 +18,7 @@ release = "0.0.0"
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-cwd = Path(os.getcwd())
-root = cwd.parent.parent
-sys.path.append(str(root))
-extensions = ["breathe"]
-
+extensions = ["breathe_plus"]
 
 templates_path = ["_templates"]
 exclude_patterns = []
@@ -39,5 +35,8 @@ breathe_projects = {
     "class_methods": "../../examples/class_methods/xml/",
     "references": "../../examples/references/xml/",
     "paragraphs": "../../examples/paragraphs/xml/",
+    "functions": "../../examples/functions/xml/",
+    "structs": "../../examples/structs/xml/",
 }
+
 breathe_default_project = "nutshell"

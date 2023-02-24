@@ -41,6 +41,7 @@ fn parse_compound_def(
     start_tag: BytesStart<'_>,
 ) -> anyhow::Result<CompoundDefType> {
     let id = xml::get_attribute_string(b"id", &start_tag)?;
+    let kind = xml::get_attribute_enum::<DoxCompoundKind>(b"kind", &start_tag)?;
     let mut compound_name = String::new();
     let mut brief_description = None;
     let mut detailed_description = None;
@@ -68,6 +69,7 @@ fn parse_compound_def(
                     return Ok(CompoundDefType {
                         id,
                         compound_name,
+                        kind,
                         brief_description,
                         detailed_description,
                         section_defs,

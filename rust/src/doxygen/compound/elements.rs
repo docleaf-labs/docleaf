@@ -15,7 +15,7 @@ pub struct DoxygenType {
 pub struct CompoundDefType {
     // Attributes
     pub id: String,
-    // pub kind: DoxCompoundKind,
+    pub kind: DoxCompoundKind,
     // pub language: DoxLanguage,
     // pub prot: DoxProtectionKind,
     // pub final_: bool,
