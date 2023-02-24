@@ -2,16 +2,52 @@ mod doxygen;
 mod nodes;
 mod xml;
 
+use std::collections::HashMap;
+use std::path::PathBuf;
+
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 
-use std::path::PathBuf;
-
-use crate::doxygen::index::elements::{CompoundKind, MemberKind};
+use crate::doxygen::index::elements::{CompoundKind, DoxygenType, MemberKind};
 use crate::nodes::Node;
 
+/// Cache for xml files so that we don't have to keep re-reading them
+#[pyclass]
+struct Cache {
+    index_cache: HashMap<PathBuf, DoxygenType>,
+}
+
+#[pymethods]
+impl Cache {
+    #[new]
+    fn new() -> Self {
+        Self {
+            index_cache: HashMap::new(),
+        }
+    }
+}
+
+impl Cache {
+    fn parse_index(&mut self, path: PathBuf) -> anyhow::Result<&DoxygenType> {
+        // TODO: Figure out how to avoid double lookup - previous attempt led to borrow checker errors
+        if self.index_cache.contains_key(&path) {
+            return Ok(self.index_cache.get(&path).unwrap());
+        } else {
+            let info = {
+                let info = doxygen::index::parse_file(&path)?;
+                self.index_cache.insert(path.clone(), info);
+
+                // Can safely unwrap as we've just inserted it
+                self.index_cache.get(&path).unwrap()
+            };
+
+            Ok(info)
+        }
+    }
+}
+
 #[pyfunction]
-fn render_class(name: String, path: String) -> PyResult<Vec<Node>> {
+fn render_class(name: String, path: String, cache: &mut Cache) -> PyResult<Vec<Node>> {
     tracing::info!("render_class {} {}", name, path);
     let xml_directory = PathBuf::from(path);
 
@@ -21,7 +57,7 @@ fn render_class(name: String, path: String) -> PyResult<Vec<Node>> {
     let xml_path = source_directory.join(xml_directory);
     let index_xml_path = std::fs::canonicalize(xml_path.join("index.xml"))?;
 
-    let index = doxygen::index::parse_file(&index_xml_path)?;
+    let index = cache.parse_index(index_xml_path)?;
 
     let compound = index
         .compound
@@ -43,7 +79,7 @@ fn render_class(name: String, path: String) -> PyResult<Vec<Node>> {
 }
 
 #[pyfunction]
-fn render_struct(name: String, path: String) -> PyResult<Vec<Node>> {
+fn render_struct(name: String, path: String, cache: &mut Cache) -> PyResult<Vec<Node>> {
     tracing::info!("render_struct {} {}", name, path);
     let xml_directory = PathBuf::from(path);
 
@@ -75,7 +111,7 @@ fn render_struct(name: String, path: String) -> PyResult<Vec<Node>> {
 }
 
 #[pyfunction]
-fn render_function(name: String, path: String) -> PyResult<Vec<Node>> {
+fn render_function(name: String, path: String, cache: &mut Cache) -> PyResult<Vec<Node>> {
     tracing::info!("render_function {} {}", name, path);
     let xml_directory = PathBuf::from(path);
 
@@ -123,8 +159,11 @@ fn backend(_py: Python, module: &PyModule) -> PyResult<()> {
             .init();
     }
 
+    module.add_class::<Cache>()?;
+
     module.add_wrapped(pyo3::wrap_pyfunction!(render_class))?;
     module.add_wrapped(pyo3::wrap_pyfunction!(render_struct))?;
     module.add_wrapped(pyo3::wrap_pyfunction!(render_function))?;
+
     Ok(())
 }

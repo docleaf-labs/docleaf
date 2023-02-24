@@ -76,7 +76,7 @@ class ClassDirective(Directive):
         name = self.arguments[0]
         project = self.options["project"] or self.app.config.breathe_default_project
         path = self.app.config.breathe_projects[project]
-        node_list = backend.render_class(name, path)
+        node_list = backend.render_class(name, path, self.cache)
         document = self.state.document
 
         node_builder = NodeManager(document)
@@ -96,7 +96,7 @@ class StructDirective(Directive):
         name = self.arguments[0]
         project = self.options["project"] or self.app.config.breathe_default_project
         path = self.app.config.breathe_projects[project]
-        node_list = backend.render_struct(name, path)
+        node_list = backend.render_struct(name, path, self.cache)
         document = self.state.document
 
         node_builder = NodeManager(document)
@@ -116,7 +116,7 @@ class FunctionDirective(Directive):
         name = self.arguments[0]
         project = self.options["project"] or self.app.config.breathe_default_project
         path = self.app.config.breathe_projects[project]
-        node_list = backend.render_function(name, path)
+        node_list = backend.render_function(name, path, self.cache)
         document = self.state.document
 
         node_builder = NodeManager(document)
@@ -124,13 +124,18 @@ class FunctionDirective(Directive):
 
 
 def setup(app: Sphinx):
+    cache = backend.Cache()
+
     ClassDirective.app = app
+    ClassDirective.cache = cache
     app.add_directive("doxygenclass", ClassDirective)
 
     StructDirective.app = app
+    StructDirective.cache = cache
     app.add_directive("doxygenstruct", StructDirective)
 
     FunctionDirective.app = app
+    FunctionDirective.cache = cache
     app.add_directive("doxygenfunction", FunctionDirective)
 
     app.add_config_value("breathe_projects", {}, "env")
