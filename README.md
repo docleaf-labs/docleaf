@@ -21,7 +21,7 @@ And Poetry for Python package management.
 ```
 poetry install
 poetry shell
-./build.sh
+maturin develop
 make -C documentation html
 firefox documentation/build/html/index.html
 ```
