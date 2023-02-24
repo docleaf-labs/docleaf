@@ -10,7 +10,7 @@ import os
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = "Breathe Pro"
+project = "Breathe Plus"
 copyright = "2023, Breathe Team"
 author = "Breathe Team"
 release = "0.0.0"

@@ -2,7 +2,7 @@
 
 Contributor: Michael Jones
 
-Source Code: https://github.com/michaeljones/breathe-pro
+Source Code: https://github.com/breathe-doc/breathe-plus
 
 ## Purpose
 
