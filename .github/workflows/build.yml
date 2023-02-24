@@ -2,7 +2,8 @@ name: Build
 
 on:
   pull_request:
-  tags:
+  push:
+    tags:
 
 jobs:
   # macos:
