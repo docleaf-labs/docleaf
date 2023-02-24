@@ -1,6 +1,6 @@
 [project]
 name = "breathe_plus"
-version = "0.1.0-alpha"
+version = "0.1.0a1"
 description = "Integrate your doxygen-generated technical documentation into Sphinx"
 license = { file = "LICENSE.md" }
 readme = "README.md"
@@ -10,7 +10,7 @@ authors = [
 
 [tool.poetry]
 name = "breathe_plus"
-version = "0.1.0-alpha"
+version = "0.1.0a1"
 description = "Integrate your doxygen-generated technical documentation into Sphinx"
 license = "Parity-7.0.0"
 readme = "README.md"
