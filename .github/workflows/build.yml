@@ -90,10 +90,6 @@ jobs:
     - name: Install built wheel
       if: matrix.target == 'x86_64'
       run: |
-        # Export poetry-managed-dependencies as requirements.txt and pip install them
-        poetry export -f requirements.txt --output requirements.txt
-        pip install -r requirements.txt
-
         # Install built package and check we can import it
         pip install breathe-plus --no-index --find-links dist --force-reinstall
         python -c "import breathe_plus"
