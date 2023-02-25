@@ -91,7 +91,7 @@ jobs:
       if: matrix.target == 'x86_64'
       run: |
         # Install built package and check we can import it
-        pip install breathe-plus --no-index --find-links dist --force-reinstall
+        python3 -m pip install breathe-plus --no-index --find-links dist --force-reinstall
         python -c "import breathe_plus"
     - name: Upload wheels
       uses: actions/upload-artifact@v3
