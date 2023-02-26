@@ -29,6 +29,12 @@ Function
 .. doxygenfunction:: example_function
    :project: functions
 
+Enum
+----
+
+.. doxygenenum:: ExampleEnum
+   :project: enums
+
 Methods
 -------
 

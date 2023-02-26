@@ -111,8 +111,23 @@ fn render_struct(name: String, path: String, _cache: &mut Cache) -> PyResult<Vec
 }
 
 #[pyfunction]
-fn render_function(name: String, path: String, _cache: &mut Cache) -> PyResult<Vec<Node>> {
+fn render_enum(name: String, path: String, cache: &mut Cache) -> PyResult<Vec<Node>> {
+    tracing::info!("render_enum {} {}", name, path);
+    render_member(name, MemberKind::Enum, path, cache)
+}
+
+#[pyfunction]
+fn render_function(name: String, path: String, cache: &mut Cache) -> PyResult<Vec<Node>> {
     tracing::info!("render_function {} {}", name, path);
+    render_member(name, MemberKind::Function, path, cache)
+}
+
+fn render_member(
+    name: String,
+    kind: MemberKind,
+    path: String,
+    _cache: &mut Cache,
+) -> PyResult<Vec<Node>> {
     let xml_directory = PathBuf::from(path);
 
     let cwd = std::env::current_dir()?;
@@ -127,12 +142,10 @@ fn render_function(name: String, path: String, _cache: &mut Cache) -> PyResult<V
         let member = compound
             .member
             .iter()
-            .find(|member| member.name == name && member.kind == MemberKind::Function);
+            .find(|member| member.name == name && member.kind == kind);
 
         member.map(|member| (compound, member))
     });
-
-    //  tracing::info!("found member ref_id {}", member.ref_id);
 
     match found {
         Some((compound, member)) => {
@@ -143,7 +156,7 @@ fn render_function(name: String, path: String, _cache: &mut Cache) -> PyResult<V
             Ok(doxygen::render::render_member(root, &member.ref_id))
         }
         None => Err(PyValueError::new_err(format!(
-            "Unable to find function matching '{name}'"
+            "Unable to find {kind:?} matching '{name}'"
         ))),
     }
 }
@@ -164,6 +177,7 @@ fn backend(_py: Python, module: &PyModule) -> PyResult<()> {
     module.add_wrapped(pyo3::wrap_pyfunction!(render_class))?;
     module.add_wrapped(pyo3::wrap_pyfunction!(render_struct))?;
     module.add_wrapped(pyo3::wrap_pyfunction!(render_function))?;
+    module.add_wrapped(pyo3::wrap_pyfunction!(render_enum))?;
 
     Ok(())
 }

@@ -37,6 +37,7 @@ breathe_projects = {
     "paragraphs": "../../examples/paragraphs/xml/",
     "functions": "../../examples/functions/xml/",
     "structs": "../../examples/structs/xml/",
+    "enums": "../../examples/enums/xml/",
 }
 
 breathe_default_project = "nutshell"
