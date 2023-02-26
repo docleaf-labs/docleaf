@@ -65,7 +65,7 @@ pub fn text(text_: String) -> TextDetails {
 
 #[derive(Debug, Clone)]
 pub enum SignatureType {
-    SingleLine,
+    // SingleLine,
     MultiLine,
 }
 
@@ -85,9 +85,9 @@ pub enum Node {
     DescSignatureKeyword(String),
     DescSignatureLine(Vec<Node>),
     DescSignatureName(String),
-    DescSignaturePunctuation(String),
+    // DescSignaturePunctuation(String),
     DescSignatureSpace,
-    Index,
+    // Index,
     Paragraph(Vec<Node>),
     Reference {
         internal: bool,
@@ -180,14 +180,16 @@ impl IntoPy<PyObject> for Node {
                 vec![text(name)],
             )
             .into_py(py),
-            Self::DescSignaturePunctuation(text_) => node(
-                py,
-                "desc_sig_punctuation",
-                CallAs::SourceText,
-                Attributes::new(),
-                vec![text(text_)],
-            )
-            .into_py(py),
+            /*
+                Self::DescSignaturePunctuation(text_) => node(
+                    py,
+                    "desc_sig_punctuation",
+                    CallAs::SourceText,
+                    Attributes::new(),
+                    vec![text(text_)],
+                )
+                .into_py(py),
+            */
             Self::DescSignatureSpace => node(
                 py,
                 "desc_sig_space",
@@ -196,14 +198,16 @@ impl IntoPy<PyObject> for Node {
                 vec![text(" ".to_string())],
             )
             .into_py(py),
-            Self::Index => node(
-                py,
-                "index",
-                CallAs::Source,
-                Attributes::new(),
-                Vec::<Node>::new(),
-            )
-            .into_py(py),
+            /*
+                Self::Index => node(
+                    py,
+                    "index",
+                    CallAs::Source,
+                    Attributes::new(),
+                    Vec::<Node>::new(),
+                )
+                .into_py(py),
+            */
             Self::Paragraph(children) => node(
                 py,
                 "paragraph",

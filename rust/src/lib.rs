@@ -79,7 +79,7 @@ fn render_class(name: String, path: String, cache: &mut Cache) -> PyResult<Vec<N
 }
 
 #[pyfunction]
-fn render_struct(name: String, path: String, cache: &mut Cache) -> PyResult<Vec<Node>> {
+fn render_struct(name: String, path: String, _cache: &mut Cache) -> PyResult<Vec<Node>> {
     tracing::info!("render_struct {} {}", name, path);
     let xml_directory = PathBuf::from(path);
 
@@ -111,7 +111,7 @@ fn render_struct(name: String, path: String, cache: &mut Cache) -> PyResult<Vec<
 }
 
 #[pyfunction]
-fn render_function(name: String, path: String, cache: &mut Cache) -> PyResult<Vec<Node>> {
+fn render_function(name: String, path: String, _cache: &mut Cache) -> PyResult<Vec<Node>> {
     tracing::info!("render_function {} {}", name, path);
     let xml_directory = PathBuf::from(path);
 
