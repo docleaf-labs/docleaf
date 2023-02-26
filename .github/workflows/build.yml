@@ -90,8 +90,8 @@ jobs:
     - name: Install built wheel
       if: matrix.target == 'x86_64'
       run: |
-        # Install built package and check we can import it
-        python3 -m pip install breathe-plus --no-index --find-links dist --force-reinstall
+        # Install built package directly from whl and check we can import it
+        pip install dist/*.whl
         python -c "import breathe_plus"
     - name: Upload wheels
       uses: actions/upload-artifact@v3
