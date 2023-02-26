@@ -82,7 +82,7 @@ pub enum Node {
     DescParameter(Vec<Node>),
     DescParameterList(Vec<Node>),
     DescSignature(SignatureType, Vec<Node>),
-    DescSignatureKeyword(String),
+    DescSignatureKeyword(Vec<Node>),
     DescSignatureLine(Vec<Node>),
     DescSignatureName(String),
     // DescSignaturePunctuation(String),
@@ -156,12 +156,12 @@ impl IntoPy<PyObject> for Node {
                 )
                 .into_py(py)
             }
-            Self::DescSignatureKeyword(keyword) => node(
+            Self::DescSignatureKeyword(nodes) => node(
                 py,
                 "desc_sig_keyword",
                 CallAs::SourceText,
                 Attributes::new(),
-                vec![text(keyword)],
+                nodes,
             )
             .into_py(py),
             Self::DescSignatureLine(nodes) => node(

@@ -124,6 +124,7 @@ fn parse_member_def(
     let mut detailed_description = None;
     let mut enumvalue = Vec::new();
     let mut param = Vec::new();
+    let mut type_ = None;
 
     loop {
         match reader.read_event() {
@@ -143,6 +144,9 @@ fn parse_member_def(
                 b"param" => {
                     param.push(parse_param(reader, tag)?);
                 }
+                b"type" => {
+                    type_ = Some(parse_linked_text(reader, tag)?);
+                }
                 _ => {}
             },
             Ok(Event::End(tag)) => {
@@ -154,6 +158,7 @@ fn parse_member_def(
                         brief_description,
                         detailed_description,
                         enumvalue,
+                        type_,
                         param,
                     });
                 }

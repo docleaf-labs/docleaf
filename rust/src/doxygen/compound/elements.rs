@@ -185,7 +185,7 @@ pub struct MemberDefType {
     // pub maybeambiguous: bool,
     // Elements
     // pub templateparamlist: Option<TemplateParamListType>,
-    // pub type_: Option<LinkedTextType>,
+    pub type_: Option<LinkedTextType>,
     // pub definition: Option<String>,
     // pub argsstring: Option<String>,
     pub name: String,

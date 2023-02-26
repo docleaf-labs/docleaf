@@ -37,7 +37,7 @@ pub fn render_compound(root: e::DoxygenType) -> Vec<Node> {
             SignatureType::MultiLine,
             vec![Node::DescSignatureLine(vec![
                 Node::Target { ids, names },
-                Node::DescSignatureKeyword(kind.to_string()),
+                Node::DescSignatureKeyword(vec![Node::Text(kind.to_string())]),
                 Node::DescSignatureSpace,
                 Node::DescName(Box::new(Node::DescSignatureName(
                     compound_def.compound_name,
@@ -166,15 +166,17 @@ pub fn render_member_def(member_def: e::MemberDefType) -> Node {
     let ids = member_def.id.clone();
     let names = member_def.id;
 
-    let mut signature_line = vec![
-        Node::Target { ids, names },
-        Node::DescSignatureKeyword(name),
-        Node::DescSignatureSpace,
-        Node::DescName(Box::new(Node::DescSignatureName(member_def.name))),
-    ];
+    let signature_line;
 
     match member_def.kind {
         e::DoxMemberKind::Enum => {
+            signature_line = vec![
+                Node::Target { ids, names },
+                Node::DescSignatureKeyword(vec![Node::Text(name)]),
+                Node::DescSignatureSpace,
+                Node::DescName(Box::new(Node::DescSignatureName(member_def.name))),
+            ];
+
             content_nodes.append(
                 &mut member_def
                     .enumvalue
@@ -208,9 +210,34 @@ pub fn render_member_def(member_def: e::MemberDefType) -> Node {
                     Node::DescParameter(param_contents)
                 })
                 .collect();
-            signature_line.push(Node::DescParameterList(parameter_list_items));
+
+            match member_def.type_ {
+                Some(type_) => {
+                    signature_line = vec![
+                        Node::Target { ids, names },
+                        Node::DescSignatureKeyword(render_linked_text_type(type_)),
+                        Node::DescSignatureSpace,
+                        Node::DescName(Box::new(Node::DescSignatureName(member_def.name))),
+                        Node::DescParameterList(parameter_list_items),
+                    ];
+                }
+                None => {
+                    signature_line = vec![
+                        Node::Target { ids, names },
+                        Node::DescName(Box::new(Node::DescSignatureName(member_def.name))),
+                        Node::DescParameterList(parameter_list_items),
+                    ];
+                }
+            }
         }
-        _ => {}
+        _ => {
+            signature_line = vec![
+                Node::Target { ids, names },
+                Node::DescSignatureKeyword(vec![Node::Text(name)]),
+                Node::DescSignatureSpace,
+                Node::DescName(Box::new(Node::DescSignatureName(member_def.name))),
+            ];
+        }
     };
 
     let content = Node::DescContent(content_nodes);
