@@ -123,20 +123,26 @@ class FunctionDirective(Directive):
         return render_node_list(node_list, node_builder)
 
 
+class Context:
+    def __init__(self, app: Sphinx, cache):
+        self.app = app
+        self.cache = cache
+
+
+def add_directive(context, name, Cls):
+    Cls.app = context.app
+    Cls.cache = context.cache
+    context.app.add_directive(name, Cls)
+
+
 def setup(app: Sphinx):
     cache = backend.Cache()
 
-    ClassDirective.app = app
-    ClassDirective.cache = cache
-    app.add_directive("doxygenclass", ClassDirective)
+    context = Context(app, cache)
 
-    StructDirective.app = app
-    StructDirective.cache = cache
-    app.add_directive("doxygenstruct", StructDirective)
-
-    FunctionDirective.app = app
-    FunctionDirective.cache = cache
-    app.add_directive("doxygenfunction", FunctionDirective)
+    add_directive(context, "doxygenclass", ClassDirective)
+    add_directive(context, "doxygenstruct", StructDirective)
+    add_directive(context, "doxygenfunction", FunctionDirective)
 
     app.add_config_value("breathe_projects", {}, "env")
     app.add_config_value("breathe_default_project", None, "env")
