@@ -165,10 +165,15 @@ fn render_member(
 #[pymodule]
 fn backend(_py: Python, module: &PyModule) -> PyResult<()> {
     {
-        use tracing_subscriber::{fmt, prelude::*, EnvFilter};
+        use tracing_subscriber::{filter::LevelFilter, fmt, prelude::*, EnvFilter};
         tracing_subscriber::registry()
             .with(fmt::layer())
-            .with(EnvFilter::from_default_env())
+            .with(
+                EnvFilter::builder()
+                    .with_default_directive(LevelFilter::WARN.into())
+                    .with_env_var("BREATHE_LOG")
+                    .from_env_lossy(),
+            )
             .init();
     }
 

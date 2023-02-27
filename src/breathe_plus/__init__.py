@@ -29,6 +29,7 @@ class NodeManager:
             "desc_signature_line": sphinx.addnodes.desc_signature_line,
             "emphasis": nodes.emphasis,
             "index": sphinx.addnodes.index,
+            "inline": nodes.inline,
             "paragraph": nodes.paragraph,
             "reference": nodes.reference,
             "rubric": nodes.rubric,
