@@ -8,6 +8,13 @@ use vec1::Vec1;
 use crate::doxygen::compound::elements::*;
 use crate::xml;
 
+fn log_unhandled(fn_name: &str, tag_name: &[u8]) {
+    tracing::debug!(
+        "Unhandled {} in {fn_name}",
+        String::from_utf8_lossy(tag_name)
+    );
+}
+
 pub fn parse_file(compound_xml_path: &std::path::Path) -> anyhow::Result<DoxygenType> {
     tracing::info!("Reading {}", compound_xml_path.display());
     let xml = std::fs::read_to_string(compound_xml_path)?;
@@ -92,11 +99,7 @@ fn parse_section_def(
         match reader.read_event() {
             Ok(Event::Start(tag)) => match tag.name().as_ref() {
                 b"memberdef" => member_defs.push(parse_member_def(reader, tag)?),
-                tag_name => {
-                    return Err(anyhow!(
-                        "unexpected tag when parsing sectiondef: {tag_name:?}"
-                    ))
-                }
+                tag_name => log_unhandled("parse_section_def", tag_name),
             },
             Ok(Event::Text(_)) => {}
             Ok(Event::End(tag)) => {
@@ -243,12 +246,7 @@ fn parse_description(
         match reader.read_event() {
             Ok(Event::Start(tag)) => match tag.name().as_ref() {
                 b"para" => content.push(DescriptionTypeItem::Para(parse_para(reader, tag)?)),
-                tag_name => {
-                    return Err(anyhow!(
-                        "unexpected tag when parsing description: {:?}",
-                        String::from_utf8_lossy(tag_name),
-                    ))
-                }
+                tag_name => log_unhandled("parse_description", tag_name),
             },
             Ok(Event::Text(text)) => content.push(DescriptionTypeItem::Text(
                 String::from_utf8(text.to_vec()).map_err(|err| anyhow!("{:?}", err))?,
@@ -278,11 +276,7 @@ fn parse_linked_text(
                         content: xml::parse_text(reader)?,
                     }))
                 }
-                tag_name => {
-                    return Err(anyhow!(
-                        "unexpected tag when parsing linked text: {tag_name:?}"
-                    ))
-                }
+                tag_name => log_unhandled("parse_linked_text", tag_name),
             },
             Ok(Event::Text(text)) => content.push(LinkedTextTypeItem::Text(
                 String::from_utf8(text.to_vec()).map_err(|err| anyhow!("{:?}", err))?,
@@ -342,7 +336,13 @@ fn parse_doc_cmd_group_item(
                 reader, tag,
             )?)),
             b"simplesect" => Ok(DocCmdGroup::Simplesect(parse_simple_sect(reader, tag)?)),
-            name => return Err(anyhow!("unexpected tag: {:?}", name)),
+            tag_name => {
+                log_unhandled("parse_doc_cmd_group_item", tag_name);
+                return Err(anyhow!(
+                    "unhandled tag in parse_doc_cmd_group_item (might be a title_cmd_group item): {:?}",
+                    String::from_utf8_lossy(tag_name)
+                ));
+            }
         },
     }
 }
@@ -370,6 +370,12 @@ fn optional_parse_doc_title_cmd_group_item<'b>(
         b"ref" => Ok(Match::Found(DocTitleCmdGroup::Ref(
             parse_doc_ref_text_type(reader, start_tag)?,
         ))),
+        b"emphasis" => Ok(Match::Found(DocTitleCmdGroup::Emphasis(
+            parse_doc_markup_type(reader, start_tag)?,
+        ))),
+        b"bold" => Ok(Match::Found(DocTitleCmdGroup::Bold(parse_doc_markup_type(
+            reader, start_tag,
+        )?))),
         _ => Ok(Match::NotFound(start_tag)),
     }
 }
@@ -391,6 +397,29 @@ fn parse_doc_ref_text_type(
             Ok(Event::End(tag)) => {
                 if tag.name() == start_tag.name() {
                     return Ok(DocRefTextType { ref_id, content });
+                }
+            }
+            event => return Err(anyhow!("unexpected event: {:?}", event)),
+        }
+    }
+}
+
+fn parse_doc_markup_type(
+    reader: &mut Reader<&[u8]>,
+    start_tag: BytesStart<'_>,
+) -> anyhow::Result<DocMarkupType> {
+    let mut content = Vec::new();
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(tag)) => content.push(DocMarkupTypeItem::DocCmdGroup(
+                parse_doc_cmd_group_item(reader, tag)?,
+            )),
+            Ok(Event::Text(text)) => content.push(DocMarkupTypeItem::Text(
+                String::from_utf8(text.to_vec()).map_err(|err| anyhow!("{:?}", err))?,
+            )),
+            Ok(Event::End(tag)) => {
+                if tag.name() == start_tag.name() {
+                    return Ok(DocMarkupType { content });
                 }
             }
             event => return Err(anyhow!("unexpected event: {:?}", event)),

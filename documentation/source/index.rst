@@ -35,6 +35,13 @@ Enum
 .. doxygenenum:: ExampleEnum
    :project: enums
 
+
+Text Formatting
+---------------
+
+.. doxygenfunction:: example_text_formatting
+   :project: text-formatting
+
 Methods
 -------
 

@@ -75,6 +75,7 @@ pub enum Node {
     Text(String),
 
     // Nodes
+    Bold(Vec<Node>),
     Container(Vec<Node>),
     Desc(Vec<Node>, Box<Node>),
     DescContent(Vec<Node>),
@@ -87,6 +88,7 @@ pub enum Node {
     DescSignatureName(String),
     // DescSignaturePunctuation(String),
     DescSignatureSpace,
+    Emphasis(Vec<Node>),
     // Index,
     Paragraph(Vec<Node>),
     Reference {
@@ -99,6 +101,9 @@ pub enum Node {
         ids: String,
         names: String,
     },
+
+    // Placeholder node for when we haven't handled the case
+    Unknown,
 }
 
 impl IntoPy<PyObject> for Node {
@@ -108,6 +113,9 @@ impl IntoPy<PyObject> for Node {
             Self::Text(text_) => text(text_).into_py(py),
 
             // Nodes
+            Self::Bold(nodes) => {
+                node(py, "strong", CallAs::Source, Attributes::new(), nodes).into_py(py)
+            }
             Self::Container(nodes) => {
                 node(py, "container", CallAs::Source, Attributes::new(), nodes).into_py(py)
             }
@@ -208,6 +216,9 @@ impl IntoPy<PyObject> for Node {
                 )
                 .into_py(py),
             */
+            Self::Emphasis(nodes) => {
+                node(py, "emphasis", CallAs::Source, Attributes::new(), nodes).into_py(py)
+            }
             Self::Paragraph(children) => node(
                 py,
                 "paragraph",
@@ -241,6 +252,9 @@ impl IntoPy<PyObject> for Node {
                 Vec::<Node>::new(),
             )
             .into_py(py),
+
+            // Just show empty text at the moment
+            Self::Unknown => text(String::new()).into_py(py),
         }
     }
 }

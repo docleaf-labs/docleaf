@@ -324,9 +324,7 @@ pub fn render_para(element: e::DocParaType) -> Vec<Node> {
                     .flat_map(|para| render_para(para))
                     .collect(),
             ),
-            e::DocParaTypeItem::DocCmdGroup(element) => {
-                nodes.append(&mut render_doc_cmd_group(element))
-            }
+            e::DocParaTypeItem::DocCmdGroup(element) => nodes.push(render_doc_cmd_group(element)),
             e::DocParaTypeItem::Text(text) => nodes.push(Node::Text(text)),
         }
     }
@@ -334,11 +332,11 @@ pub fn render_para(element: e::DocParaType) -> Vec<Node> {
     nodes
 }
 
-fn render_doc_cmd_group(element: e::DocCmdGroup) -> Vec<Node> {
+fn render_doc_cmd_group(element: e::DocCmdGroup) -> Node {
     match element {
         e::DocCmdGroup::DocTitleCmdGroup(element) => render_doc_title_cmd_group(element),
         // TODO: Change to panic
-        _ => vec![],
+        _ => Node::Unknown,
     }
 }
 
@@ -369,7 +367,7 @@ fn render_doc_ref_text_type(doc_ref_text_type: e::DocRefTextType) -> Node {
     for entry in doc_ref_text_type.content {
         match entry {
             e::DocRefTextTypeItem::DocTitleCmdGroup(content) => {
-                nodes.append(&mut render_doc_title_cmd_group(content))
+                nodes.push(render_doc_title_cmd_group(content))
             }
             e::DocRefTextTypeItem::Text(text) => nodes.push(Node::Text(text)),
         }
@@ -382,10 +380,27 @@ fn render_doc_ref_text_type(doc_ref_text_type: e::DocRefTextType) -> Node {
     }
 }
 
-fn render_doc_title_cmd_group(element: e::DocTitleCmdGroup) -> Vec<Node> {
+fn render_doc_title_cmd_group(element: e::DocTitleCmdGroup) -> Node {
     match element {
-        e::DocTitleCmdGroup::Ref(element) => vec![render_doc_ref_text_type(element)],
-        // TODO: Change to panic
-        _ => Vec::new(),
+        e::DocTitleCmdGroup::Ref(element) => render_doc_ref_text_type(element),
+        e::DocTitleCmdGroup::Bold(element) => Node::Bold(render_doc_markup_type(element)),
+        e::DocTitleCmdGroup::Emphasis(element) => Node::Emphasis(render_doc_markup_type(element)),
+        element => {
+            tracing::error!("No render handled for {element:?} in render_doc_title_cmd_group");
+            Node::Unknown
+        }
     }
+}
+
+fn render_doc_markup_type(element: e::DocMarkupType) -> Vec<Node> {
+    let mut nodes = Vec::new();
+
+    for entry in element.content {
+        match entry {
+            e::DocMarkupTypeItem::DocCmdGroup(content) => nodes.push(render_doc_cmd_group(content)),
+            e::DocMarkupTypeItem::Text(text) => nodes.push(Node::Text(text)),
+        }
+    }
+
+    nodes
 }
