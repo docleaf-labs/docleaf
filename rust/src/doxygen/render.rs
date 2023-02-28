@@ -387,73 +387,18 @@ fn render_doc_title_cmd_group(doc_title_cmd_group: e::DocTitleCmdGroup) -> Node 
         e::DocTitleCmdGroup::Bold(element) => Node::Bold(render_doc_markup_type(element)),
         e::DocTitleCmdGroup::Emphasis(element) => Node::Emphasis(render_doc_markup_type(element)),
 
-        e::DocTitleCmdGroup::S(element) => {
-            tracing::warn!(
-                "Unhandled inline doc_markup node: {element:?} in render_doc_title_cmd_group"
-            );
-            Node::UnknownInline(render_doc_markup_type(element))
-        }
-        e::DocTitleCmdGroup::Strike(element) => {
-            tracing::warn!(
-                "Unhandled inline doc_markup node: {element:?} in render_doc_title_cmd_group"
-            );
-            Node::UnknownInline(render_doc_markup_type(element))
-        }
-        e::DocTitleCmdGroup::Underline(element) => {
-            tracing::warn!(
-                "Unhandled inline doc_markup node: {element:?} in render_doc_title_cmd_group"
-            );
-            Node::UnknownInline(render_doc_markup_type(element))
-        }
-        e::DocTitleCmdGroup::Computeroutput(element) => {
-            tracing::warn!(
-                "Unhandled inline doc_markup node: {element:?} in render_doc_title_cmd_group"
-            );
-            Node::UnknownInline(render_doc_markup_type(element))
-        }
-        e::DocTitleCmdGroup::Subscript(element) => {
-            tracing::warn!(
-                "Unhandled inline doc_markup node: {element:?} in render_doc_title_cmd_group"
-            );
-            Node::UnknownInline(render_doc_markup_type(element))
-        }
-        e::DocTitleCmdGroup::Superscript(element) => {
-            tracing::warn!(
-                "Unhandled inline doc_markup node: {element:?} in render_doc_title_cmd_group"
-            );
-            Node::UnknownInline(render_doc_markup_type(element))
-        }
-        e::DocTitleCmdGroup::Center(element) => {
-            tracing::warn!(
-                "Unhandled inline doc_markup node: {element:?} in render_doc_title_cmd_group"
-            );
-            Node::UnknownInline(render_doc_markup_type(element))
-        }
-        e::DocTitleCmdGroup::Small(element) => {
-            tracing::warn!(
-                "Unhandled inline doc_markup node: {element:?} in render_doc_title_cmd_group"
-            );
-            Node::UnknownInline(render_doc_markup_type(element))
-        }
-        e::DocTitleCmdGroup::Cite(element) => {
-            tracing::warn!(
-                "Unhandled inline doc_markup node: {element:?} in render_doc_title_cmd_group"
-            );
-            Node::UnknownInline(render_doc_markup_type(element))
-        }
-        e::DocTitleCmdGroup::Del(element) => {
-            tracing::warn!(
-                "Unhandled inline doc_markup node: {element:?} in render_doc_title_cmd_group"
-            );
-            Node::UnknownInline(render_doc_markup_type(element))
-        }
-        e::DocTitleCmdGroup::Ins(element) => {
-            tracing::warn!(
-                "Unhandled inline doc_markup node: {element:?} in render_doc_title_cmd_group"
-            );
-            Node::UnknownInline(render_doc_markup_type(element))
-        }
-        e::DocTitleCmdGroup::Summary(element) => {
+        e::DocTitleCmdGroup::S(element)
+        | e::DocTitleCmdGroup::Strike(element)
+        | e::DocTitleCmdGroup::Underline(element)
+        | e::DocTitleCmdGroup::Computeroutput(element)
+        | e::DocTitleCmdGroup::Subscript(element)
+        | e::DocTitleCmdGroup::Superscript(element)
+        | e::DocTitleCmdGroup::Center(element)
+        | e::DocTitleCmdGroup::Small(element)
+        | e::DocTitleCmdGroup::Cite(element)
+        | e::DocTitleCmdGroup::Del(element)
+        | e::DocTitleCmdGroup::Ins(element)
+        | e::DocTitleCmdGroup::Summary(element) => {
             tracing::warn!(
                 "Unhandled inline doc_markup node: {element:?} in render_doc_title_cmd_group"
             );
