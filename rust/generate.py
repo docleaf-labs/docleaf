@@ -223,9 +223,13 @@ def create_group(element):
                     entry_type = grandchild.attrib["type"]
                     entry_name = convert_type_name(entry_name, False)
                     entry_type = convert_type_name(entry_type, False)
+
                     if entry_name not in names:
                         names.append(entry_name)
-                        entries.append(f"{entry_name}({entry_type})")
+                        if entry_type == "DocEmptyType":
+                            entries.append(entry_name)
+                        else:
+                            entries.append(f"{entry_name}({entry_type})")
 
             entries = ",\n    ".join(entries)
 
@@ -264,6 +268,10 @@ def create_struct(output, tag, comment_lookup):
     """
 
     name = convert_type_name(tag.attrib["name"], False)
+
+    if name == "DocEmptyType":
+        return []
+
     attribute_fields = get_attribute_fields(tag, name, comment_lookup)
 
     element_fields = []
