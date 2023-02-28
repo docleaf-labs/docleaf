@@ -7,7 +7,7 @@ build:
 	make -C documentation pseudoxml
 
 compound-elements:
-	git checkout src/doxygen/compound/elements.rs
-	python3 src/generate.py examples/nutshell/xml/compound.xsd src/doxygen/compound/elements.rs
-	rustfmt src/doxygen/compound/elements.rs
+	git checkout rust/src/doxygen/compound/elements.rs
+	python3 rust/generate.py examples/nutshell/xml/compound.xsd rust/src/doxygen/compound/elements.rs
+	rustfmt rust/src/doxygen/compound/elements.rs
 	# cargo lbuild
