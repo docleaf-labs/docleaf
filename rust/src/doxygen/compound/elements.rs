@@ -320,10 +320,10 @@ pub struct ListingType {
 #[derive(Debug, PartialEq)]
 pub struct CodelineType {
     // Attributes
-    pub lineno: i32,
+    // pub lineno: i32,
     // pub ref_id: String,
-    pub refkind: DoxRefKind,
-    pub external: bool,
+    // pub refkind: DoxRefKind,
+    // pub external: bool,
     // Elements
     pub highlight: Vec<HighlightType>,
 }

@@ -336,6 +336,9 @@ fn parse_doc_cmd_group_item(
                 reader, tag,
             )?)),
             b"simplesect" => Ok(DocCmdGroup::Simplesect(parse_simple_sect(reader, tag)?)),
+            b"programlisting" => Ok(DocCmdGroup::ProgramListing(parse_program_listing(
+                reader, tag,
+            )?)),
             tag_name => {
                 log_unhandled("parse_doc_cmd_group_item", tag_name);
                 return Err(anyhow!(
@@ -420,6 +423,117 @@ fn parse_doc_markup_type(
             Ok(Event::End(tag)) => {
                 if tag.name() == start_tag.name() {
                     return Ok(DocMarkupType { content });
+                }
+            }
+            event => return Err(anyhow!("unexpected event: {:?}", event)),
+        }
+    }
+}
+
+fn parse_program_listing(
+    reader: &mut Reader<&[u8]>,
+    start_tag: BytesStart<'_>,
+) -> anyhow::Result<ListingType> {
+    let filename = xml::get_optional_attribute_string(b"filename", &start_tag)?;
+    let mut codeline = Vec::new();
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(tag)) => match tag.name().as_ref() {
+                b"codeline" => {
+                    codeline.push(parse_code_line(reader, tag)?);
+                }
+                tag_name => {
+                    return Err(anyhow!(
+                        "unexpected tag when parsing {}: {:?}",
+                        String::from_utf8_lossy(start_tag.name().into_inner()),
+                        String::from_utf8_lossy(tag_name),
+                    ))
+                }
+            },
+            Ok(Event::Text(_)) => {}
+            Ok(Event::End(tag)) => {
+                if tag.name() == start_tag.name() {
+                    return Ok(ListingType {
+                        filename,
+                        codeline: Vec::new(),
+                    });
+                }
+            }
+            event => return Err(anyhow!("unexpected event: {:?}", event)),
+        }
+    }
+}
+
+fn parse_code_line(
+    reader: &mut Reader<&[u8]>,
+    start_tag: BytesStart<'_>,
+) -> anyhow::Result<CodelineType> {
+    let mut highlight = Vec::new();
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(tag)) => match tag.name().as_ref() {
+                b"highlight" => {
+                    highlight.push(parse_highlight(reader, tag)?);
+                }
+                tag_name => {
+                    return Err(anyhow!(
+                        "unexpected tag when parsing {}: {:?}",
+                        String::from_utf8_lossy(start_tag.name().into_inner()),
+                        String::from_utf8_lossy(tag_name),
+                    ))
+                }
+            },
+            Ok(Event::Text(_)) => {}
+            Ok(Event::End(tag)) => {
+                if tag.name() == start_tag.name() {
+                    return Ok(CodelineType { highlight });
+                }
+            }
+            event => return Err(anyhow!("unexpected event: {:?}", event)),
+        }
+    }
+}
+
+fn parse_highlight(
+    reader: &mut Reader<&[u8]>,
+    start_tag: BytesStart<'_>,
+) -> anyhow::Result<HighlightType> {
+    let mut content = Vec::new();
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(tag)) => match tag.name().as_ref() {
+                b"ref" => {
+                    // content.push(parse_highlight(reader, tag)?);
+                }
+                tag_name => {
+                    return Err(anyhow!(
+                        "unexpected tag when parsing {}: {:?}",
+                        String::from_utf8_lossy(start_tag.name().into_inner()),
+                        String::from_utf8_lossy(tag_name),
+                    ))
+                }
+            },
+            Ok(Event::Empty(tag)) => match tag.name().as_ref() {
+                b"sp" => {
+                    // Tag is empty so record empty string as mixed content
+                    content.push(HighlightTypeItem::Sp(SpType {
+                        content: String::new(),
+                    }));
+                }
+                tag_name => {
+                    return Err(anyhow!(
+                        "unexpected empty tag when parsing {}: {:?}",
+                        String::from_utf8_lossy(start_tag.name().into_inner()),
+                        String::from_utf8_lossy(tag_name),
+                    ))
+                }
+            },
+            Ok(Event::Text(text)) => content.push(HighlightTypeItem::Text(
+                String::from_utf8(text.to_vec()).map_err(|err| anyhow!("{:?}", err))?,
+            )),
+            Ok(Event::End(tag)) => {
+                if tag.name() == start_tag.name() {
+                    return Ok(HighlightType { content });
                 }
             }
             event => return Err(anyhow!("unexpected event: {:?}", event)),

@@ -11,6 +11,7 @@ Welcome to Breathe Plus' documentation!
    :caption: Contents:
 
    groups
+   program-listings
 
 Class
 -----

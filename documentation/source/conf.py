@@ -39,6 +39,7 @@ breathe_projects = {
     "structs": "../../examples/structs/xml/",
     "enums": "../../examples/enums/xml/",
     "groups": "../../examples/groups/xml/",
+    "program-listings": "../../examples/program-listings/xml/",
     "text-formatting": "../../examples/text-formatting/xml/",
 }
 

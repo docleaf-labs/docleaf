@@ -16,16 +16,33 @@ pub fn parse_text(reader: &mut Reader<&[u8]>) -> anyhow::Result<String> {
     }
 }
 
-pub fn get_attribute<'a>(name: &[u8], tag: &'a BytesStart<'a>) -> anyhow::Result<Attribute<'a>> {
-    tag.attributes()
+pub fn get_optional_attribute<'a>(
+    name: &[u8],
+    tag: &'a BytesStart<'a>,
+) -> anyhow::Result<Option<Attribute<'a>>> {
+    Ok(tag
+        .attributes()
         .find(|result| {
             result
                 .as_ref()
                 .map(|attr| attr.key.local_name().as_ref() == name)
                 .unwrap_or(false)
         })
-        .ok_or(anyhow!("Unable to find refid"))?
-        .map_err(|err| anyhow!("{:?}", err))
+        .transpose()?)
+}
+
+pub fn get_attribute<'a>(name: &[u8], tag: &'a BytesStart<'a>) -> anyhow::Result<Attribute<'a>> {
+    get_optional_attribute(name, tag)?
+        .ok_or_else(|| anyhow!("Unable to find {}", String::from_utf8_lossy(name)))
+}
+
+pub fn get_optional_attribute_string<'a>(
+    name: &[u8],
+    tag: &'a BytesStart<'a>,
+) -> anyhow::Result<Option<String>> {
+    Ok(get_optional_attribute(name, tag)?
+        .map(|attr| String::from_utf8(attr.value.into_owned()))
+        .transpose()?)
 }
 
 pub fn get_attribute_string<'a>(name: &[u8], tag: &'a BytesStart<'a>) -> anyhow::Result<String> {
