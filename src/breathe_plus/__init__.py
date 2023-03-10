@@ -146,6 +146,26 @@ class FunctionDirective(Directive):
         return render_node_list(node_list, node_builder)
 
 
+class GroupDirective(Directive):
+    has_content = True
+    required_arguments = 1
+    optional_arguments = 0
+    final_argument_whitespace = True
+    option_spec = {
+        "project": directives.unchanged,
+    }
+
+    def run(self) -> List[Node]:
+        name = self.arguments[0]
+        project = self.options.get("project", self.app.config.breathe_default_project)
+        path = self.app.config.breathe_projects[project]
+        node_list = backend.render_group(name, path, self.cache)
+        document = self.state.document
+
+        node_builder = NodeManager(document)
+        return render_node_list(node_list, node_builder)
+
+
 class Context:
     def __init__(self, app: Sphinx, cache):
         self.app = app
@@ -167,6 +187,7 @@ def setup(app: Sphinx):
     add_directive(context, "doxygenstruct", StructDirective)
     add_directive(context, "doxygenfunction", FunctionDirective)
     add_directive(context, "doxygenenum", EnumDirective)
+    add_directive(context, "doxygengroup", GroupDirective)
 
     app.add_config_value("breathe_projects", {}, "env")
     app.add_config_value("breathe_default_project", None, "env")

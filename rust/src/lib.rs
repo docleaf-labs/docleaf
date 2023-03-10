@@ -161,6 +161,40 @@ fn render_member(
     }
 }
 
+#[pyfunction]
+fn render_group(name: String, path: String, _cache: &mut Cache) -> PyResult<Vec<Node>> {
+    tracing::info!("render_group {} {}", name, path);
+    let xml_directory = PathBuf::from(path);
+
+    let cwd = std::env::current_dir()?;
+    let source_directory = cwd.join("source");
+
+    let xml_path = source_directory.join(xml_directory);
+    let index_xml_path = std::fs::canonicalize(xml_path.join("index.xml"))?;
+
+    let index = doxygen::index::parse_file(&index_xml_path)?;
+
+    let compound = index
+        .compound
+        .iter()
+        .find(|compound| compound.name == name && compound.kind == CompoundKind::Group);
+
+    match compound {
+        Some(compound) => {
+            let ref_id = &compound.ref_id;
+            let compound_xml_path = std::fs::canonicalize(xml_path.join(format!("{ref_id}.xml")))?;
+            let root = doxygen::compound::parse_file(&compound_xml_path)?;
+
+            tracing::debug!("Compound root: {root:?}");
+
+            Ok(doxygen::render::render_compound(root))
+        }
+        None => Err(PyValueError::new_err(format!(
+            "Unable to find struct matching '{name}'"
+        ))),
+    }
+}
+
 /// A Python module implemented in Rust.
 #[pymodule]
 fn backend(_py: Python, module: &PyModule) -> PyResult<()> {
@@ -181,8 +215,11 @@ fn backend(_py: Python, module: &PyModule) -> PyResult<()> {
 
     module.add_wrapped(pyo3::wrap_pyfunction!(render_class))?;
     module.add_wrapped(pyo3::wrap_pyfunction!(render_struct))?;
+
     module.add_wrapped(pyo3::wrap_pyfunction!(render_function))?;
     module.add_wrapped(pyo3::wrap_pyfunction!(render_enum))?;
+
+    module.add_wrapped(pyo3::wrap_pyfunction!(render_group))?;
 
     Ok(())
 }

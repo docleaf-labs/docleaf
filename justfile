@@ -6,6 +6,9 @@ build:
 	make -C documentation html
 	make -C documentation pseudoxml
 
+wheel:
+	maturin build --release
+
 compound-elements:
 	git checkout rust/src/doxygen/compound/elements.rs
 	python3 rust/generate.py examples/nutshell/xml/compound.xsd rust/src/doxygen/compound/elements.rs

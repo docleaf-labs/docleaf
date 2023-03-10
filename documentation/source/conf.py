@@ -38,6 +38,7 @@ breathe_projects = {
     "functions": "../../examples/functions/xml/",
     "structs": "../../examples/structs/xml/",
     "enums": "../../examples/enums/xml/",
+    "groups": "../../examples/groups/xml/",
     "text-formatting": "../../examples/text-formatting/xml/",
 }
 

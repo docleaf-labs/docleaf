@@ -10,6 +10,7 @@ Welcome to Breathe Plus' documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   groups
 
 Class
 -----

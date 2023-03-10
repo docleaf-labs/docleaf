@@ -1,4 +1,4 @@
-PROJECT_NAME     = "functions example"
+PROJECT_NAME     = "example"
 OUTPUT_DIRECTORY = .
 GENERATE_LATEX   = NO
 GENERATE_MAN     = NO
