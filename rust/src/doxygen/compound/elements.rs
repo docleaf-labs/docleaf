@@ -849,8 +849,8 @@ pub struct DocIndexEntryType {
 #[derive(Debug, PartialEq)]
 pub struct DocListType {
     // Attributes
-    pub type_: String,
-    pub start: i32,
+    // pub type_: String,
+    // pub start: i32,
     // Elements
     pub listitem: vec1::Vec1<DocListItemType>,
 }
@@ -858,7 +858,7 @@ pub struct DocListType {
 #[derive(Debug, PartialEq)]
 pub struct DocListItemType {
     // Attributes
-    pub value: Option<i32>,
+    // pub value: Option<i32>,
     // Elements
     pub para: Vec<DocParaType>,
 }

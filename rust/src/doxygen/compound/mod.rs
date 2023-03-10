@@ -245,7 +245,9 @@ fn parse_description(
     loop {
         match reader.read_event() {
             Ok(Event::Start(tag)) => match tag.name().as_ref() {
-                b"para" => content.push(DescriptionTypeItem::Para(parse_para(reader, tag)?)),
+                b"para" => {
+                    content.push(DescriptionTypeItem::Para(parse_doc_para_type(reader, tag)?))
+                }
                 tag_name => log_unhandled("parse_description", tag_name),
             },
             Ok(Event::Text(text)) => content.push(DescriptionTypeItem::Text(
@@ -296,7 +298,7 @@ fn parse_linked_text(
     }
 }
 
-fn parse_para(
+fn parse_doc_para_type(
     reader: &mut Reader<&[u8]>,
     start_tag: BytesStart<'_>,
 ) -> anyhow::Result<DocParaType> {
@@ -304,6 +306,9 @@ fn parse_para(
     loop {
         match reader.read_event() {
             Ok(Event::Start(tag)) => content.push(DocParaTypeItem::DocCmdGroup(
+                parse_doc_cmd_group_item(reader, tag)?,
+            )),
+            Ok(Event::Empty(tag)) => content.push(DocParaTypeItem::DocCmdGroup(
                 parse_doc_cmd_group_item(reader, tag)?,
             )),
             Ok(Event::Text(text)) => content.push(DocParaTypeItem::Text(
@@ -336,9 +341,11 @@ fn parse_doc_cmd_group_item(
                 reader, tag,
             )?)),
             b"simplesect" => Ok(DocCmdGroup::Simplesect(parse_simple_sect(reader, tag)?)),
-            b"programlisting" => Ok(DocCmdGroup::ProgramListing(parse_program_listing(
+            b"programlisting" => Ok(DocCmdGroup::ProgramListing(parse_listing_type(
                 reader, tag,
             )?)),
+            b"itemizedlist" => Ok(DocCmdGroup::ItemizedList(parse_doc_list_type(reader, tag)?)),
+            b"orderedlist" => Ok(DocCmdGroup::OrderedList(parse_doc_list_type(reader, tag)?)),
             tag_name => {
                 log_unhandled("parse_doc_cmd_group_item", tag_name);
                 return Err(anyhow!(
@@ -370,6 +377,7 @@ fn optional_parse_doc_title_cmd_group_item<'b>(
     start_tag: BytesStart<'b>,
 ) -> anyhow::Result<Match<DocTitleCmdGroup, BytesStart<'b>>> {
     match start_tag.name().as_ref() {
+        // Non-empty nodes
         b"ref" => Ok(Match::Found(DocTitleCmdGroup::Ref(
             parse_doc_ref_text_type(reader, start_tag)?,
         ))),
@@ -382,6 +390,10 @@ fn optional_parse_doc_title_cmd_group_item<'b>(
         b"computeroutput" => Ok(Match::Found(DocTitleCmdGroup::Computeroutput(
             parse_doc_markup_type(reader, start_tag)?,
         ))),
+
+        // Empty nodes
+        b"linebreak" => Ok(Match::Found(DocTitleCmdGroup::Linebreak)),
+
         _ => Ok(Match::NotFound(start_tag)),
     }
 }
@@ -395,6 +407,9 @@ fn parse_doc_ref_text_type(
     loop {
         match reader.read_event() {
             Ok(Event::Start(tag)) => content.push(DocRefTextTypeItem::DocTitleCmdGroup(
+                parse_doc_title_cmd_group_item(reader, tag)?,
+            )),
+            Ok(Event::Empty(tag)) => content.push(DocRefTextTypeItem::DocTitleCmdGroup(
                 parse_doc_title_cmd_group_item(reader, tag)?,
             )),
             Ok(Event::Text(text)) => content.push(DocRefTextTypeItem::Text(
@@ -433,7 +448,65 @@ fn parse_doc_markup_type(
     }
 }
 
-fn parse_program_listing(
+fn parse_doc_list_type(
+    reader: &mut Reader<&[u8]>,
+    start_tag: BytesStart<'_>,
+) -> anyhow::Result<DocListType> {
+    let mut listitem = Vec::new();
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(tag)) => match tag.name().as_ref() {
+                b"listitem" => listitem.push(parse_doc_list_item_type(reader, tag)?),
+                tag_name => {
+                    return Err(anyhow!(
+                        "unexpected tag when parsing {}: {:?}",
+                        String::from_utf8_lossy(start_tag.name().into_inner()),
+                        String::from_utf8_lossy(tag_name),
+                    ))
+                }
+            },
+            Ok(Event::Text(_)) => {}
+            Ok(Event::End(tag)) => {
+                if tag.name() == start_tag.name() {
+                    return Ok(DocListType {
+                        listitem: Vec1::try_from_vec(listitem)?,
+                    });
+                }
+            }
+            event => return Err(anyhow!("unexpected event: {:?}", event)),
+        }
+    }
+}
+
+fn parse_doc_list_item_type(
+    reader: &mut Reader<&[u8]>,
+    start_tag: BytesStart<'_>,
+) -> anyhow::Result<DocListItemType> {
+    let mut para = Vec::new();
+    loop {
+        match reader.read_event() {
+            Ok(Event::Start(tag)) => match tag.name().as_ref() {
+                b"para" => para.push(parse_doc_para_type(reader, tag)?),
+                tag_name => {
+                    return Err(anyhow!(
+                        "unexpected tag when parsing {}: {:?}",
+                        String::from_utf8_lossy(start_tag.name().into_inner()),
+                        String::from_utf8_lossy(tag_name),
+                    ))
+                }
+            },
+            Ok(Event::Text(_)) => {}
+            Ok(Event::End(tag)) => {
+                if tag.name() == start_tag.name() {
+                    return Ok(DocListItemType { para });
+                }
+            }
+            event => return Err(anyhow!("unexpected event: {:?}", event)),
+        }
+    }
+}
+
+fn parse_listing_type(
     reader: &mut Reader<&[u8]>,
     start_tag: BytesStart<'_>,
 ) -> anyhow::Result<ListingType> {
@@ -552,7 +625,7 @@ fn parse_simple_sect(
     loop {
         match reader.read_event() {
             Ok(Event::Start(tag)) => match tag.name().as_ref() {
-                b"para" => para.push(parse_para(reader, tag)?),
+                b"para" => para.push(parse_doc_para_type(reader, tag)?),
                 tag_name => {
                     return Err(anyhow!(
                         "unexpected tag when parsing {}: {:?}",
