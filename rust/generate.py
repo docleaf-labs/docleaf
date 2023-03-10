@@ -437,8 +437,12 @@ def get_attribute_fields(element, name, comment_lookup):
                 field_name = convert_field_name(child.attrib["name"])
                 field_type = convert_type_name(child.attrib["type"], True)
 
+                wrapper = lambda x: x
+                if child.attrib.get("use") == "optional":
+                    wrapper = Option
+
                 comment_out = comment_lookup.get(name.lower(), {}).get(field_name.lower(), True)
-                fields.append(Field(field_name, field_type, comment_out))
+                fields.append(Field(field_name, str(wrapper(field_type)), comment_out))
 
     return fields
 

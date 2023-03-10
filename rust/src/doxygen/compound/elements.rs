@@ -17,12 +17,12 @@ pub struct CompoundDefType {
     // Attributes
     pub id: String,
     pub kind: DoxCompoundKind,
-    // pub language: DoxLanguage,
+    // pub language: Option<DoxLanguage>,
     // pub prot: DoxProtectionKind,
-    // pub final_: bool,
-    // pub inline: bool,
-    // pub sealed: bool,
-    // pub abstract_: bool,
+    // pub final_: Option<bool>,
+    // pub inline: Option<bool>,
+    // pub sealed: Option<bool>,
+    // pub abstract_: Option<bool>,
     // Elements
     pub compound_name: String,
     // pub title: Option<String>,
@@ -83,7 +83,7 @@ pub struct DocHtmlOnlyType {
 #[derive(Debug, PartialEq)]
 pub struct CompoundRefType {
     // Attributes
-    // pub ref_id: String,
+    // pub ref_id: Option<String>,
     // pub prot: DoxProtectionKind,
     // pub virt: DoxVirtualKind,
     // Content
@@ -111,8 +111,8 @@ pub struct IncType {
 pub struct RefType {
     // Attributes
     // pub ref_id: String,
-    // pub prot: DoxProtectionKind,
-    // pub inline: bool,
+    // pub prot: Option<DoxProtectionKind>,
+    // pub inline: Option<bool>,
     // Content
     pub content: String,
 }
@@ -122,8 +122,8 @@ pub struct RefTextType {
     // Attributes
     pub ref_id: String,
     // pub kindref: DoxRefKind,
-    // pub external: String,
-    // pub tooltip: String,
+    // pub external: Option<String>,
+    // pub tooltip: Option<String>,
     // Content
     pub content: String,
 }
@@ -145,44 +145,44 @@ pub struct MemberDefType {
     pub id: String,
     // pub prot: DoxProtectionKind,
     // pub static_: bool,
-    // pub strong: bool,
-    // pub const_: bool,
-    // pub explicit: bool,
-    // pub inline: bool,
-    // pub refqual: DoxRefQualifierKind,
-    // pub virt: DoxVirtualKind,
-    // pub volatile: bool,
-    // pub mutable: bool,
-    // pub noexcept: bool,
-    // pub constexpr: bool,
-    // pub readable: bool,
-    // pub writable: bool,
-    // pub initonly: bool,
-    // pub settable: bool,
-    // pub privatesettable: bool,
-    // pub protectedsettable: bool,
-    // pub gettable: bool,
-    // pub privategettable: bool,
-    // pub protectedgettable: bool,
-    // pub final_: bool,
-    // pub sealed: bool,
-    // pub new: bool,
-    // pub add: bool,
-    // pub remove: bool,
-    // pub raise: bool,
-    // pub optional: bool,
-    // pub required: bool,
-    // pub accessor: DoxAccessor,
-    // pub attribute: bool,
-    // pub property: bool,
-    // pub readonly: bool,
-    // pub bound: bool,
-    // pub removable: bool,
-    // pub constrained: bool,
-    // pub transient: bool,
-    // pub maybevoid: bool,
-    // pub maybedefault: bool,
-    // pub maybeambiguous: bool,
+    // pub strong: Option<bool>,
+    // pub const_: Option<bool>,
+    // pub explicit: Option<bool>,
+    // pub inline: Option<bool>,
+    // pub refqual: Option<DoxRefQualifierKind>,
+    // pub virt: Option<DoxVirtualKind>,
+    // pub volatile: Option<bool>,
+    // pub mutable: Option<bool>,
+    // pub noexcept: Option<bool>,
+    // pub constexpr: Option<bool>,
+    // pub readable: Option<bool>,
+    // pub writable: Option<bool>,
+    // pub initonly: Option<bool>,
+    // pub settable: Option<bool>,
+    // pub privatesettable: Option<bool>,
+    // pub protectedsettable: Option<bool>,
+    // pub gettable: Option<bool>,
+    // pub privategettable: Option<bool>,
+    // pub protectedgettable: Option<bool>,
+    // pub final_: Option<bool>,
+    // pub sealed: Option<bool>,
+    // pub new: Option<bool>,
+    // pub add: Option<bool>,
+    // pub remove: Option<bool>,
+    // pub raise: Option<bool>,
+    // pub optional: Option<bool>,
+    // pub required: Option<bool>,
+    // pub accessor: Option<DoxAccessor>,
+    // pub attribute: Option<bool>,
+    // pub property: Option<bool>,
+    // pub readonly: Option<bool>,
+    // pub bound: Option<bool>,
+    // pub removable: Option<bool>,
+    // pub constrained: Option<bool>,
+    // pub transient: Option<bool>,
+    // pub maybevoid: Option<bool>,
+    // pub maybedefault: Option<bool>,
+    // pub maybeambiguous: Option<bool>,
     // Elements
     // pub templateparamlist: Option<TemplateParamListType>,
     pub type_: Option<LinkedTextType>,
@@ -305,14 +305,14 @@ pub struct ChildnodeType {
 pub struct LinkType {
     // Attributes
     // pub ref_id: String,
-    pub external: String,
+    pub external: Option<String>,
     // Elements
 }
 
 #[derive(Debug, PartialEq)]
 pub struct ListingType {
     // Attributes
-    pub filename: String,
+    pub filename: Option<String>,
     // Elements
     pub codeline: Vec<CodelineType>,
 }
@@ -346,7 +346,7 @@ pub enum HighlightTypeItem {
 #[derive(Debug, PartialEq)]
 pub struct SpType {
     // Attributes
-    // pub value: i32,
+    // pub value: Option<i32>,
     // Contents
     pub content: String,
 }
@@ -355,7 +355,7 @@ pub struct SpType {
 pub struct ReferenceType {
     // Attributes
     // pub ref_id: String,
-    // pub compoundref: String,
+    // pub compoundref: Option<String>,
     // pub startline: i32,
     // pub endline: i32,
     // Contents
@@ -367,10 +367,10 @@ pub struct LocationType {
     // Attributes
     pub file: String,
     pub line: i32,
-    pub column: i32,
-    pub declfile: String,
-    pub declline: i32,
-    pub declcolumn: i32,
+    pub column: Option<i32>,
+    pub declfile: Option<String>,
+    pub declline: Option<i32>,
+    pub declcolumn: Option<i32>,
     pub bodyfile: String,
     pub bodystart: i32,
     pub bodyend: i32,
@@ -858,7 +858,7 @@ pub struct DocListType {
 #[derive(Debug, PartialEq)]
 pub struct DocListItemType {
     // Attributes
-    pub value: i32,
+    pub value: Option<i32>,
     // Elements
     pub para: Vec<DocParaType>,
 }
@@ -967,13 +967,13 @@ pub enum DocHeadingTypeItem {
 #[derive(Debug, PartialEq)]
 pub struct DocImageType {
     // Attributes
-    // pub type_: DoxImageKind,
-    // pub name: String,
-    // pub width: String,
-    // pub height: String,
-    // pub alt: String,
-    // pub inline: bool,
-    // pub caption: String,
+    // pub type_: Option<DoxImageKind>,
+    // pub name: Option<String>,
+    // pub width: Option<String>,
+    // pub height: Option<String>,
+    // pub alt: Option<String>,
+    // pub inline: Option<bool>,
+    // pub caption: Option<String>,
     // Contents
     pub content: Vec<DocImageTypeItem>,
 }
@@ -987,10 +987,10 @@ pub enum DocImageTypeItem {
 #[derive(Debug, PartialEq)]
 pub struct DocDotMscType {
     // Attributes
-    // pub name: String,
-    // pub width: String,
-    // pub height: String,
-    // pub caption: String,
+    // pub name: Option<String>,
+    // pub width: Option<String>,
+    // pub height: Option<String>,
+    // pub caption: Option<String>,
     // Contents
     pub content: Vec<DocDotMscTypeItem>,
 }
@@ -1004,9 +1004,9 @@ pub enum DocDotMscTypeItem {
 #[derive(Debug, PartialEq)]
 pub struct DocImageFileType {
     // Attributes
-    // pub name: String,
-    // pub width: String,
-    // pub height: String,
+    // pub name: Option<String>,
+    // pub width: Option<String>,
+    // pub height: Option<String>,
     // Contents
     pub content: Vec<DocImageFileTypeItem>,
 }
@@ -1020,11 +1020,11 @@ pub enum DocImageFileTypeItem {
 #[derive(Debug, PartialEq)]
 pub struct DocPlantumlType {
     // Attributes
-    // pub name: String,
-    // pub width: String,
-    // pub height: String,
-    // pub caption: String,
-    // pub engine: DoxPlantumlEngine,
+    // pub name: Option<String>,
+    // pub width: Option<String>,
+    // pub height: Option<String>,
+    // pub caption: Option<String>,
+    // pub engine: Option<DoxPlantumlEngine>,
     // Contents
     pub content: Vec<DocPlantumlTypeItem>,
 }
@@ -1108,7 +1108,7 @@ pub enum DocParamTypeItem {
 #[derive(Debug, PartialEq)]
 pub struct DocParamName {
     // Attributes
-    // pub direction: DoxParamDir,
+    // pub direction: Option<DoxParamDir>,
     // Contents
     pub content: Vec<DocParamNameItem>,
 }
