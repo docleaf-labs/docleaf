@@ -12,6 +12,7 @@ Welcome to Breathe Plus' documentation!
 
    groups
    program-listings
+   lists
    text-formatting
 
 Class

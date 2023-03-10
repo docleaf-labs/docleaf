@@ -31,15 +31,16 @@ html_static_path = ["_static"]
 
 # -- Options for Breathe
 breathe_projects = {
-    "nutshell": "../../examples/nutshell/xml/",
     "class_methods": "../../examples/class_methods/xml/",
-    "references": "../../examples/references/xml/",
-    "paragraphs": "../../examples/paragraphs/xml/",
-    "functions": "../../examples/functions/xml/",
-    "structs": "../../examples/structs/xml/",
     "enums": "../../examples/enums/xml/",
+    "functions": "../../examples/functions/xml/",
     "groups": "../../examples/groups/xml/",
+    "lists": "../../examples/lists/xml/",
+    "nutshell": "../../examples/nutshell/xml/",
+    "paragraphs": "../../examples/paragraphs/xml/",
     "program-listings": "../../examples/program-listings/xml/",
+    "references": "../../examples/references/xml/",
+    "structs": "../../examples/structs/xml/",
     "text-formatting": "../../examples/text-formatting/xml/",
 }
 
