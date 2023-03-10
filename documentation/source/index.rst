@@ -12,6 +12,7 @@ Welcome to Breathe Plus' documentation!
 
    groups
    program-listings
+   text-formatting
 
 Class
 -----
@@ -37,12 +38,6 @@ Enum
 .. doxygenenum:: ExampleEnum
    :project: enums
 
-
-Text Formatting
----------------
-
-.. doxygenfunction:: example_text_formatting
-   :project: text-formatting
 
 Methods
 -------

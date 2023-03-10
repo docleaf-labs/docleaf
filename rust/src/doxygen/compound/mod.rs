@@ -379,6 +379,9 @@ fn optional_parse_doc_title_cmd_group_item<'b>(
         b"bold" => Ok(Match::Found(DocTitleCmdGroup::Bold(parse_doc_markup_type(
             reader, start_tag,
         )?))),
+        b"computeroutput" => Ok(Match::Found(DocTitleCmdGroup::Computeroutput(
+            parse_doc_markup_type(reader, start_tag)?,
+        ))),
         _ => Ok(Match::NotFound(start_tag)),
     }
 }

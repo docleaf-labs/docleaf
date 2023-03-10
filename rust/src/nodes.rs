@@ -89,6 +89,7 @@ pub enum Node {
     // DescSignaturePunctuation(String),
     DescSignatureSpace,
     Emphasis(Vec<Node>),
+    Literal(Vec<Node>),
     // Index,
     Paragraph(Vec<Node>),
     Reference {
@@ -219,6 +220,9 @@ impl IntoPy<PyObject> for Node {
             */
             Self::Emphasis(nodes) => {
                 node(py, "emphasis", CallAs::Source, Attributes::new(), nodes).into_py(py)
+            }
+            Self::Literal(nodes) => {
+                node(py, "literal", CallAs::Source, Attributes::new(), nodes).into_py(py)
             }
             Self::Paragraph(children) => node(
                 py,

@@ -4,6 +4,8 @@
 
   Some of this sentence has **strong emphasis**.
 
+  The answer is \p x added to \p y
+
   \param arg1 the first arg
   \param arg2 the second arg
 */

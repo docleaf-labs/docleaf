@@ -386,11 +386,13 @@ fn render_doc_title_cmd_group(doc_title_cmd_group: e::DocTitleCmdGroup) -> Node 
         e::DocTitleCmdGroup::Ref(element) => render_doc_ref_text_type(element),
         e::DocTitleCmdGroup::Bold(element) => Node::Bold(render_doc_markup_type(element)),
         e::DocTitleCmdGroup::Emphasis(element) => Node::Emphasis(render_doc_markup_type(element)),
+        e::DocTitleCmdGroup::Computeroutput(element) => {
+            Node::Literal(render_doc_markup_type(element))
+        }
 
         e::DocTitleCmdGroup::S(element)
         | e::DocTitleCmdGroup::Strike(element)
         | e::DocTitleCmdGroup::Underline(element)
-        | e::DocTitleCmdGroup::Computeroutput(element)
         | e::DocTitleCmdGroup::Subscript(element)
         | e::DocTitleCmdGroup::Superscript(element)
         | e::DocTitleCmdGroup::Center(element)

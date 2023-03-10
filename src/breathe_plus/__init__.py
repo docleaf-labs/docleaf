@@ -30,6 +30,7 @@ class NodeManager:
             "emphasis": nodes.emphasis,
             "index": sphinx.addnodes.index,
             "inline": nodes.inline,
+            "literal": nodes.literal,
             "paragraph": nodes.paragraph,
             "reference": nodes.reference,
             "rubric": nodes.rubric,
