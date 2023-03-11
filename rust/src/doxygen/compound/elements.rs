@@ -4,6 +4,10 @@
 //!    generate.py examples/nutshell/xml/compound.xsd rust/src/doxygen/compound/elements.rs
 //!
 
+mod generated {
+    include!(concat!(env!("OUT_DIR"), "/xsds/compound.rs"));
+}
+
 #[derive(Debug, PartialEq)]
 pub struct DoxygenType {
     // Attributes
