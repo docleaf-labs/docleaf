@@ -48,6 +48,7 @@ dependencies = [
  "env_logger",
  "insta",
  "pretty_assertions",
+ "proc-macro2",
  "pyo3",
  "quick-xml",
  "quote",
