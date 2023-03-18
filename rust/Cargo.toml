@@ -29,8 +29,4 @@ pretty_assertions = "1.3.0"
 
 [build-dependencies]
 anyhow = "1.0.65"
-heck = "0.4.1"
-proc-macro2 = "1.0.51"
-quote = "1.0.23"
-roxmltree = "0.18.0"
-syn = "1.0.109"
+xsd-codegen = { path = "./crates/xsd-codegen" }

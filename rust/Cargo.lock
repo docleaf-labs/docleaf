@@ -46,20 +46,17 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "env_logger",
- "heck",
  "insta",
  "pretty_assertions",
- "proc-macro2",
  "pyo3",
  "quick-xml",
- "quote",
  "roxmltree",
  "serde",
  "strum",
- "syn",
  "tracing",
  "tracing-subscriber",
  "vec1",
+ "xsd-codegen",
 ]
 
 [[package]]
@@ -744,6 +741,18 @@ name = "xmlparser"
 version = "0.13.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4d25c75bf9ea12c4040a97f829154768bbbce366287e2dc044af160cd79a13fd"
+
+[[package]]
+name = "xsd-codegen"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "heck",
+ "proc-macro2",
+ "quote",
+ "roxmltree",
+ "syn",
+]
 
 [[package]]
 name = "yaml-rust"

@@ -1,0 +1,14 @@
+[package]
+name = "xsd-codegen"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0.65"
+heck = "0.4.1"
+proc-macro2 = "1.0.51"
+quote = "1.0.23"
+roxmltree = "0.18.0"
+syn = "1.0.109"
