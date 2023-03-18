@@ -1,5 +1,7 @@
 fn main() -> anyhow::Result<()> {
-    xsd_codegen::generate_mod("compound", &std::path::PathBuf::from("xsd/compound.xsd"))?;
+    xsd_codegen::Builder::new(std::path::PathBuf::from("xsd/compound.xsd"))
+        .module("compound")
+        .generate()?;
 
     Ok(())
 }

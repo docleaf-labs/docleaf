@@ -1,5 +1,5 @@
 use std::collections::HashSet;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use anyhow::Context;
 use heck::ToUpperCamelCase;
@@ -379,7 +379,7 @@ fn handle_group(element: rx::Node) -> anyhow::Result<TokenStream> {
     })
 }
 
-pub fn generate_mod(mod_name: &str, xsd_path: &Path) -> anyhow::Result<()> {
+fn generate_mod(mod_name: &str, xsd_path: &Path) -> anyhow::Result<()> {
     let xml_str = std::fs::read_to_string(&xsd_path)?;
     let doc = rx::Document::parse(&xml_str)?;
 
@@ -419,4 +419,35 @@ pub fn generate_mod(mod_name: &str, xsd_path: &Path) -> anyhow::Result<()> {
     }
 
     Ok(())
+}
+
+pub struct Builder {
+    path: PathBuf,
+    module: Option<String>,
+}
+
+impl Builder {
+    pub fn new(path: PathBuf) -> Self {
+        Self { path, module: None }
+    }
+
+    pub fn module(mut self, name: &str) -> Self {
+        self.module = Some(name.to_string());
+        self
+    }
+
+    pub fn generate(self) -> anyhow::Result<()> {
+        let module = match self.module {
+            Some(name) => name,
+            None => self
+                .path
+                .file_stem()
+                .context("Failed to extract module name from xsd path")?
+                .to_string_lossy()
+                .to_owned()
+                .to_string(),
+        };
+
+        generate_mod(&module, &self.path)
+    }
 }
