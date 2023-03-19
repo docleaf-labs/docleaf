@@ -7,6 +7,13 @@ use proc_macro2::{Ident, TokenStream};
 use quote::{quote, ToTokens};
 use roxmltree as rx;
 
+trait ToTokenStream {
+    fn to_names_stream(&self) -> TokenStream;
+    fn to_fields_stream(&self) -> TokenStream;
+    fn to_init_stream(&self) -> TokenStream;
+    fn to_unpack_stream(&self) -> TokenStream;
+}
+
 fn id(str: &str) -> Ident {
     quote::format_ident!("{}", str)
 }
@@ -55,26 +62,76 @@ fn is_simple_content(element: &rx::Node) -> bool {
         .is_some()
 }
 
-fn create_struct(element: rx::Node) -> anyhow::Result<TokenStream> {
-    let name = id(&convert_type(
-        element
-            .attribute("name")
+fn create_struct(node: rx::Node) -> anyhow::Result<TokenStream> {
+    let type_name = id(&convert_type(
+        node.attribute("name")
             .context("Failed to get name attribute")?,
     ));
 
     // Skip DocEmptyType as it represents nothing
-    if name == "DocEmptyType" {
+    if type_name == "DocEmptyType" {
         return Ok(TokenStream::new());
     }
 
-    let attributes = get_attribute_fields(&element);
+    let attributes = get_attribute_fields(&node);
+    let attribute_fields = attributes.to_fields_stream();
+    let attribute_field_names = attributes.to_names_stream();
+    let attribute_inits = attributes.to_init_stream();
+    let attribute_unpacks = attributes.to_unpack_stream();
 
-    let element_fields = get_element_fields(&element)?;
+    let elements = get_elements(&node)?;
+    let element_fields = elements.to_fields_stream();
+    let element_field_names = elements.to_names_stream();
+    let element_inits = elements.to_init_stream();
+    let element_unpacks = elements.to_unpack_stream();
 
     Ok(quote! {
-        struct #name {
-            #attributes
+        struct #type_name {
+            #attribute_fields
             #element_fields
+        }
+
+        impl #type_name {
+            fn parse(
+                reader: &mut Reader<&[u8]>,
+                start_tag: BytesStart<'_>,
+            ) -> anyhow::Result<Self> {
+                #attribute_inits
+                #element_inits
+
+                loop {
+                    match reader.read_event() {
+                        Ok(Event::Start(tag)) => match tag.name().as_ref() {
+                            /*
+                            b"compoundname" => {
+                                compound_name = xml::parse_text(reader)?;
+                            }
+                            b"briefdescription" => {
+                                brief_description = Some(parse_description(reader, tag)?);
+                            }
+                            b"detaileddescription" => {
+                                detailed_description = Some(parse_description(reader, tag)?);
+                            }
+                            b"sectiondef" => {
+                                section_defs.push(parse_section_def(reader, tag)?);
+                            }
+                            _ => {}
+                            */
+                        },
+                        Ok(Event::End(tag)) => {
+                            if tag.name() == start_tag.name() {
+                                #attribute_unpacks
+                                #element_unpacks
+                                return Ok(#type_name {
+                                    #attribute_field_names
+                                    #element_field_names
+                                });
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+            }
         }
     })
 }
@@ -128,10 +185,12 @@ fn create_mixed_content(element: rx::Node) -> anyhow::Result<TokenStream> {
         }
     }
 
+    let attributes_token_stream = attributes.to_fields_stream();
+
     if entries.is_empty() {
         Ok(quote! {
             struct #name_id {
-                #attributes
+                #attributes_token_stream
                 pub content: String,
             }
         })
@@ -139,7 +198,7 @@ fn create_mixed_content(element: rx::Node) -> anyhow::Result<TokenStream> {
         let item_id = id(&format!("{name}Item"));
         Ok(quote! {
             struct #name_id {
-                #attributes
+                #attributes_token_stream
                 pub content: Vec<#item_id>,
             }
 
@@ -173,10 +232,11 @@ fn create_simple_content(element: rx::Node) -> anyhow::Result<TokenStream> {
     let content_type = id(&convert_type(content_type));
 
     let attributes = get_attribute_fields(&extension);
+    let attributes_token_stream = attributes.to_fields_stream();
 
     Ok(quote! {
         struct #name {
-            #attributes
+            #attributes_token_stream
             pub content: #content_type,
         }
     })
@@ -201,34 +261,235 @@ fn get_wrapper(element: &rx::Node) -> anyhow::Result<Option<Wrapper>> {
     }
 }
 
-fn get_element_fields(element: &rx::Node) -> anyhow::Result<TokenStream> {
-    let mut stream = TokenStream::new();
+struct Element {
+    name: Ident,
+    wrapper: Option<Wrapper>,
+    type_: TokenStream,
+}
+
+impl Element {
+    fn to_field(&self) -> TokenStream {
+        let name = self.name.clone();
+        let type_ = self.type_.clone();
+
+        match self.wrapper {
+            Some(Wrapper::Vec) => {
+                quote! { #name: Vec<#type_> }
+            }
+            Some(Wrapper::Vec1) => {
+                quote! { #name: vec1::Vec1<#type_> }
+            }
+            Some(Wrapper::Option) => {
+                quote! { #name: Option<#type_> }
+            }
+            None => {
+                quote! { #name: #type_ }
+            }
+        }
+    }
+
+    fn to_init(&self) -> TokenStream {
+        let name = self.name.clone();
+        match self.wrapper {
+            Some(Wrapper::Vec) => {
+                quote! { let mut #name = Vec::new() }
+            }
+            Some(Wrapper::Vec1) => {
+                // Ordinary Vec but we'll check for it being non-empty before when parsing the
+                // xml element
+                quote! { let mut #name = Vec::new() }
+            }
+            Some(Wrapper::Option) => {
+                quote! { let mut #name = None }
+            }
+            None => {
+                // None but we'll check for a value before when parsing the
+                // xml element
+                quote! { let mut #name = None }
+            }
+        }
+    }
+
+    fn to_unpack(&self) -> Option<TokenStream> {
+        let name = self.name.clone();
+
+        match self.wrapper {
+            Some(Wrapper::Vec) => None,
+            Some(Wrapper::Vec1) => Some(
+                quote! { let #name = vec1::Vec1::try_from_vec(#name).context("Vec was empty")?; },
+            ),
+            Some(Wrapper::Option) => None,
+            None => Some(quote! { let #name = #name.context("Failed to find value")?; }),
+        }
+    }
+}
+
+impl ToTokenStream for Vec<Element> {
+    fn to_names_stream(&self) -> TokenStream {
+        if self.is_empty() {
+            TokenStream::new()
+        } else {
+            let entries = self.iter().map(|element| element.name.clone());
+            // Include trailing comma here as we know we have fields
+            quote! { #(#entries),*, }
+        }
+    }
+
+    fn to_fields_stream(&self) -> TokenStream {
+        if self.is_empty() {
+            TokenStream::new()
+        } else {
+            let entries = self.iter().map(Element::to_field);
+            // Include trailing comma here as we know we have fields
+            quote! { #(#entries),*, }
+        }
+    }
+
+    fn to_init_stream(&self) -> TokenStream {
+        if self.is_empty() {
+            TokenStream::new()
+        } else {
+            let entries = self.iter().map(Element::to_init);
+            // Include trailing semi-colon here as we know we have fields
+            quote! { #(#entries);*; }
+        }
+    }
+
+    fn to_unpack_stream(&self) -> TokenStream {
+        if self.is_empty() {
+            TokenStream::new()
+        } else {
+            let entries = self.iter().flat_map(Element::to_unpack);
+            // Include trailing semi-colon here as we know we have fields
+            quote! { #(#entries);*; }
+        }
+    }
+}
+
+struct Attribute {
+    name: Ident,
+    type_: TokenStream,
+    optional: bool,
+}
+
+impl Attribute {
+    fn to_field(&self) -> TokenStream {
+        let name = self.name.clone();
+        let type_ = self.type_.clone();
+
+        if self.optional {
+            quote! { #name: Option<#type_> }
+        } else {
+            quote! { #name: #type_ }
+        }
+    }
+
+    fn to_init(&self) -> TokenStream {
+        let name = self.name.clone();
+        quote! { let mut #name = None }
+    }
+
+    fn to_unpack(&self) -> Option<TokenStream> {
+        let name = self.name.clone();
+
+        if self.optional {
+            None
+        } else {
+            Some(quote! { let #name = #name.context("Failed to find value")?; })
+        }
+    }
+}
+
+impl ToTokenStream for Vec<Attribute> {
+    fn to_names_stream(&self) -> TokenStream {
+        if self.is_empty() {
+            TokenStream::new()
+        } else {
+            let entries = self.iter().map(|attr| attr.name.clone());
+            // Include trailing comma here as we know we have fields
+            quote! { #(#entries),*, }
+        }
+    }
+
+    fn to_fields_stream(&self) -> TokenStream {
+        if self.is_empty() {
+            TokenStream::new()
+        } else {
+            let entries = self.iter().map(Attribute::to_field);
+            // Include trailing comma here as we know we have fields
+            quote! { #(#entries),*, }
+        }
+    }
+
+    fn to_init_stream(&self) -> TokenStream {
+        if self.is_empty() {
+            TokenStream::new()
+        } else {
+            let entries = self.iter().map(Attribute::to_init);
+            // Include trailing semi-colon here as we know we have fields
+            quote! { #(#entries);*; }
+        }
+    }
+
+    fn to_unpack_stream(&self) -> TokenStream {
+        if self.is_empty() {
+            TokenStream::new()
+        } else {
+            let entries = self.iter().flat_map(Attribute::to_unpack);
+            // Include trailing semi-colon here as we know we have fields
+            quote! { #(#entries);*; }
+        }
+    }
+}
+
+fn get_elements(element: &rx::Node) -> anyhow::Result<Vec<Element>> {
+    let mut elements = Vec::new();
 
     for child in element.children() {
         match child.tag_name().name() {
-            "sequence" => stream.extend(get_element_fields(&child)?),
-            "choice" => stream.extend(get_element_fields(&child)?),
+            "sequence" => elements.extend(get_elements(&child)?),
+            "choice" => elements.extend(get_elements(&child)?),
             "element" => {
                 if let Some(name) = child.attribute("name") {
                     let name = id(&convert_field_name(name));
                     let type_ = id(&convert_type(child.attribute("type").unwrap_or("String")));
+                    elements.push(Element {
+                        name,
+                        type_: quote! { #type_ },
+                        wrapper: get_wrapper(&child)?,
+                    })
+
+                    /*
                     match get_wrapper(&child)? {
-                        Some(Wrapper::Vec) => stream.extend(quote! { #name: Vec<#type_>, }),
-                        Some(Wrapper::Vec1) => stream.extend(quote! { #name: vec1::Vec1<#type_>, }),
-                        Some(Wrapper::Option) => stream.extend(quote! { #name: Option<#type_>, }),
-                        None => stream.extend(quote! { #name: #type_, }),
+                        Some(Wrapper::Vec) => elements.push(Element {
+                            name,
+                            type_: quote! { Vec<#type_> },
+                        }),
+                        Some(Wrapper::Vec1) => elements.push(Element {
+                            name,
+                            type_: quote! { vec1::Vec1<#type_>, },
+                        }),
+                        Some(Wrapper::Option) => elements.push(Element {
+                            name,
+                            type_: quote! { Option<#type_>, },
+                        }),
+                        None => elements.push(Element {
+                            name,
+                            type_: quote! { #type_ },
+                        }),
                     }
+                    */
                 }
             }
             _ => {}
         }
     }
 
-    Ok(stream)
+    Ok(elements)
 }
 
-fn get_attribute_fields(element: &rx::Node) -> TokenStream {
-    let entries = element
+fn get_attribute_fields(element: &rx::Node) -> Vec<Attribute> {
+    element
         .children()
         .filter(|child| child.tag_name().name() == "attribute")
         .flat_map(
@@ -237,24 +498,16 @@ fn get_attribute_fields(element: &rx::Node) -> TokenStream {
                     let name = id(&convert_field_name(name));
                     let type_ = id(&convert_type(type_));
 
-                    if child.attribute("use") == Some("optional") {
-                        Some(quote! {
-                            #name: #type_,
-                        })
-                    } else {
-                        Some(quote! {
-                            #name: Option<#type_>,
-                        })
-                    }
+                    Some(Attribute {
+                        name,
+                        type_: quote! { #type_ },
+                        optional: child.attribute("use") == Some("optional"),
+                    })
                 }
                 _ => None,
             },
         )
-        .collect::<Vec<_>>();
-
-    quote! {
-        #(#entries)*
-    }
+        .collect::<Vec<_>>()
 }
 
 fn create_restriction(name: &str, element: rx::Node) -> anyhow::Result<TokenStream> {
@@ -301,8 +554,6 @@ fn handle_simple_type(element: rx::Node) -> anyhow::Result<TokenStream> {
     let name = element
         .attribute("name")
         .context("Failed to get name for simple type")?;
-
-    println!("simple type {}", name);
 
     for child in element.children() {
         match child.tag_name().name() {
@@ -379,7 +630,12 @@ fn handle_group(element: rx::Node) -> anyhow::Result<TokenStream> {
     })
 }
 
-fn generate_mod(mod_name: &str, xsd_path: &Path) -> anyhow::Result<()> {
+fn generate_mod(
+    root_tag: &str,
+    root_type: &str,
+    mod_name: &str,
+    xsd_path: &Path,
+) -> anyhow::Result<()> {
     let xml_str = std::fs::read_to_string(&xsd_path)?;
     let doc = rx::Document::parse(&xml_str)?;
 
@@ -399,8 +655,35 @@ fn generate_mod(mod_name: &str, xsd_path: &Path) -> anyhow::Result<()> {
         }
     }
 
+    let root_tag_literal = proc_macro2::Literal::byte_string(root_tag.as_bytes());
+    let root_type = id(root_type);
+
     let file_ast = quote! {
         #[allow(dead_code)]
+        use anyhow::Context;
+        use quick_xml::events::{BytesStart, Event};
+        use quick_xml::reader::Reader;
+
+        pub fn parse(xml: &str) -> anyhow::Result<#root_type> {
+            let mut reader = Reader::from_str(xml);
+
+            loop {
+                match reader.read_event() {
+                    Err(e) => panic!("Error at position {}: {:?}", reader.buffer_position(), e),
+
+                    Ok(Event::Eof) => {}
+
+                    Ok(Event::Start(tag)) => {
+                        if let #root_tag_literal = tag.name().as_ref() {
+                            return #root_type::parse(&mut reader, tag)
+                        }
+                    }
+
+                    _ => (),
+                }
+            }
+        }
+
         #nodes
     };
 
@@ -422,13 +705,20 @@ fn generate_mod(mod_name: &str, xsd_path: &Path) -> anyhow::Result<()> {
 }
 
 pub struct Builder {
+    root_tag: String,
+    root_type: String,
     path: PathBuf,
     module: Option<String>,
 }
 
 impl Builder {
-    pub fn new(path: PathBuf) -> Self {
-        Self { path, module: None }
+    pub fn new(path: PathBuf, root_tag: String, root_type: String) -> Self {
+        Self {
+            path,
+            root_tag,
+            root_type,
+            module: None,
+        }
     }
 
     pub fn module(mut self, name: &str) -> Self {
@@ -448,6 +738,6 @@ impl Builder {
                 .to_string(),
         };
 
-        generate_mod(&module, &self.path)
+        generate_mod(&self.root_tag, &self.root_type, &module, &self.path)
     }
 }

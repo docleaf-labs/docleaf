@@ -8,17 +8,21 @@ use vec1::Vec1;
 use crate::doxygen::compound::elements::*;
 use crate::xml;
 
-fn log_unhandled(fn_name: &str, tag_name: &[u8]) {
-    tracing::debug!(
-        "Unhandled {} in {fn_name}",
-        String::from_utf8_lossy(tag_name)
-    );
+mod generated {
+    include!(concat!(env!("OUT_DIR"), "/xsds/compound.rs"));
 }
 
 pub fn parse_file(compound_xml_path: &std::path::Path) -> anyhow::Result<DoxygenType> {
     tracing::info!("Reading {}", compound_xml_path.display());
     let xml = std::fs::read_to_string(compound_xml_path)?;
-    parse(&xml)
+    generated::parse(&xml)
+}
+
+fn log_unhandled(fn_name: &str, tag_name: &[u8]) {
+    tracing::debug!(
+        "Unhandled {} in {fn_name}",
+        String::from_utf8_lossy(tag_name)
+    );
 }
 
 fn parse(xml: &str) -> anyhow::Result<DoxygenType> {
