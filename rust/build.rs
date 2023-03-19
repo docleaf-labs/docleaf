@@ -4,6 +4,16 @@ fn main() -> anyhow::Result<()> {
         "doxygen".to_string(),
         "DoxygenType".to_string(),
     )
+    .rename_enum_variants(vec![(
+        "DoxOlType".to_string(),
+        vec![
+            ("1".to_string(), "Numeric".to_string()),
+            ("a".to_string(), "LowerA".to_string()),
+            ("A".to_string(), "UpperA".to_string()),
+            ("i".to_string(), "LowerI".to_string()),
+            ("I".to_string(), "UpperI".to_string()),
+        ],
+    )])
     .generate()?;
 
     Ok(())

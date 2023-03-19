@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
-use anyhow::Context;
+use anyhow::Context as AnyhowContext;
 use heck::ToUpperCamelCase;
 use proc_macro2::{Ident, TokenStream};
 use quote::{quote, ToTokens};
@@ -35,12 +35,20 @@ fn convert_type(str: &str) -> String {
         "xsd:string" => String::from("String"),
         "xsd:integer" => String::from("i32"),
         "DoxBool" => String::from("bool"),
-        "DoxOlType" => String::from("String"),
         _ => String::from(str.to_upper_camel_case()),
     }
 }
 
-fn convert_enum_name(name: &str) -> String {
+fn convert_enum_name(name: &str, renames: Option<&Vec<(String, String)>>) -> String {
+    if let Some(renames) = renames {
+        if let Some(rename_to) = renames
+            .iter()
+            .find_map(|(from, to)| if from == name { Some(to) } else { None })
+        {
+            return rename_to.to_string();
+        }
+    }
+
     let name = name.replace("#", "Sharp");
     let name = name.replace("+", "Plus");
     name.to_upper_camel_case()
@@ -77,7 +85,7 @@ fn create_struct(node: rx::Node) -> anyhow::Result<TokenStream> {
     let attribute_fields = attributes.to_fields_stream();
     let attribute_field_names = attributes.to_names_stream();
     let attribute_inits = attributes.to_init_stream();
-    let attribute_unpacks = attributes.to_unpack_stream();
+    // let attribute_unpacks = attributes.to_unpack_stream();
 
     let elements = get_elements(&node)?;
     let element_fields = elements.to_fields_stream();
@@ -120,7 +128,6 @@ fn create_struct(node: rx::Node) -> anyhow::Result<TokenStream> {
                         },
                         Ok(Event::End(tag)) => {
                             if tag.name() == start_tag.name() {
-                                #attribute_unpacks
                                 #element_unpacks
                                 return Ok(#type_name {
                                     #attribute_field_names
@@ -366,16 +373,48 @@ impl ToTokenStream for Vec<Element> {
     }
 }
 
+#[derive(Debug, Clone)]
+enum Type {
+    Bool,
+    Integer,
+    String,
+    Enum(String),
+}
+
+impl Type {
+    fn from_str(str: &str) -> Self {
+        match str {
+            "DoxBool" => Self::Bool,
+            "xsd:integer" => Self::Integer,
+            "xsd:string" => Self::String,
+            _ => Self::Enum(str.to_string()),
+        }
+    }
+
+    fn to_token_stream(&self) -> TokenStream {
+        match self {
+            Self::Bool => quote! { bool },
+            Self::Integer => quote! { i32 },
+            Self::String => quote! { String },
+            Self::Enum(name) => {
+                let name = id(&name);
+                quote! { #name }
+            }
+        }
+    }
+}
+
 struct Attribute {
-    name: Ident,
-    type_: TokenStream,
+    name: String,
+    safe_name: String,
+    type_: Type,
     optional: bool,
 }
 
 impl Attribute {
     fn to_field(&self) -> TokenStream {
-        let name = self.name.clone();
-        let type_ = self.type_.clone();
+        let name = id(&self.safe_name);
+        let type_ = self.type_.to_token_stream();
 
         if self.optional {
             quote! { #name: Option<#type_> }
@@ -385,12 +424,62 @@ impl Attribute {
     }
 
     fn to_init(&self) -> TokenStream {
-        let name = self.name.clone();
-        quote! { let mut #name = None }
+        let field_name = id(&self.safe_name);
+        let attr_name = proc_macro2::Literal::byte_string(self.name.as_bytes());
+        // TODO: Move these extra parse code into xml module helpers rather than having it inline here
+        match self.type_ {
+            Type::Bool => {
+                if self.optional {
+                    quote! {
+                        let #field_name = xml::get_optional_attribute_string(#attr_name, &start_tag)?
+                                                .map(|str| str.parse::<bool>()).transpose()?
+                    }
+                } else {
+                    quote! {
+                        let #field_name = xml::get_attribute_string(#attr_name, &start_tag)?.parse::<bool>()?
+                    }
+                }
+            }
+            Type::Integer => {
+                if self.optional {
+                    quote! {
+                        let #field_name = xml::get_optional_attribute_string(#attr_name, &start_tag)?
+                                                .map(|str| str.parse::<i32>()).transpose()?
+                    }
+                } else {
+                    quote! {
+                        let #field_name = xml::get_attribute_string(#attr_name, &start_tag)?.parse::<i32>()?
+                    }
+                }
+            }
+            Type::String => {
+                if self.optional {
+                    quote! {
+                        let #field_name = xml::get_optional_attribute_string(#attr_name, &start_tag)?
+                    }
+                } else {
+                    quote! {
+                        let #field_name = xml::get_attribute_string(#attr_name, &start_tag)?
+                    }
+                }
+            }
+            Type::Enum(ref enum_name) => {
+                let enum_name_id = id(enum_name);
+                if self.optional {
+                    quote! {
+                        let #field_name = xml::get_optional_attribute_enum::<#enum_name_id>(#attr_name, &start_tag)?
+                    }
+                } else {
+                    quote! {
+                        let #field_name = xml::get_attribute_enum::<#enum_name_id>(#attr_name, &start_tag)?
+                    }
+                }
+            }
+        }
     }
 
     fn to_unpack(&self) -> Option<TokenStream> {
-        let name = self.name.clone();
+        let name = id(&self.safe_name);
 
         if self.optional {
             None
@@ -405,7 +494,7 @@ impl ToTokenStream for Vec<Attribute> {
         if self.is_empty() {
             TokenStream::new()
         } else {
-            let entries = self.iter().map(|attr| attr.name.clone());
+            let entries = self.iter().map(|attr| id(&attr.safe_name));
             // Include trailing comma here as we know we have fields
             quote! { #(#entries),*, }
         }
@@ -494,44 +583,59 @@ fn get_attribute_fields(element: &rx::Node) -> Vec<Attribute> {
         .filter(|child| child.tag_name().name() == "attribute")
         .flat_map(
             |child| match (child.attribute("name"), child.attribute("type")) {
-                (Some(name), Some(type_)) => {
-                    let name = id(&convert_field_name(name));
-                    let type_ = id(&convert_type(type_));
-
-                    Some(Attribute {
-                        name,
-                        type_: quote! { #type_ },
-                        optional: child.attribute("use") == Some("optional"),
-                    })
-                }
+                (Some(name), Some(type_)) => Some(Attribute {
+                    name: name.to_string(),
+                    safe_name: convert_field_name(name),
+                    type_: Type::from_str(type_),
+                    optional: child.attribute("use") == Some("optional"),
+                }),
                 _ => None,
             },
         )
         .collect::<Vec<_>>()
 }
 
-fn create_restriction(name: &str, element: rx::Node) -> anyhow::Result<TokenStream> {
+fn create_restriction(
+    name: &str,
+    node: rx::Node,
+    context: &Context,
+) -> anyhow::Result<TokenStream> {
     let name_id = id(&convert_type(name));
 
     if name == "DoxVersionNumber" || name == "DoxCharRange" {
         return Ok(quote! { type #name_id = String; });
     }
 
-    if name == "DoxOlType" || name == "DoxBool" {
+    if name == "DoxBool" {
         return Ok(TokenStream::new());
     }
 
     let mut entries = Vec::new();
-    for child in element.children() {
+    for child in node.children() {
         if child.tag_name().name() == "enumeration" {
             let entry_name = child.attribute("value").context("Failed to get value")?;
-            let entry_name = convert_enum_name(entry_name);
+
+            let renames = context
+                .enum_variant_renames
+                .iter()
+                .find_map(
+                    |(target, renames)| {
+                        if target == name {
+                            Some(renames)
+                        } else {
+                            None
+                        }
+                    },
+                );
+
+            let entry_name = convert_enum_name(entry_name, renames);
 
             entries.push(id(&entry_name));
         }
     }
 
     Ok(quote! {
+        #[derive(Debug, strum::EnumString, Clone)]
         enum #name_id {
             #(#entries),*
         }
@@ -548,16 +652,16 @@ fn handle_complex_type(element: rx::Node) -> anyhow::Result<TokenStream> {
     }
 }
 
-fn handle_simple_type(element: rx::Node) -> anyhow::Result<TokenStream> {
+fn handle_simple_type(node: rx::Node, context: &Context) -> anyhow::Result<TokenStream> {
     let mut stream = TokenStream::new();
 
-    let name = element
+    let name = node
         .attribute("name")
         .context("Failed to get name for simple type")?;
 
-    for child in element.children() {
+    for child in node.children() {
         match child.tag_name().name() {
-            "restriction" => stream.extend(create_restriction(name, child)),
+            "restriction" => stream.extend(create_restriction(name, child, context)),
             _ => {}
         }
     }
@@ -630,7 +734,12 @@ fn handle_group(element: rx::Node) -> anyhow::Result<TokenStream> {
     })
 }
 
+struct Context {
+    enum_variant_renames: EnumVariantRenames,
+}
+
 fn generate_mod(
+    context: Context,
     root_tag: &str,
     root_type: &str,
     mod_name: &str,
@@ -649,7 +758,7 @@ fn generate_mod(
     for child in schema.children() {
         match child.tag_name().name() {
             "complexType" => nodes.extend(handle_complex_type(child)?),
-            "simpleType" => nodes.extend(handle_simple_type(child)?),
+            "simpleType" => nodes.extend(handle_simple_type(child, &context)?),
             "group" => nodes.extend(handle_group(child)?),
             _ => {}
         }
@@ -663,6 +772,8 @@ fn generate_mod(
         use anyhow::Context;
         use quick_xml::events::{BytesStart, Event};
         use quick_xml::reader::Reader;
+
+        use crate::xml;
 
         pub fn parse(xml: &str) -> anyhow::Result<#root_type> {
             let mut reader = Reader::from_str(xml);
@@ -704,11 +815,14 @@ fn generate_mod(
     Ok(())
 }
 
+type EnumVariantRenames = Vec<(String, Vec<(String, String)>)>;
+
 pub struct Builder {
     root_tag: String,
     root_type: String,
     path: PathBuf,
     module: Option<String>,
+    enum_variant_renames: Option<EnumVariantRenames>,
 }
 
 impl Builder {
@@ -718,11 +832,17 @@ impl Builder {
             root_tag,
             root_type,
             module: None,
+            enum_variant_renames: None,
         }
     }
 
     pub fn module(mut self, name: &str) -> Self {
         self.module = Some(name.to_string());
+        self
+    }
+
+    pub fn rename_enum_variants(mut self, enum_variant_renames: EnumVariantRenames) -> Self {
+        self.enum_variant_renames = Some(enum_variant_renames);
         self
     }
 
@@ -738,6 +858,16 @@ impl Builder {
                 .to_string(),
         };
 
-        generate_mod(&self.root_tag, &self.root_type, &module, &self.path)
+        let context = Context {
+            enum_variant_renames: self.enum_variant_renames.unwrap_or_default(),
+        };
+
+        generate_mod(
+            context,
+            &self.root_tag,
+            &self.root_type,
+            &module,
+            &self.path,
+        )
     }
 }
