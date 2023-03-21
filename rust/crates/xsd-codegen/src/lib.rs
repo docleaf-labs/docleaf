@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use anyhow::Context as AnyhowContext;
 use heck::ToUpperCamelCase;
 use proc_macro2::{Ident, TokenStream};
-use quote::{quote, ToTokens};
+use quote::{format_ident, quote, ToTokens};
 use roxmltree as rx;
 
 trait ToTokenStream {
@@ -12,10 +12,11 @@ trait ToTokenStream {
     fn to_fields_stream(&self) -> TokenStream;
     fn to_init_stream(&self) -> TokenStream;
     fn to_unpack_stream(&self) -> TokenStream;
+    fn to_matches_stream(&self) -> TokenStream;
 }
 
 fn id(str: &str) -> Ident {
-    quote::format_ident!("{}", str)
+    format_ident!("{}", str)
 }
 
 fn convert_field_name(str: &str) -> String {
@@ -30,223 +31,66 @@ fn convert_field_name(str: &str) -> String {
     }
 }
 
-fn convert_type(str: &str) -> String {
-    match str {
-        "xsd:string" => String::from("String"),
-        "xsd:integer" => String::from("i32"),
-        "DoxBool" => String::from("bool"),
-        _ => String::from(str.to_upper_camel_case()),
-    }
+#[derive(Debug, Clone, PartialEq)]
+enum Type {
+    Integer,
+    String,
+    Enum(String),
 }
 
-fn convert_enum_name(name: &str, renames: Option<&Vec<(String, String)>>) -> String {
-    if let Some(renames) = renames {
-        if let Some(rename_to) = renames
-            .iter()
-            .find_map(|(from, to)| if from == name { Some(to) } else { None })
-        {
-            return rename_to.to_string();
+impl Type {
+    fn from_str(str: &str) -> Self {
+        match str {
+            "xsd:integer" => Self::Integer,
+            "xsd:string" => Self::String,
+            _ => Self::Enum(str.to_string()),
         }
     }
 
-    let name = name.replace("#", "Sharp");
-    let name = name.replace("+", "Plus");
-    name.to_upper_camel_case()
-}
-
-fn is_mixed_content(element: &rx::Node) -> bool {
-    let mixed_exceptions = vec![Some("enumvalueType")];
-    if mixed_exceptions.contains(&element.attribute("name")) {
-        false
-    } else {
-        element.attribute("mixed").is_some()
-    }
-}
-
-fn is_simple_content(element: &rx::Node) -> bool {
-    element
-        .children()
-        .find(|child| child.tag_name().name() == "simpleContent")
-        .is_some()
-}
-
-fn create_struct(node: rx::Node) -> anyhow::Result<TokenStream> {
-    let type_name = id(&convert_type(
-        node.attribute("name")
-            .context("Failed to get name attribute")?,
-    ));
-
-    // Skip DocEmptyType as it represents nothing
-    if type_name == "DocEmptyType" {
-        return Ok(TokenStream::new());
-    }
-
-    let attributes = get_attribute_fields(&node);
-    let attribute_fields = attributes.to_fields_stream();
-    let attribute_field_names = attributes.to_names_stream();
-    let attribute_inits = attributes.to_init_stream();
-    // let attribute_unpacks = attributes.to_unpack_stream();
-
-    let elements = get_elements(&node)?;
-    let element_fields = elements.to_fields_stream();
-    let element_field_names = elements.to_names_stream();
-    let element_inits = elements.to_init_stream();
-    let element_unpacks = elements.to_unpack_stream();
-
-    Ok(quote! {
-        struct #type_name {
-            #attribute_fields
-            #element_fields
-        }
-
-        impl #type_name {
-            fn parse(
-                reader: &mut Reader<&[u8]>,
-                start_tag: BytesStart<'_>,
-            ) -> anyhow::Result<Self> {
-                #attribute_inits
-                #element_inits
-
-                loop {
-                    match reader.read_event() {
-                        Ok(Event::Start(tag)) => match tag.name().as_ref() {
-                            /*
-                            b"compoundname" => {
-                                compound_name = xml::parse_text(reader)?;
-                            }
-                            b"briefdescription" => {
-                                brief_description = Some(parse_description(reader, tag)?);
-                            }
-                            b"detaileddescription" => {
-                                detailed_description = Some(parse_description(reader, tag)?);
-                            }
-                            b"sectiondef" => {
-                                section_defs.push(parse_section_def(reader, tag)?);
-                            }
-                            _ => {}
-                            */
-                        },
-                        Ok(Event::End(tag)) => {
-                            if tag.name() == start_tag.name() {
-                                #element_unpacks
-                                return Ok(#type_name {
-                                    #attribute_field_names
-                                    #element_field_names
-                                });
-                            }
-                        }
-                        _ => {}
-                    }
-                }
+    fn to_token_stream(&self) -> TokenStream {
+        match self {
+            Self::Integer => quote! { i32 },
+            Self::String => quote! { String },
+            Self::Enum(name) => {
+                let name = id(&name);
+                quote! { #name }
             }
-        }
-    })
-}
-
-fn create_mixed_content(element: rx::Node) -> anyhow::Result<TokenStream> {
-    let name = convert_type(
-        element
-            .attribute("name")
-            .context("Failed to get name attribute")?,
-    );
-
-    let name_id = id(&name);
-
-    let attributes = get_attribute_fields(&element);
-
-    let mut entries = Vec::new();
-
-    for child in element.children() {
-        match child.tag_name().name() {
-            "sequence" | "choice" => {
-                let mut enum_entries = child
-                    .children()
-                    .flat_map(
-                        |child| match (child.attribute("name"), child.attribute("type")) {
-                            (Some(name), Some(type_)) => {
-                                let name = id(&convert_field_name(name));
-                                let type_ = id(&convert_type(type_));
-
-                                Some(quote! {
-                                    #name(#type_),
-                                })
-                            }
-                            _ => None,
-                        },
-                    )
-                    .collect::<Vec<_>>();
-
-                enum_entries.push(quote! { Text(String) });
-                entries.append(&mut enum_entries)
-            }
-            "group" => {
-                if let Some(ref_) = child.attribute("ref") {
-                    let type_name = convert_type(ref_);
-                    entries.push(quote! {
-                        #type_name(#type_name),
-                        Text(String),
-                    })
-                }
-            }
-            _ => {}
         }
     }
 
-    let attributes_token_stream = attributes.to_fields_stream();
-
-    if entries.is_empty() {
-        Ok(quote! {
-            struct #name_id {
-                #attributes_token_stream
-                pub content: String,
+    fn to_type_id(&self) -> TokenStream {
+        match self {
+            Self::Integer => quote! { i32 },
+            Self::String => quote! { String },
+            Self::Enum(name) => {
+                let name = id(&name.to_upper_camel_case());
+                quote! { #name }
             }
-        })
-    } else {
-        let item_id = id(&format!("{name}Item"));
-        Ok(quote! {
-            struct #name_id {
-                #attributes_token_stream
-                pub content: Vec<#item_id>,
-            }
-
-            enum #item_id {
-            }
-        })
-    }
-}
-
-fn create_simple_content(element: rx::Node) -> anyhow::Result<TokenStream> {
-    let name = id(&convert_type(
-        element
-            .attribute("name")
-            .context("Unable to get name attribute")?,
-    ));
-
-    let Some(simple_content) = element
-        .children()
-        .find(|child| child.tag_name().name() == "simpleContent") else {
-        return Ok(TokenStream::new())
-    };
-
-    let Some(extension) = simple_content.children().find(|child| child.tag_name().name() == "extension") else {
-        return Ok(TokenStream::new())
-    };
-
-    let content_type = extension
-        .attribute("base")
-        .context("Unable to find base attribute")?;
-
-    let content_type = id(&convert_type(content_type));
-
-    let attributes = get_attribute_fields(&extension);
-    let attributes_token_stream = attributes.to_fields_stream();
-
-    Ok(quote! {
-        struct #name {
-            #attributes_token_stream
-            pub content: #content_type,
         }
-    })
+    }
+
+    fn to_type_str(&self) -> String {
+        match self {
+            Self::Integer => "i32".to_string(),
+            Self::String => "String".to_string(),
+            Self::Enum(name) => name.to_upper_camel_case(),
+        }
+    }
+
+    fn to_parse_call(&self) -> TokenStream {
+        match self {
+            Self::Integer => quote! {
+                xml::parse_text(reader)?.parse::<i32>()?
+            },
+            Self::String => quote! {
+                xml::parse_text(reader)?
+            },
+            Self::Enum(name) => {
+                let name = id(&name.to_upper_camel_case());
+                quote! { #name::parse(reader, tag)? }
+            }
+        }
+    }
 }
 
 enum Wrapper {
@@ -269,15 +113,15 @@ fn get_wrapper(element: &rx::Node) -> anyhow::Result<Option<Wrapper>> {
 }
 
 struct Element {
-    name: Ident,
+    name: String,
+    type_: Type,
     wrapper: Option<Wrapper>,
-    type_: TokenStream,
 }
 
 impl Element {
     fn to_field(&self) -> TokenStream {
-        let name = self.name.clone();
-        let type_ = self.type_.clone();
+        let name = id(&self.name.clone());
+        let type_ = self.type_.to_type_id();
 
         match self.wrapper {
             Some(Wrapper::Vec) => {
@@ -296,7 +140,7 @@ impl Element {
     }
 
     fn to_init(&self) -> TokenStream {
-        let name = self.name.clone();
+        let name = id(&self.name.clone());
         match self.wrapper {
             Some(Wrapper::Vec) => {
                 quote! { let mut #name = Vec::new() }
@@ -318,7 +162,7 @@ impl Element {
     }
 
     fn to_unpack(&self) -> Option<TokenStream> {
-        let name = self.name.clone();
+        let name = id(&self.name.clone());
 
         match self.wrapper {
             Some(Wrapper::Vec) => None,
@@ -329,6 +173,36 @@ impl Element {
             None => Some(quote! { let #name = #name.context("Failed to find value")?; }),
         }
     }
+
+    fn to_match(&self) -> TokenStream {
+        let name_string = proc_macro2::Literal::byte_string(self.name.as_bytes());
+        let name_var = id(&self.name);
+
+        let parse_call = self.type_.to_parse_call();
+
+        match self.wrapper {
+            Some(Wrapper::Vec) => quote! {
+                #name_string => {
+                    #name_var.push(#parse_call);
+                }
+            },
+            Some(Wrapper::Vec1) => quote! {
+                #name_string => {
+                    #name_var.push(#parse_call);
+                }
+            },
+            Some(Wrapper::Option) => quote! {
+                #name_string => {
+                    #name_var = Some(#parse_call);
+                }
+            },
+            None => quote! {
+                #name_string => {
+                    #name_var = Some(#parse_call);
+                }
+            },
+        }
+    }
 }
 
 impl ToTokenStream for Vec<Element> {
@@ -336,7 +210,7 @@ impl ToTokenStream for Vec<Element> {
         if self.is_empty() {
             TokenStream::new()
         } else {
-            let entries = self.iter().map(|element| element.name.clone());
+            let entries = self.iter().map(|element| id(&element.name));
             // Include trailing comma here as we know we have fields
             quote! { #(#entries),*, }
         }
@@ -371,35 +245,14 @@ impl ToTokenStream for Vec<Element> {
             quote! { #(#entries);*; }
         }
     }
-}
 
-#[derive(Debug, Clone)]
-enum Type {
-    Bool,
-    Integer,
-    String,
-    Enum(String),
-}
-
-impl Type {
-    fn from_str(str: &str) -> Self {
-        match str {
-            "DoxBool" => Self::Bool,
-            "xsd:integer" => Self::Integer,
-            "xsd:string" => Self::String,
-            _ => Self::Enum(str.to_string()),
-        }
-    }
-
-    fn to_token_stream(&self) -> TokenStream {
-        match self {
-            Self::Bool => quote! { bool },
-            Self::Integer => quote! { i32 },
-            Self::String => quote! { String },
-            Self::Enum(name) => {
-                let name = id(&name);
-                quote! { #name }
-            }
+    fn to_matches_stream(&self) -> TokenStream {
+        if self.is_empty() {
+            TokenStream::new()
+        } else {
+            let entries = self.iter().flat_map(Element::to_match);
+            // Include trailing semi-colon here as we know we have fields
+            quote! { #(#entries)* }
         }
     }
 }
@@ -428,18 +281,6 @@ impl Attribute {
         let attr_name = proc_macro2::Literal::byte_string(self.name.as_bytes());
         // TODO: Move these extra parse code into xml module helpers rather than having it inline here
         match self.type_ {
-            Type::Bool => {
-                if self.optional {
-                    quote! {
-                        let #field_name = xml::get_optional_attribute_string(#attr_name, &start_tag)?
-                                                .map(|str| str.parse::<bool>()).transpose()?
-                    }
-                } else {
-                    quote! {
-                        let #field_name = xml::get_attribute_string(#attr_name, &start_tag)?.parse::<bool>()?
-                    }
-                }
-            }
             Type::Integer => {
                 if self.optional {
                     quote! {
@@ -529,6 +370,343 @@ impl ToTokenStream for Vec<Attribute> {
             quote! { #(#entries);*; }
         }
     }
+
+    fn to_matches_stream(&self) -> TokenStream {
+        todo!()
+    }
+}
+
+fn convert_enum_name(name: &str, renames: Option<&Vec<(String, String)>>) -> String {
+    if let Some(renames) = renames {
+        if let Some(rename_to) = renames
+            .iter()
+            .find_map(|(from, to)| if from == name { Some(to) } else { None })
+        {
+            return rename_to.to_string();
+        }
+    }
+
+    let name = name.replace("#", "Sharp");
+    let name = name.replace("+", "Plus");
+    name.to_upper_camel_case()
+}
+
+fn is_mixed_content(element: &rx::Node) -> bool {
+    let mixed_exceptions = vec![Some("enumvalueType")];
+    if mixed_exceptions.contains(&element.attribute("name")) {
+        false
+    } else {
+        element.attribute("mixed").is_some()
+    }
+}
+
+fn is_simple_content(element: &rx::Node) -> bool {
+    element
+        .children()
+        .find(|child| child.tag_name().name() == "simpleContent")
+        .is_some()
+}
+
+fn get_attribute_fields(element: &rx::Node) -> Vec<Attribute> {
+    element
+        .children()
+        .filter(|child| child.tag_name().name() == "attribute")
+        .flat_map(
+            |child| match (child.attribute("name"), child.attribute("type")) {
+                (Some(name), Some(type_)) => Some(Attribute {
+                    name: name.to_string(),
+                    safe_name: convert_field_name(name),
+                    type_: Type::from_str(type_),
+                    optional: child.attribute("use") == Some("optional"),
+                }),
+                _ => None,
+            },
+        )
+        .collect::<Vec<_>>()
+}
+
+fn create_struct(node: rx::Node, context: &Context) -> anyhow::Result<TokenStream> {
+    let type_name = node
+        .attribute("name")
+        .context("Failed to get name attribute")?;
+
+    if context.skip_types.contains(type_name) {
+        return Ok(TokenStream::new());
+    }
+
+    let type_name = Type::from_str(
+        node.attribute("name")
+            .context("Failed to get name attribute")?,
+    )
+    .to_type_id();
+
+    let attributes = get_attribute_fields(&node);
+    let attribute_fields = attributes.to_fields_stream();
+    let attribute_field_names = attributes.to_names_stream();
+    let attribute_inits = attributes.to_init_stream();
+
+    let elements = get_elements(&node)?;
+    let element_fields = elements.to_fields_stream();
+    let element_field_names = elements.to_names_stream();
+    let element_inits = elements.to_init_stream();
+    let element_unpacks = elements.to_unpack_stream();
+    let element_matches = elements.to_matches_stream();
+
+    Ok(quote! {
+        struct #type_name {
+            #attribute_fields
+            #element_fields
+        }
+
+        impl #type_name {
+            fn parse(
+                reader: &mut Reader<&[u8]>,
+                start_tag: BytesStart<'_>,
+            ) -> anyhow::Result<Self> {
+                #attribute_inits
+                #element_inits
+
+                loop {
+                    match reader.read_event() {
+                        Ok(Event::Start(tag)) => match tag.name().as_ref() {
+                            #element_matches
+                            _ => {}
+                        },
+                        Ok(Event::End(tag)) => {
+                            if tag.name() == start_tag.name() {
+                                #element_unpacks
+                                return Ok(#type_name {
+                                    #attribute_field_names
+                                    #element_field_names
+                                });
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+            }
+        }
+    })
+}
+
+fn create_mixed_content(element: rx::Node) -> anyhow::Result<TokenStream> {
+    let type_name = Type::from_str(
+        element
+            .attribute("name")
+            .context("Failed to get name attribute")?,
+    );
+
+    let type_name_id = type_name.to_type_id();
+    let item_id = id(&format!("{type_name_id}Item"));
+
+    let attributes = get_attribute_fields(&element);
+
+    let mut entries = Vec::new();
+    let mut match_entries = Vec::new();
+
+    for child in element.children() {
+        match child.tag_name().name() {
+            "sequence" | "choice" => {
+                let (mut new_enum_entries, mut new_match_entries): (Vec<_>, Vec<_>) = child
+                    .children()
+                    .flat_map(
+                        |child| match (child.attribute("name"), child.attribute("type")) {
+                            (Some(name), Some(type_)) => {
+                                let name_bytes = proc_macro2::Literal::byte_string(name.as_bytes());
+                                let name = id(&name.to_upper_camel_case());
+
+                                let type_ = Type::from_str(type_);
+                                let type_id = type_.to_type_id();
+                                let parse_call = type_.to_parse_call();
+
+                                Some((
+                                    quote! {
+                                        #name(#type_id),
+                                    },
+                                    quote! {
+                                        #name_bytes => {
+                                            content.push(#item_id::#name(#parse_call))
+                                        }
+                                    },
+                                ))
+                            }
+                            _ => None,
+                        },
+                    )
+                    .unzip();
+
+                new_enum_entries.push(quote! { Text(String) });
+                entries.append(&mut new_enum_entries);
+                match_entries.append(&mut new_match_entries);
+            }
+            "group" => {
+                if let Some(ref_) = child.attribute("ref") {
+                    let type_name = Type::from_str(ref_).to_type_id();
+                    entries.push(quote! {
+                        #type_name(#type_name),
+                        Text(String),
+                    })
+                }
+            }
+            _ => {}
+        }
+    }
+
+    let attribute_fields = attributes.to_fields_stream();
+    let attribute_field_names = attributes.to_names_stream();
+    let attribute_inits = attributes.to_init_stream();
+
+    if entries.is_empty() {
+        Ok(quote! {
+            struct #type_name_id {
+                #attribute_fields
+                pub content: String,
+            }
+
+            impl #type_name_id {
+                fn parse(
+                    reader: &mut Reader<&[u8]>,
+                    start_tag: BytesStart<'_>,
+                ) -> anyhow::Result<Self> {
+                    #attribute_inits
+
+                    let mut content = String::new();
+                    loop {
+                        match reader.read_event() {
+                            Ok(Event::Text(text)) => {
+                                content = String::from_utf8(text.to_vec()).map_err(|err| anyhow::anyhow!("{:?}", err))?;
+                            }
+                            Ok(Event::End(tag)) => {
+                                if tag.name() == start_tag.name() {
+                                    return Ok(#type_name_id {
+                                        #attribute_field_names
+                                        content
+                                    });
+                                }
+                            }
+                            event => return Err(anyhow::anyhow!("unexpected event: {:?}", event)),
+                        }
+                    }
+                }
+            }
+        })
+    } else {
+        Ok(quote! {
+            struct #type_name_id {
+                #attribute_fields
+                pub content: Vec<#item_id>,
+            }
+
+            enum #item_id {
+                #(#entries)*
+            }
+
+            impl #type_name_id {
+                fn parse(
+                    reader: &mut Reader<&[u8]>,
+                    start_tag: BytesStart<'_>,
+                ) -> anyhow::Result<Self> {
+                    #attribute_inits
+                    let mut content = Vec::new();
+                    loop {
+                        match reader.read_event() {
+                            Ok(Event::Start(tag)) => match tag.name().as_ref() {
+                                #(#match_entries)*
+                                tag_name => {
+                                    return Err(anyhow::anyhow!("unexpected tag: {:?}", String::from_utf8_lossy(tag_name)));
+                                }
+                            },
+                            Ok(Event::Text(text)) => content.push(#item_id::Text(
+                                String::from_utf8(text.to_vec()).map_err(|err| anyhow::anyhow!("{:?}", err))?,
+                            )),
+                            Ok(Event::End(tag)) => {
+                                if tag.name() == start_tag.name() {
+                                    return Ok(#type_name_id {
+                                        #attribute_field_names
+                                        content
+                                    });
+                                }
+                            }
+                            event => return Err(anyhow::anyhow!("unexpected event: {:?}", event)),
+                        }
+                    }
+                }
+            }
+
+        })
+    }
+}
+
+fn create_simple_content(element: rx::Node) -> anyhow::Result<TokenStream> {
+    let type_name = Type::from_str(
+        element
+            .attribute("name")
+            .context("Unable to get name attribute")?,
+    )
+    .to_type_id();
+
+    let Some(simple_content) = element
+        .children()
+        .find(|child| child.tag_name().name() == "simpleContent") else {
+        return Ok(TokenStream::new())
+    };
+
+    let Some(extension) = simple_content.children().find(|child| child.tag_name().name() == "extension") else {
+        return Ok(TokenStream::new())
+    };
+
+    let content_type = extension
+        .attribute("base")
+        .context("Unable to find base attribute")?;
+
+    let content_type = Type::from_str(content_type);
+
+    let attributes = get_attribute_fields(&extension);
+    let attribute_fields = attributes.to_fields_stream();
+    let attribute_field_names = attributes.to_names_stream();
+    let attribute_inits = attributes.to_init_stream();
+
+    let type_name = type_name.to_token_stream();
+
+    if let Type::String = content_type {
+        let type_id = content_type.to_type_id();
+        Ok(quote! {
+            struct #type_name {
+                #attribute_fields
+                pub content: #type_id,
+            }
+
+            impl #type_name {
+                fn parse(
+                    reader: &mut Reader<&[u8]>,
+                    start_tag: BytesStart<'_>,
+                ) -> anyhow::Result<Self> {
+                    #attribute_inits
+                    let mut content = String::new();
+
+                    loop {
+                        match reader.read_event() {
+                            Ok(Event::Text(text)) => {
+                                content = String::from_utf8(text.to_vec()).map_err(|err| anyhow::anyhow!("{:?}", err))?;
+                            }
+                            Ok(Event::End(tag)) => {
+                                if tag.name() == start_tag.name() {
+                                    return Ok(#type_name {
+                                        #attribute_field_names
+                                        content
+                                    });
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
+                }
+            }
+
+        })
+    } else {
+        anyhow::bail!("Unsupported content type for simple content");
+    }
 }
 
 fn get_elements(element: &rx::Node) -> anyhow::Result<Vec<Element>> {
@@ -540,11 +718,12 @@ fn get_elements(element: &rx::Node) -> anyhow::Result<Vec<Element>> {
             "choice" => elements.extend(get_elements(&child)?),
             "element" => {
                 if let Some(name) = child.attribute("name") {
-                    let name = id(&convert_field_name(name));
-                    let type_ = id(&convert_type(child.attribute("type").unwrap_or("String")));
+                    let name = convert_field_name(name);
+                    // Default to string if no type is present
+                    let type_ = Type::from_str(child.attribute("type").unwrap_or("xsd:string"));
                     elements.push(Element {
                         name,
-                        type_: quote! { #type_ },
+                        type_,
                         wrapper: get_wrapper(&child)?,
                     })
 
@@ -577,37 +756,16 @@ fn get_elements(element: &rx::Node) -> anyhow::Result<Vec<Element>> {
     Ok(elements)
 }
 
-fn get_attribute_fields(element: &rx::Node) -> Vec<Attribute> {
-    element
-        .children()
-        .filter(|child| child.tag_name().name() == "attribute")
-        .flat_map(
-            |child| match (child.attribute("name"), child.attribute("type")) {
-                (Some(name), Some(type_)) => Some(Attribute {
-                    name: name.to_string(),
-                    safe_name: convert_field_name(name),
-                    type_: Type::from_str(type_),
-                    optional: child.attribute("use") == Some("optional"),
-                }),
-                _ => None,
-            },
-        )
-        .collect::<Vec<_>>()
-}
-
 fn create_restriction(
     name: &str,
     node: rx::Node,
     context: &Context,
 ) -> anyhow::Result<TokenStream> {
-    let name_id = id(&convert_type(name));
+    let type_name_id = Type::from_str(name).to_token_stream();
 
+    // TODO: Lift to top configuration or base off xsd info
     if name == "DoxVersionNumber" || name == "DoxCharRange" {
-        return Ok(quote! { type #name_id = String; });
-    }
-
-    if name == "DoxBool" {
-        return Ok(TokenStream::new());
+        return Ok(quote! { type #type_name_id = String; });
     }
 
     let mut entries = Vec::new();
@@ -636,19 +794,19 @@ fn create_restriction(
 
     Ok(quote! {
         #[derive(Debug, strum::EnumString, Clone)]
-        enum #name_id {
+        enum #type_name_id {
             #(#entries),*
         }
     })
 }
 
-fn handle_complex_type(element: rx::Node) -> anyhow::Result<TokenStream> {
-    if is_simple_content(&element) {
-        create_simple_content(element)
-    } else if is_mixed_content(&element) {
-        create_mixed_content(element)
+fn handle_complex_type(node: rx::Node, context: &Context) -> anyhow::Result<TokenStream> {
+    if is_simple_content(&node) {
+        create_simple_content(node)
+    } else if is_mixed_content(&node) {
+        create_mixed_content(node)
     } else {
-        create_struct(element)
+        create_struct(node, context)
     }
 }
 
@@ -669,7 +827,7 @@ fn handle_simple_type(node: rx::Node, context: &Context) -> anyhow::Result<Token
     Ok(stream)
 }
 
-fn get_choice_entries(element: rx::Node) -> anyhow::Result<TokenStream> {
+fn get_choice_entries(element: rx::Node, context: &Context) -> anyhow::Result<TokenStream> {
     let mut stream = TokenStream::new();
 
     let mut already_seen = HashSet::new();
@@ -680,25 +838,27 @@ fn get_choice_entries(element: rx::Node) -> anyhow::Result<TokenStream> {
                 let ref_ = child
                     .attribute("ref")
                     .context("Failed to get ref attribute")?;
-                let type_name = id(&convert_type(ref_));
+                let type_id = Type::from_str(ref_).to_type_id();
                 stream.extend(quote! {
-                    #type_name(#type_name),
+                    #type_id(#type_id),
                 })
             }
             "element" => match (child.attribute("name"), child.attribute("type")) {
-                (Some(name), Some(type_)) => {
-                    let name = convert_type(name);
-                    let name_id = id(&name);
-                    let type_ = id(&convert_type(type_));
+                (Some(name_str), Some(type_)) => {
+                    let name = Type::from_str(name_str);
+                    let name_id = name.to_type_id();
 
-                    if already_seen.insert(name) {
-                        if type_ == "DocEmptyType" {
+                    let name_str = name.to_type_str();
+
+                    if already_seen.insert(name_str.clone()) {
+                        if context.skip_types.contains(type_) {
                             stream.extend(quote! {
                                 #name_id,
                             })
                         } else {
+                            let type_id = Type::from_str(type_).to_type_id();
                             stream.extend(quote! {
-                                #name_id(#type_),
+                                #name_id(#type_id),
                             })
                         }
                     }
@@ -712,18 +872,18 @@ fn get_choice_entries(element: rx::Node) -> anyhow::Result<TokenStream> {
     Ok(stream)
 }
 
-fn handle_group(element: rx::Node) -> anyhow::Result<TokenStream> {
+fn handle_group(element: rx::Node, context: &Context) -> anyhow::Result<TokenStream> {
     let name = element
         .attribute("name")
         .context("Failed to get name attribute in restriction")?;
 
-    let name_id = id(&convert_type(name));
+    let name_id = Type::from_str(name).to_type_id();
 
     let mut enum_entries = TokenStream::new();
 
     for child in element.children() {
         if child.tag_name().name() == "choice" {
-            enum_entries.extend(get_choice_entries(child)?);
+            enum_entries.extend(get_choice_entries(child, context)?);
         }
     }
 
@@ -735,6 +895,7 @@ fn handle_group(element: rx::Node) -> anyhow::Result<TokenStream> {
 }
 
 struct Context {
+    skip_types: HashSet<String>,
     enum_variant_renames: EnumVariantRenames,
 }
 
@@ -757,9 +918,9 @@ fn generate_mod(
 
     for child in schema.children() {
         match child.tag_name().name() {
-            "complexType" => nodes.extend(handle_complex_type(child)?),
+            "complexType" => nodes.extend(handle_complex_type(child, &context)?),
             "simpleType" => nodes.extend(handle_simple_type(child, &context)?),
-            "group" => nodes.extend(handle_group(child)?),
+            "group" => nodes.extend(handle_group(child, &context)?),
             _ => {}
         }
     }
@@ -822,7 +983,8 @@ pub struct Builder {
     root_type: String,
     path: PathBuf,
     module: Option<String>,
-    enum_variant_renames: Option<EnumVariantRenames>,
+    enum_variant_renames: EnumVariantRenames,
+    skip_types: HashSet<String>,
 }
 
 impl Builder {
@@ -832,7 +994,8 @@ impl Builder {
             root_tag,
             root_type,
             module: None,
-            enum_variant_renames: None,
+            enum_variant_renames: Vec::new(),
+            skip_types: HashSet::new(),
         }
     }
 
@@ -842,7 +1005,12 @@ impl Builder {
     }
 
     pub fn rename_enum_variants(mut self, enum_variant_renames: EnumVariantRenames) -> Self {
-        self.enum_variant_renames = Some(enum_variant_renames);
+        self.enum_variant_renames = enum_variant_renames;
+        self
+    }
+
+    pub fn skip_types(mut self, skip_types: HashSet<String>) -> Self {
+        self.skip_types = skip_types;
         self
     }
 
@@ -859,7 +1027,8 @@ impl Builder {
         };
 
         let context = Context {
-            enum_variant_renames: self.enum_variant_renames.unwrap_or_default(),
+            enum_variant_renames: self.enum_variant_renames,
+            skip_types: self.skip_types,
         };
 
         generate_mod(
