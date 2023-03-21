@@ -125,16 +125,16 @@ impl Element {
 
         match self.wrapper {
             Some(Wrapper::Vec) => {
-                quote! { #name: Vec<#type_> }
+                quote! { pub #name: Vec<#type_> }
             }
             Some(Wrapper::Vec1) => {
-                quote! { #name: vec1::Vec1<#type_> }
+                quote! { pub #name: vec1::Vec1<#type_> }
             }
             Some(Wrapper::Option) => {
-                quote! { #name: Option<#type_> }
+                quote! { pub #name: Option<#type_> }
             }
             None => {
-                quote! { #name: #type_ }
+                quote! { pub #name: #type_ }
             }
         }
     }
@@ -270,9 +270,9 @@ impl Attribute {
         let type_ = self.type_.to_token_stream();
 
         if self.optional {
-            quote! { #name: Option<#type_> }
+            quote! { pub #name: Option<#type_> }
         } else {
-            quote! { #name: #type_ }
+            quote! { pub #name: #type_ }
         }
     }
 
@@ -453,7 +453,8 @@ fn create_struct(node: rx::Node, context: &Context) -> anyhow::Result<TokenStrea
     let element_matches = elements.to_matches_stream();
 
     Ok(quote! {
-        struct #type_name {
+        #[derive(Debug)]
+        pub struct #type_name {
             #attribute_fields
             #element_fields
         }
@@ -558,7 +559,8 @@ fn create_mixed_content(element: rx::Node) -> anyhow::Result<TokenStream> {
 
     if entries.is_empty() {
         Ok(quote! {
-            struct #type_name_id {
+            #[derive(Debug)]
+            pub struct #type_name_id {
                 #attribute_fields
                 pub content: String,
             }
@@ -592,12 +594,14 @@ fn create_mixed_content(element: rx::Node) -> anyhow::Result<TokenStream> {
         })
     } else {
         Ok(quote! {
-            struct #type_name_id {
+            #[derive(Debug)]
+            pub struct #type_name_id {
                 #attribute_fields
                 pub content: Vec<#item_id>,
             }
 
-            enum #item_id {
+            #[derive(Debug)]
+            pub enum #item_id {
                 #(#entries)*
             }
 
@@ -671,7 +675,8 @@ fn create_simple_content(element: rx::Node) -> anyhow::Result<TokenStream> {
     if let Type::String = content_type {
         let type_id = content_type.to_type_id();
         Ok(quote! {
-            struct #type_name {
+            #[derive(Debug)]
+            pub struct #type_name {
                 #attribute_fields
                 pub content: #type_id,
             }
@@ -773,7 +778,7 @@ fn create_restriction(
 
     Ok(quote! {
         #[derive(Debug, strum::EnumString, Clone)]
-        enum #type_name_id {
+        pub enum #type_name_id {
             #(#entries),*
         }
     })
@@ -867,7 +872,8 @@ fn handle_group(element: rx::Node, context: &Context) -> anyhow::Result<TokenStr
     }
 
     Ok(quote! {
-        enum #name_id {
+        #[derive(Debug)]
+        pub enum #name_id {
             #enum_entries
         }
     })
@@ -908,7 +914,6 @@ fn generate_mod(
     let root_type = id(root_type);
 
     let file_ast = quote! {
-        #[allow(dead_code)]
         use anyhow::Context;
         use quick_xml::events::{BytesStart, Event};
         use quick_xml::reader::Reader;

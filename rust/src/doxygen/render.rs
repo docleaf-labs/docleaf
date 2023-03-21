@@ -1,25 +1,25 @@
 use crate::nodes::{Node, SignatureType};
 
-use crate::doxygen::compound::elements as e;
+use crate::doxygen::compound::generated as e;
 
 pub fn render_compound(root: e::DoxygenType) -> Vec<Node> {
-    let Some(compound_def) = root.compound_def else {
+    let Some(compound_def) = root.compounddef else {
         return Vec::new();
     };
 
     let mut content_nodes = Vec::new();
 
-    if let Some(description) = compound_def.brief_description {
+    if let Some(description) = compound_def.briefdescription {
         content_nodes.append(&mut render_description(description));
     }
 
-    if let Some(description) = compound_def.detailed_description {
+    if let Some(description) = compound_def.detaileddescription {
         content_nodes.append(&mut render_description(description));
     }
 
     content_nodes.append(
         &mut compound_def
-            .section_defs
+            .sectiondef
             .into_iter()
             .map(render_section_def)
             .collect(),
@@ -39,9 +39,7 @@ pub fn render_compound(root: e::DoxygenType) -> Vec<Node> {
                 Node::Target { ids, names },
                 Node::DescSignatureKeyword(vec![Node::Text(kind.to_string())]),
                 Node::DescSignatureSpace,
-                Node::DescName(Box::new(Node::DescSignatureName(
-                    compound_def.compound_name,
-                ))),
+                Node::DescName(Box::new(Node::DescSignatureName(compound_def.compoundname))),
             ])],
         )],
         Box::new(content),
@@ -72,19 +70,16 @@ fn render_compound_kind(kind: e::DoxCompoundKind) -> &'static str {
 }
 
 pub fn render_member(root: e::DoxygenType, member_ref_id: &str) -> Vec<Node> {
-    let Some(compound_def) = root.compound_def else {
+    let Some(compound_def) = root.compounddef else {
         return Vec::new();
     };
 
-    let member_def = compound_def
-        .section_defs
-        .into_iter()
-        .find_map(|section_def| {
-            section_def
-                .member_defs
-                .into_iter()
-                .find(|member_def| member_def.id == member_ref_id)
-        });
+    let member_def = compound_def.sectiondef.into_iter().find_map(|section_def| {
+        section_def
+            .memberdef
+            .into_iter()
+            .find(|member_def| member_def.id == member_ref_id)
+    });
 
     match member_def {
         Some(member_def) => {
@@ -96,13 +91,13 @@ pub fn render_member(root: e::DoxygenType, member_ref_id: &str) -> Vec<Node> {
     }
 }
 
-fn render_section_def(section_def: e::SectionDefType) -> Node {
+fn render_section_def(section_def: e::SectiondefType) -> Node {
     let mut content_nodes = vec![Node::Rubric(vec![Node::Text(section_title(
         &section_def.kind,
     ))])];
     content_nodes.append(
         &mut section_def
-            .member_defs
+            .memberdef
             .into_iter()
             .map(render_member_def)
             .collect(),
@@ -152,14 +147,14 @@ fn section_title(section_kind: &e::DoxSectionKind) -> String {
     }
 }
 
-pub fn render_member_def(member_def: e::MemberDefType) -> Node {
+pub fn render_member_def(member_def: e::MemberdefType) -> Node {
     let name = member_kind_name(&member_def.kind);
     let mut content_nodes = Vec::new();
 
-    if let Some(description) = member_def.brief_description {
+    if let Some(description) = member_def.briefdescription {
         content_nodes.append(&mut render_description(description));
     }
-    if let Some(description) = member_def.detailed_description {
+    if let Some(description) = member_def.detaileddescription {
         content_nodes.append(&mut render_description(description));
     }
 
@@ -270,13 +265,13 @@ fn member_kind_name(member_kind: &e::DoxMemberKind) -> String {
     }
 }
 
-pub fn render_enum_value(enum_value: e::EnumValueType) -> Node {
+pub fn render_enum_value(enum_value: e::EnumvalueType) -> Node {
     let mut content_nodes = Vec::new();
 
-    if let Some(description) = enum_value.brief_description {
+    if let Some(description) = enum_value.briefdescription {
         content_nodes.append(&mut render_description(description));
     }
-    if let Some(description) = enum_value.detailed_description {
+    if let Some(description) = enum_value.detaileddescription {
         content_nodes.append(&mut render_description(description));
     }
 
@@ -314,10 +309,11 @@ pub fn render_para(element: e::DocParaType) -> Vec<Node> {
     for entry in element.content {
         match entry {
             // TODO: Render list
-            e::DocParaTypeItem::DocCmdGroup(e::DocCmdGroup::ParameterList(_)) => {}
+            e::DocParaTypeItem::DocCmdGroup(e::DocCmdGroup::Parameterlist(_)) => {}
             // TODO: Handle title & paragraph block
             e::DocParaTypeItem::DocCmdGroup(e::DocCmdGroup::Simplesect(e::DocSimpleSectType {
                 para,
+                ..
             })) => nodes.append(
                 &mut para
                     .into_iter()
@@ -356,7 +352,7 @@ fn render_linked_text_type(linked_text_type: e::LinkedTextType) -> Vec<Node> {
 fn render_ref_text_type(ref_text_type: e::RefTextType) -> Node {
     Node::Reference {
         internal: true,
-        refid: ref_text_type.ref_id,
+        refid: ref_text_type.refid,
         children: vec![Node::DescSignatureName(ref_text_type.content)],
     }
 }
@@ -375,7 +371,7 @@ fn render_doc_ref_text_type(doc_ref_text_type: e::DocRefTextType) -> Node {
 
     Node::Reference {
         internal: true,
-        refid: doc_ref_text_type.ref_id,
+        refid: doc_ref_text_type.refid,
         children: nodes,
     }
 }
