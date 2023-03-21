@@ -726,27 +726,6 @@ fn get_elements(element: &rx::Node) -> anyhow::Result<Vec<Element>> {
                         type_,
                         wrapper: get_wrapper(&child)?,
                     })
-
-                    /*
-                    match get_wrapper(&child)? {
-                        Some(Wrapper::Vec) => elements.push(Element {
-                            name,
-                            type_: quote! { Vec<#type_> },
-                        }),
-                        Some(Wrapper::Vec1) => elements.push(Element {
-                            name,
-                            type_: quote! { vec1::Vec1<#type_>, },
-                        }),
-                        Some(Wrapper::Option) => elements.push(Element {
-                            name,
-                            type_: quote! { Option<#type_>, },
-                        }),
-                        None => elements.push(Element {
-                            name,
-                            type_: quote! { #type_ },
-                        }),
-                    }
-                    */
                 }
             }
             _ => {}
