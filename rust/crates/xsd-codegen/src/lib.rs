@@ -777,7 +777,7 @@ fn create_restriction(
     }
 
     Ok(quote! {
-        #[derive(Debug, strum::EnumString, Clone)]
+        #[derive(Debug, strum::EnumString, Clone, PartialEq)]
         pub enum #type_name_id {
             #(#entries),*
         }

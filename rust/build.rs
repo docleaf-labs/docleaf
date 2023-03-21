@@ -19,5 +19,12 @@ fn main() -> anyhow::Result<()> {
     )])
     .generate()?;
 
+    xsd_codegen::Builder::new(
+        std::path::PathBuf::from("xsd/index.xsd"),
+        "doxygenindex".to_string(),
+        "DoxygenType".to_string(),
+    )
+    .generate()?;
+
     Ok(())
 }
