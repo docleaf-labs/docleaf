@@ -792,15 +792,17 @@ fn create_restriction(
                     },
                 );
 
-            let entry_name = convert_enum_name(entry_name, renames);
-
-            entries.push(id(&entry_name));
+            let safe_entry_name = convert_enum_name(entry_name, renames);
+            let entry_name_id = id(&safe_entry_name);
+            entries.push(quote! {
+                #[strum(serialize = #entry_name)]
+                #entry_name_id
+            });
         }
     }
 
     Ok(quote! {
         #[derive(Debug, strum::EnumString, Clone, PartialEq)]
-        #[strum(serialize_all = "kebab-case")]
         pub enum #type_name_id {
             #(#entries),*
         }
