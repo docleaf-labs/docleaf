@@ -170,7 +170,12 @@ impl Element {
                 quote! { let #name = vec1::Vec1::try_from_vec(#name).context("Vec was empty")?; },
             ),
             Some(Wrapper::Option) => None,
-            None => Some(quote! { let #name = #name.context("Failed to find value")?; }),
+            None => {
+                let name_str = self.name.clone();
+                Some(
+                    quote! { let #name = #name.with_context(|| format!("Failed to find value for {}", #name_str))?; },
+                )
+            }
         }
     }
 
@@ -437,8 +442,9 @@ fn create_struct(node: rx::Node, context: &Context) -> anyhow::Result<TokenStrea
     let type_name = Type::from_str(
         node.attribute("name")
             .context("Failed to get name attribute")?,
-    )
-    .to_type_id();
+    );
+
+    let type_name_id = type_name.to_type_id();
 
     let attributes = get_attribute_fields(&node);
     let attribute_fields = attributes.to_fields_stream();
@@ -454,16 +460,17 @@ fn create_struct(node: rx::Node, context: &Context) -> anyhow::Result<TokenStrea
 
     Ok(quote! {
         #[derive(Debug)]
-        pub struct #type_name {
+        pub struct #type_name_id {
             #attribute_fields
             #element_fields
         }
 
-        impl #type_name {
+        impl #type_name_id {
             fn parse(
                 reader: &mut Reader<&[u8]>,
                 start_tag: BytesStart<'_>,
             ) -> anyhow::Result<Self> {
+                tracing::debug!("Parsing {:?}", start_tag.name());
                 #attribute_inits
                 #element_inits
 
@@ -476,7 +483,7 @@ fn create_struct(node: rx::Node, context: &Context) -> anyhow::Result<TokenStrea
                         Ok(Event::End(tag)) => {
                             if tag.name() == start_tag.name() {
                                 #element_unpacks
-                                return Ok(#type_name {
+                                return Ok(#type_name_id {
                                     #attribute_field_names
                                     #element_field_names
                                 });
