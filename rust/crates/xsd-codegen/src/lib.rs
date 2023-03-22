@@ -784,6 +784,7 @@ fn create_restriction(
 
     Ok(quote! {
         #[derive(Debug, strum::EnumString, Clone, PartialEq)]
+        #[strum(serialize_all = "kebab-case")]
         pub enum #type_name_id {
             #(#entries),*
         }
