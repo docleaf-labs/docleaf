@@ -156,7 +156,7 @@
       <xsd:element name="briefdescription" type="descriptionType" minOccurs="0" />
       <xsd:element name="detaileddescription" type="descriptionType" minOccurs="0" />
       <xsd:element name="inbodydescription" type="descriptionType" minOccurs="0" />
-      <xsd:element name="location" type="locationType" />
+      <xsd:element name="location" type="locationType" minOccurs="0" />
       <xsd:element name="references" type="referenceType" minOccurs="0" maxOccurs="unbounded" />
       <xsd:element name="referencedby" type="referenceType" minOccurs="0" maxOccurs="unbounded" />
     </xsd:sequence>
