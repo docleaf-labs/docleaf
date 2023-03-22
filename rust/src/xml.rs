@@ -32,8 +32,13 @@ pub fn get_optional_attribute<'a>(
 }
 
 pub fn get_attribute<'a>(name: &[u8], tag: &'a BytesStart<'a>) -> anyhow::Result<Attribute<'a>> {
-    get_optional_attribute(name, tag)?
-        .ok_or_else(|| anyhow!("Unable to find {}", String::from_utf8_lossy(name)))
+    get_optional_attribute(name, tag)?.ok_or_else(|| {
+        anyhow!(
+            "Unable to find attribute '{}' on tag '{:?}'",
+            String::from_utf8_lossy(name),
+            tag
+        )
+    })
 }
 
 pub fn get_optional_attribute_string<'a>(
@@ -56,7 +61,12 @@ pub fn get_attribute_enum<'a, T: FromStr>(
 ) -> anyhow::Result<T> {
     let attr = get_attribute(name, tag)?;
     let str = String::from_utf8(attr.value.into_owned())?;
-    T::from_str(&str).map_err(|_| anyhow::anyhow!("Failed to parse string '{str}' to enum"))
+    T::from_str(&str).map_err(|_| {
+        anyhow::anyhow!(
+            "Failed to parse string '{str}' to enum '{}'",
+            std::any::type_name::<T>()
+        )
+    })
 }
 
 pub fn get_optional_attribute_enum<'a, T: FromStr>(
@@ -68,7 +78,7 @@ pub fn get_optional_attribute_enum<'a, T: FromStr>(
     Ok(get_optional_attribute(name, tag)?
         .map(|attr| {
             String::from_utf8(attr.value.into_owned())
-                .map_err(|_| anyhow::anyhow!("Failed to parse string '{str}' to enum"))
+                .map_err(|_| anyhow::anyhow!("Failed to parse to enum"))
                 .and_then(|str| {
                     T::from_str(&str)
                         .map_err(|_| anyhow::anyhow!("Failed to parse string '{str}' to enum"))

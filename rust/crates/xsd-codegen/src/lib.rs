@@ -617,7 +617,13 @@ fn create_mixed_content(element: rx::Node) -> anyhow::Result<TokenStream> {
                             Ok(Event::Start(tag)) => match tag.name().as_ref() {
                                 #(#match_entries)*
                                 tag_name => {
-                                    return Err(anyhow::anyhow!("unexpected tag: {:?}", String::from_utf8_lossy(tag_name)));
+                                    return Err(
+                                        anyhow::anyhow!(
+                                            "unexpected tag {:?} when parsing {}",
+                                            String::from_utf8_lossy(tag_name),
+                                            std::any::type_name::<#type_name_id>()
+                                        )
+                                    );
                                 }
                             },
                             Ok(Event::Text(text)) => content.push(#item_id::Text(
