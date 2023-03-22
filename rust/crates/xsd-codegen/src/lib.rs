@@ -502,6 +502,18 @@ fn create_mixed_content(element: rx::Node) -> anyhow::Result<TokenStream> {
 
     let attributes = get_attribute_fields(&element);
 
+    let mut unexpected_tag = quote! {
+        tag_name => {
+            return Err(
+                anyhow::anyhow!(
+                    "unexpected tag {:?} when parsing {}",
+                    String::from_utf8_lossy(tag_name),
+                    std::any::type_name::<#type_name_id>()
+                )
+            );
+        }
+    };
+
     let mut entries = Vec::new();
     let mut match_entries = Vec::new();
 
@@ -546,7 +558,12 @@ fn create_mixed_content(element: rx::Node) -> anyhow::Result<TokenStream> {
                     entries.push(quote! {
                         #type_name(#type_name),
                         Text(String),
-                    })
+                    });
+                    unexpected_tag = quote! {
+                        _ => {
+                            content.push(#item_id::#type_name(#type_name::parse(reader, tag)?));
+                        }
+                    };
                 }
             }
             _ => {}
@@ -616,15 +633,7 @@ fn create_mixed_content(element: rx::Node) -> anyhow::Result<TokenStream> {
                         match reader.read_event() {
                             Ok(Event::Start(tag)) => match tag.name().as_ref() {
                                 #(#match_entries)*
-                                tag_name => {
-                                    return Err(
-                                        anyhow::anyhow!(
-                                            "unexpected tag {:?} when parsing {}",
-                                            String::from_utf8_lossy(tag_name),
-                                            std::any::type_name::<#type_name_id>()
-                                        )
-                                    );
-                                }
+                                #unexpected_tag
                             },
                             Ok(Event::Text(text)) => content.push(#item_id::Text(
                                 String::from_utf8(text.to_vec()).map_err(|err| anyhow::anyhow!("{:?}", err))?,
@@ -818,38 +827,39 @@ fn handle_simple_type(node: rx::Node, context: &Context) -> anyhow::Result<Token
     Ok(stream)
 }
 
-fn get_choice_entries(element: rx::Node, context: &Context) -> anyhow::Result<TokenStream> {
-    let mut stream = TokenStream::new();
+enum Choice {
+    Group { type_: String },
+    Element { name: String, type_: Option<String> },
+}
+
+fn get_choice_entries(node: rx::Node, context: &Context) -> anyhow::Result<Vec<Choice>> {
+    let mut choices = Vec::new();
 
     let mut already_seen = HashSet::new();
 
-    for child in element.children() {
+    for child in node.children() {
         match child.tag_name().name() {
             "group" => {
                 let ref_ = child
                     .attribute("ref")
                     .context("Failed to get ref attribute")?;
-                let type_id = Type::from_str(ref_).to_type_id();
-                stream.extend(quote! {
-                    #type_id(#type_id),
+                choices.push(Choice::Group {
+                    type_: ref_.to_string(),
                 })
             }
             "element" => match (child.attribute("name"), child.attribute("type")) {
-                (Some(name_str), Some(type_)) => {
-                    let name = Type::from_str(name_str);
-                    let name_id = name.to_type_id();
-
-                    let name_str = name.to_type_str();
-
-                    if already_seen.insert(name_str.clone()) {
+                (Some(name), Some(type_)) => {
+                    let normalised_name = Type::from_str(name).to_type_str();
+                    if already_seen.insert(normalised_name) {
                         if context.skip_types.contains(type_) {
-                            stream.extend(quote! {
-                                #name_id,
+                            choices.push(Choice::Element {
+                                name: name.to_string(),
+                                type_: None,
                             })
                         } else {
-                            let type_id = Type::from_str(type_).to_type_id();
-                            stream.extend(quote! {
-                                #name_id(#type_id),
+                            choices.push(Choice::Element {
+                                name: name.to_string(),
+                                type_: Some(type_.to_string()),
                             })
                         }
                     }
@@ -860,28 +870,107 @@ fn get_choice_entries(element: rx::Node, context: &Context) -> anyhow::Result<To
         }
     }
 
-    Ok(stream)
+    Ok(choices)
 }
 
 fn handle_group(element: rx::Node, context: &Context) -> anyhow::Result<TokenStream> {
-    let name = element
+    let enum_name = element
         .attribute("name")
         .context("Failed to get name attribute in restriction")?;
 
-    let name_id = Type::from_str(name).to_type_id();
+    let enum_name_id = Type::from_str(enum_name).to_type_id();
 
-    let mut enum_entries = TokenStream::new();
+    let mut choices = Vec::new();
 
     for child in element.children() {
         if child.tag_name().name() == "choice" {
-            enum_entries.extend(get_choice_entries(child, context)?);
+            choices.extend(get_choice_entries(child, context)?);
         }
+    }
+
+    let enum_entries = choices.iter().map(|choice| match choice {
+        Choice::Group { type_ } => {
+            let type_id = Type::from_str(type_).to_type_id();
+            quote! { #type_id(#type_id) }
+        }
+        Choice::Element { name, type_ } => {
+            let name_id = Type::from_str(name).to_type_id();
+            match type_ {
+                Some(type_) => {
+                    let type_id = Type::from_str(type_).to_type_id();
+                    quote! { #name_id(#type_id) }
+                }
+                None => {
+                    quote! { #name_id }
+                }
+            }
+        }
+    });
+
+    let direct_matches = choices.iter().flat_map(|choice| match choice {
+        Choice::Group { .. } => None,
+        Choice::Element { name, type_ } => {
+            let enum_entry_name_id = Type::from_str(name).to_type_id();
+            let bytes_str = proc_macro2::Literal::byte_string(name.as_bytes());
+            match type_ {
+                Some(type_) => {
+                    let type_parse_call = Type::from_str(type_).to_parse_call();
+                    Some(quote! {
+                        #bytes_str => {
+                            Ok(#enum_name_id::#enum_entry_name_id(#type_parse_call))
+                        }
+                    })
+                }
+                None => Some(quote! {
+                    #bytes_str => {
+                        Ok(#enum_name_id::#enum_entry_name_id)
+                    }
+                }),
+            }
+        }
+    });
+
+    let group_matches = choices.iter().flat_map(|choice| match choice {
+        Choice::Group { type_ } => {
+            let type_id = Type::from_str(&type_).to_type_id();
+            Some(quote! {
+                _ => {
+                    Ok(#enum_name_id::#type_id(#type_id::parse(reader, tag)?))
+                }
+            })
+        }
+        Choice::Element { .. } => None,
+    });
+
+    let mut match_unexpected = quote! {
+        _ => anyhow::bail!("Unexpected tag")
+    };
+
+    if choices
+        .iter()
+        .any(|choice| matches!(choice, Choice::Group { .. }))
+    {
+        match_unexpected = quote! {};
     }
 
     Ok(quote! {
         #[derive(Debug)]
-        pub enum #name_id {
-            #enum_entries
+        pub enum #enum_name_id {
+            #(#enum_entries),*
+        }
+
+        impl #enum_name_id {
+            #[allow(unused_variables)]
+            fn parse(
+                reader: &mut Reader<&[u8]>,
+                tag: BytesStart<'_>,
+            ) -> anyhow::Result<Self> {
+                match tag.name().as_ref() {
+                    #(#direct_matches)*
+                    #(#group_matches)*
+                    #match_unexpected
+                }
+            }
         }
     })
 }
