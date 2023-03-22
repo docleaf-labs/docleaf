@@ -73,8 +73,6 @@ pub fn get_optional_attribute_enum<'a, T: FromStr>(
     name: &[u8],
     tag: &'a BytesStart<'a>,
 ) -> anyhow::Result<Option<T>> {
-    let attr = get_attribute(name, tag)?;
-    let str = String::from_utf8(attr.value.into_owned())?;
     Ok(get_optional_attribute(name, tag)?
         .map(|attr| {
             String::from_utf8(attr.value.into_owned())
