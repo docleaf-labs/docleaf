@@ -95,7 +95,9 @@ impl Type {
     fn to_parse_empty_call(&self) -> Option<TokenStream> {
         match self {
             Self::Integer => None,
-            Self::String => None,
+            Self::String => Some(quote! {
+                String::new()
+            }),
             Self::Enum(name) => {
                 let name = id(&name.to_upper_camel_case());
                 Some(quote! { #name::parse_empty(tag)? })
@@ -504,6 +506,19 @@ fn create_struct(node: rx::Node, context: &Context) -> anyhow::Result<TokenStrea
                     }
                 }
             }
+
+            fn parse_empty(
+                start_tag: BytesStart<'_>,
+            ) -> anyhow::Result<Self> {
+                tracing::debug!("Parsing {:?}", start_tag.name());
+                #attribute_inits
+                #element_inits
+                #element_unpacks
+                Ok(#type_name_id {
+                    #attribute_field_names
+                    #element_field_names
+                })
+            }
         }
     })
 }
@@ -532,7 +547,7 @@ fn create_mixed_content(element: rx::Node) -> anyhow::Result<TokenStream> {
         }
     };
 
-    let mut empty_unexpected_tag = quote! {
+    let mut unexpected_empty_tag = quote! {
         tag_name => {
             return Err(
                 anyhow::anyhow!(
@@ -602,6 +617,11 @@ fn create_mixed_content(element: rx::Node) -> anyhow::Result<TokenStream> {
                     unexpected_tag = quote! {
                         _ => {
                             content.push(#item_id::#type_name(#type_name::parse(reader, tag)?));
+                        }
+                    };
+                    unexpected_empty_tag = quote! {
+                        _ => {
+                            content.push(#item_id::#type_name(#type_name::parse_empty(tag)?));
                         }
                     };
                 }
@@ -688,7 +708,7 @@ fn create_mixed_content(element: rx::Node) -> anyhow::Result<TokenStream> {
                             },
                             Ok(Event::Empty(tag)) => match tag.name().as_ref() {
                                 #(#match_empty_entries)*
-                                #unexpected_tag
+                                #unexpected_empty_tag
                             },
                             Ok(Event::Text(text)) => content.push(#item_id::Text(
                                 String::from_utf8(text.to_vec()).map_err(|err| anyhow::anyhow!("{:?}", err))?,
@@ -1007,6 +1027,29 @@ fn handle_group(element: rx::Node, context: &Context) -> anyhow::Result<TokenStr
         }
     });
 
+    let direct_empty_matches = choices.iter().flat_map(|choice| match choice {
+        Choice::Group { .. } => None,
+        Choice::Element { name, type_ } => {
+            let enum_entry_name_id = Type::from_str(name).to_type_id();
+            let bytes_str = proc_macro2::Literal::byte_string(name.as_bytes());
+            match type_ {
+                Some(type_) => {
+                    let type_parse_call = Type::from_str(type_).to_parse_empty_call();
+                    Some(quote! {
+                        #bytes_str => {
+                            Ok(#enum_name_id::#enum_entry_name_id(#type_parse_call))
+                        }
+                    })
+                }
+                None => Some(quote! {
+                    #bytes_str => {
+                        Ok(#enum_name_id::#enum_entry_name_id)
+                    }
+                }),
+            }
+        }
+    });
+
     let group_matches = choices.iter().flat_map(|choice| match choice {
         Choice::Group { type_ } => {
             let type_id = Type::from_str(&type_).to_type_id();
@@ -1019,7 +1062,23 @@ fn handle_group(element: rx::Node, context: &Context) -> anyhow::Result<TokenStr
         Choice::Element { .. } => None,
     });
 
+    let group_empty_matches = choices.iter().flat_map(|choice| match choice {
+        Choice::Group { type_ } => {
+            let type_id = Type::from_str(&type_).to_type_id();
+            Some(quote! {
+                _ => {
+                    Ok(#enum_name_id::#type_id(#type_id::parse_empty(tag)?))
+                }
+            })
+        }
+        Choice::Element { .. } => None,
+    });
+
     let mut match_unexpected = quote! {
+        _ => anyhow::bail!("Unexpected tag")
+    };
+
+    let mut match_unexpected_empty = quote! {
         _ => anyhow::bail!("Unexpected tag")
     };
 
@@ -1028,6 +1087,7 @@ fn handle_group(element: rx::Node, context: &Context) -> anyhow::Result<TokenStr
         .any(|choice| matches!(choice, Choice::Group { .. }))
     {
         match_unexpected = quote! {};
+        match_unexpected_empty = quote! {};
     }
 
     Ok(quote! {
@@ -1046,6 +1106,17 @@ fn handle_group(element: rx::Node, context: &Context) -> anyhow::Result<TokenStr
                     #(#direct_matches)*
                     #(#group_matches)*
                     #match_unexpected
+                }
+            }
+
+            #[allow(unused_variables)]
+            fn parse_empty(
+                tag: BytesStart<'_>,
+            ) -> anyhow::Result<Self> {
+                match tag.name().as_ref() {
+                    #(#direct_empty_matches)*
+                    #(#group_empty_matches)*
+                    #match_unexpected_empty
                 }
             }
         }
