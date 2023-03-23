@@ -67,7 +67,7 @@
     <xsd:attribute name="refid" type="xsd:string" />
     <xsd:attribute name="prot" type="DoxProtectionKind" />
     <xsd:attribute name="virt" type="DoxVirtualKind" />
-    <xsd:attribute name="ambiguityscope" type="xsd:string" />
+    <xsd:attribute name="ambiguityscope" type="xsd:string" use="optional" />
   </xsd:complexType>
 
   <xsd:complexType name="docHtmlOnlyType">
@@ -297,10 +297,10 @@
     <xsd:sequence>
       <xsd:element name="highlight" type="highlightType" minOccurs="0" maxOccurs="unbounded" />
     </xsd:sequence>
-    <xsd:attribute name="lineno" type="xsd:integer" />
-    <xsd:attribute name="refid" type="xsd:string" />
-    <xsd:attribute name="refkind" type="DoxRefKind" />
-    <xsd:attribute name="external" type="DoxBool" />
+    <xsd:attribute name="lineno" type="xsd:integer" use="optional" />
+    <xsd:attribute name="refid" type="xsd:string" use="optional" />
+    <xsd:attribute name="refkind" type="DoxRefKind" use="optional" />
+    <xsd:attribute name="external" type="DoxBool" use="optional" />
   </xsd:complexType>
 
   <xsd:complexType name="highlightType" mixed="true">
@@ -766,8 +766,8 @@
     <xsd:sequence>
       <xsd:element name="listitem" type="docListItemType" maxOccurs="unbounded" />
     </xsd:sequence>
-    <xsd:attribute name="type" type="DoxOlType" />
-    <xsd:attribute name="start" type="xsd:integer" />
+    <xsd:attribute name="type" type="DoxOlType" use="optional" />
+    <xsd:attribute name="start" type="xsd:integer" use="optional" />
   </xsd:complexType>
 
   <xsd:complexType name="docListItemType">
@@ -810,7 +810,7 @@
     <xsd:group ref="docTitleCmdGroup" minOccurs="0" maxOccurs="unbounded" />
     <xsd:attribute name="refid" type="xsd:string" />
     <xsd:attribute name="kindref" type="DoxRefKind" />
-    <xsd:attribute name="external" type="xsd:string" />
+    <xsd:attribute name="external" type="xsd:string" use="optional" />
   </xsd:complexType>
 
   <xsd:complexType name="docTableType">
