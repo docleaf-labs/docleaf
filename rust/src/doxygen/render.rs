@@ -314,12 +314,7 @@ pub fn render_para(element: e::DocParaType) -> Vec<Node> {
             e::DocParaTypeItem::DocCmdGroup(e::DocCmdGroup::Simplesect(e::DocSimpleSectType {
                 para,
                 ..
-            })) => nodes.append(
-                &mut para
-                    .into_iter()
-                    .flat_map(|para| render_para(para))
-                    .collect(),
-            ),
+            })) => nodes.append(&mut para.into_iter().flat_map(render_para).collect()),
             e::DocParaTypeItem::DocCmdGroup(element) => nodes.push(render_doc_cmd_group(element)),
             e::DocParaTypeItem::Text(text) => nodes.push(Node::Text(text)),
         }

@@ -68,7 +68,7 @@ pub fn get_optional_attribute_enum<'a, T: FromStr>(
     name: &[u8],
     tag: &'a BytesStart<'a>,
 ) -> anyhow::Result<Option<T>> {
-    Ok(get_optional_attribute(name, tag)?
+    get_optional_attribute(name, tag)?
         .map(|attr| {
             String::from_utf8(attr.value.into_owned())
                 .map_err(|_| anyhow::anyhow!("Failed to parse to enum"))
@@ -77,5 +77,5 @@ pub fn get_optional_attribute_enum<'a, T: FromStr>(
                         .map_err(|_| anyhow::anyhow!("Failed to parse string '{str}' to enum"))
                 })
         })
-        .transpose()?)
+        .transpose()
 }
