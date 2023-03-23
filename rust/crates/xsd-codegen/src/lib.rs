@@ -7,15 +7,6 @@ use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote, ToTokens};
 use roxmltree as rx;
 
-trait ToTokenStream {
-    fn to_names_stream(&self) -> TokenStream;
-    fn to_fields_stream(&self) -> TokenStream;
-    fn to_mut_init_stream(&self) -> TokenStream;
-    fn to_init_stream(&self) -> TokenStream;
-    fn to_unpack_stream(&self) -> TokenStream;
-    fn to_matches_stream(&self) -> TokenStream;
-}
-
 fn id(str: &str) -> Ident {
     format_ident!("{}", str)
 }
@@ -246,7 +237,16 @@ impl Element {
     }
 }
 
-impl ToTokenStream for Vec<Element> {
+trait ElementTokenStream {
+    fn to_names_stream(&self) -> TokenStream;
+    fn to_fields_stream(&self) -> TokenStream;
+    fn to_mut_init_stream(&self) -> TokenStream;
+    fn to_init_stream(&self) -> TokenStream;
+    fn to_unpack_stream(&self) -> TokenStream;
+    fn to_matches_stream(&self) -> TokenStream;
+}
+
+impl ElementTokenStream for Vec<Element> {
     fn to_names_stream(&self) -> TokenStream {
         if self.is_empty() {
             TokenStream::new()
@@ -381,7 +381,14 @@ impl Attribute {
     }
 }
 
-impl ToTokenStream for Vec<Attribute> {
+trait AttributeTokenStream {
+    fn to_names_stream(&self) -> TokenStream;
+    fn to_fields_stream(&self) -> TokenStream;
+    fn to_init_stream(&self) -> TokenStream;
+    fn to_unpack_stream(&self) -> TokenStream;
+}
+
+impl AttributeTokenStream for Vec<Attribute> {
     fn to_names_stream(&self) -> TokenStream {
         if self.is_empty() {
             TokenStream::new()
@@ -412,16 +419,6 @@ impl ToTokenStream for Vec<Attribute> {
         }
     }
 
-    fn to_mut_init_stream(&self) -> TokenStream {
-        if self.is_empty() {
-            TokenStream::new()
-        } else {
-            let entries = self.iter().map(Attribute::to_init);
-            // Include trailing semi-colon here as we know we have fields
-            quote! { #(#entries);*; }
-        }
-    }
-
     fn to_unpack_stream(&self) -> TokenStream {
         if self.is_empty() {
             TokenStream::new()
@@ -430,10 +427,6 @@ impl ToTokenStream for Vec<Attribute> {
             // Include trailing semi-colon here as we know we have fields
             quote! { #(#entries);*; }
         }
-    }
-
-    fn to_matches_stream(&self) -> TokenStream {
-        todo!()
     }
 }
 
@@ -505,8 +498,7 @@ fn create_struct(node: rx::Node, context: &Context) -> anyhow::Result<TokenStrea
     let attributes = get_attribute_fields(&node);
     let attribute_fields = attributes.to_fields_stream();
     let attribute_field_names = attributes.to_names_stream();
-    let attribute_mut_inits = attributes.to_mut_init_stream();
-    let attribute_inits = attributes.to_mut_init_stream();
+    let attribute_inits = attributes.to_init_stream();
 
     let elements = get_elements(&node)?;
     let element_fields = elements.to_fields_stream();
@@ -529,7 +521,7 @@ fn create_struct(node: rx::Node, context: &Context) -> anyhow::Result<TokenStrea
                 start_tag: BytesStart<'_>,
             ) -> anyhow::Result<Self> {
                 tracing::debug!("Parsing {:?}", start_tag.name());
-                #attribute_mut_inits
+                #attribute_inits
                 #element_mut_inits
 
                 loop {
@@ -677,7 +669,6 @@ fn create_mixed_content(element: rx::Node) -> anyhow::Result<TokenStream> {
 
     let attribute_fields = attributes.to_fields_stream();
     let attribute_field_names = attributes.to_names_stream();
-    let attribute_mut_inits = attributes.to_mut_init_stream();
     let attribute_inits = attributes.to_init_stream();
 
     if entries.is_empty() {
@@ -693,7 +684,7 @@ fn create_mixed_content(element: rx::Node) -> anyhow::Result<TokenStream> {
                     reader: &mut Reader<&[u8]>,
                     start_tag: BytesStart<'_>,
                 ) -> anyhow::Result<Self> {
-                    #attribute_mut_inits
+                    #attribute_inits
 
                     let mut content = String::new();
                     loop {
@@ -814,7 +805,7 @@ fn create_simple_content(element: rx::Node) -> anyhow::Result<TokenStream> {
     let attributes = get_attribute_fields(&extension);
     let attribute_fields = attributes.to_fields_stream();
     let attribute_field_names = attributes.to_names_stream();
-    let attribute_inits = attributes.to_mut_init_stream();
+    let attribute_inits = attributes.to_init_stream();
 
     let type_name = type_name.to_token_stream();
 
