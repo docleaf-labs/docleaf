@@ -91,6 +91,17 @@ impl Type {
             }
         }
     }
+
+    fn to_parse_empty_call(&self) -> Option<TokenStream> {
+        match self {
+            Self::Integer => None,
+            Self::String => None,
+            Self::Enum(name) => {
+                let name = id(&name.to_upper_camel_case());
+                Some(quote! { #name::parse_empty(tag)? })
+            }
+        }
+    }
 }
 
 enum Wrapper {
@@ -521,43 +532,65 @@ fn create_mixed_content(element: rx::Node) -> anyhow::Result<TokenStream> {
         }
     };
 
+    let mut empty_unexpected_tag = quote! {
+        tag_name => {
+            return Err(
+                anyhow::anyhow!(
+                    "unexpected tag {:?} when parsing {}",
+                    String::from_utf8_lossy(tag_name),
+                    std::any::type_name::<#type_name_id>()
+                )
+            );
+        }
+    };
+
     let mut entries = Vec::new();
     let mut match_entries = Vec::new();
+    let mut match_empty_entries = Vec::new();
 
     for child in element.children() {
         match child.tag_name().name() {
             "sequence" | "choice" => {
-                let (mut new_enum_entries, mut new_match_entries): (Vec<_>, Vec<_>) = child
-                    .children()
-                    .flat_map(
-                        |child| match (child.attribute("name"), child.attribute("type")) {
-                            (Some(name), Some(type_)) => {
-                                let name_bytes = proc_macro2::Literal::byte_string(name.as_bytes());
-                                let name = id(&name.to_upper_camel_case());
+                let mut new_enum_entries = Vec::new();
+                let mut new_match_entries = Vec::new();
+                let mut new_match_empty_entries = Vec::new();
 
-                                let type_ = Type::from_str(type_);
-                                let type_id = type_.to_type_id();
-                                let parse_call = type_.to_parse_call();
+                for grand_child in child.children() {
+                    match (grand_child.attribute("name"), grand_child.attribute("type")) {
+                        (Some(name), Some(type_)) => {
+                            let name_bytes = proc_macro2::Literal::byte_string(name.as_bytes());
+                            let name = id(&name.to_upper_camel_case());
 
-                                Some((
-                                    quote! {
-                                        #name(#type_id),
-                                    },
-                                    quote! {
-                                        #name_bytes => {
-                                            content.push(#item_id::#name(#parse_call))
-                                        }
-                                    },
-                                ))
+                            let type_ = Type::from_str(type_);
+                            let type_id = type_.to_type_id();
+                            let parse_call = type_.to_parse_call();
+
+                            new_enum_entries.push(quote! {
+                                #name(#type_id),
+                            });
+
+                            new_match_entries.push(quote! {
+                                #name_bytes => {
+                                    content.push(#item_id::#name(#parse_call))
+                                }
+                            });
+
+                            if let Some(parse_empty_call) = type_.to_parse_empty_call() {
+                                new_match_empty_entries.push(quote! {
+                                    #name_bytes => {
+                                        content.push(#item_id::#name(#parse_empty_call))
+                                    }
+                                });
                             }
-                            _ => None,
-                        },
-                    )
-                    .unzip();
+                        }
+                        _ => {}
+                    }
+                }
 
                 new_enum_entries.push(quote! { Text(String) });
                 entries.append(&mut new_enum_entries);
                 match_entries.append(&mut new_match_entries);
+                match_empty_entries.append(&mut new_match_empty_entries);
             }
             "group" => {
                 if let Some(ref_) = child.attribute("ref") {
@@ -610,9 +643,20 @@ fn create_mixed_content(element: rx::Node) -> anyhow::Result<TokenStream> {
                                     });
                                 }
                             }
-                            event => return Err(anyhow::anyhow!("unexpected event: {:?}", event)),
+                            event => return Err(anyhow::anyhow!("unexpected event '{:?}' when parsing '{:?}'", event, start_tag.name())),
                         }
                     }
+                }
+
+                #[allow(unused_variables)]
+                fn parse_empty(
+                    start_tag: BytesStart<'_>,
+                ) -> anyhow::Result<Self> {
+                    #attribute_inits
+                    Ok(#type_name_id {
+                        #attribute_field_names
+                        content: String::new(),
+                    })
                 }
             }
         })
@@ -642,6 +686,10 @@ fn create_mixed_content(element: rx::Node) -> anyhow::Result<TokenStream> {
                                 #(#match_entries)*
                                 #unexpected_tag
                             },
+                            Ok(Event::Empty(tag)) => match tag.name().as_ref() {
+                                #(#match_empty_entries)*
+                                #unexpected_tag
+                            },
                             Ok(Event::Text(text)) => content.push(#item_id::Text(
                                 String::from_utf8(text.to_vec()).map_err(|err| anyhow::anyhow!("{:?}", err))?,
                             )),
@@ -653,12 +701,22 @@ fn create_mixed_content(element: rx::Node) -> anyhow::Result<TokenStream> {
                                     });
                                 }
                             }
-                            event => return Err(anyhow::anyhow!("unexpected event: {:?}", event)),
+                            event => return Err(anyhow::anyhow!("unexpected event '{:?}' when parsing '{:?}'", event, start_tag.name())),
                         }
                     }
                 }
-            }
 
+                #[allow(unused_variables)]
+                fn parse_empty(
+                    start_tag: BytesStart<'_>,
+                ) -> anyhow::Result<Self> {
+                    #attribute_inits
+                    Ok(#type_name_id {
+                        #attribute_field_names
+                        content: Vec::new(),
+                    })
+                }
+            }
         })
     }
 }
@@ -728,8 +786,18 @@ fn create_simple_content(element: rx::Node) -> anyhow::Result<TokenStream> {
                         }
                     }
                 }
-            }
 
+                #[allow(unused_variables)]
+                fn parse_empty(
+                    start_tag: BytesStart<'_>,
+                ) -> anyhow::Result<Self> {
+                    #attribute_inits
+                    Ok(#type_name {
+                        #attribute_field_names
+                        content: String::new(),
+                    })
+                }
+            }
         })
     } else {
         anyhow::bail!("Unsupported content type for simple content");

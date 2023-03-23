@@ -10,6 +10,8 @@ pub fn parse_text(reader: &mut Reader<&[u8]>) -> anyhow::Result<String> {
         Ok(Event::Text(text)) => {
             String::from_utf8(text.to_vec()).map_err(|err| anyhow!("{:?}", err))
         }
+        // TODO: Check that the tag is the same as the start tag
+        Ok(Event::End(_tag)) => Ok(String::new()),
         event => Err(anyhow!(
             "parse_text called on non-text node resulting in event: {event:?}"
         )),
@@ -20,15 +22,8 @@ pub fn get_optional_attribute<'a>(
     name: &[u8],
     tag: &'a BytesStart<'a>,
 ) -> anyhow::Result<Option<Attribute<'a>>> {
-    Ok(tag
-        .attributes()
-        .find(|result| {
-            result
-                .as_ref()
-                .map(|attr| attr.key.local_name().as_ref() == name)
-                .unwrap_or(false)
-        })
-        .transpose()?)
+    let attr = tag.try_get_attribute(name)?;
+    Ok(attr)
 }
 
 pub fn get_attribute<'a>(name: &[u8], tag: &'a BytesStart<'a>) -> anyhow::Result<Attribute<'a>> {
