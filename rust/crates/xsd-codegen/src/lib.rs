@@ -1,5 +1,5 @@
 use std::collections::HashSet;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use anyhow::Context as AnyhowContext;
 use heck::ToUpperCamelCase;
@@ -1165,15 +1165,13 @@ struct Context {
     enum_variant_renames: EnumVariantRenames,
 }
 
-fn generate_mod(
-    context: Context,
-    root_tag: &str,
-    root_type: &str,
-    mod_name: &str,
-    xsd_path: &Path,
-) -> anyhow::Result<()> {
-    let xml_str = std::fs::read_to_string(&xsd_path)?;
-    let doc = rx::Document::parse(&xml_str)?;
+pub struct Root {
+    pub tag: String,
+    pub type_: String,
+}
+
+fn generate(context: Context, root: Root, xsd_str: &str) -> anyhow::Result<String> {
+    let doc = rx::Document::parse(&xsd_str)?;
 
     let schema = doc
         .root()
@@ -1191,8 +1189,8 @@ fn generate_mod(
         }
     }
 
-    let root_tag_literal = proc_macro2::Literal::byte_string(root_tag.as_bytes());
-    let root_type = id(root_type);
+    let root_tag_literal = proc_macro2::Literal::byte_string(root.tag.as_bytes());
+    let root_type = id(&root.type_);
 
     let file_ast = quote! {
         use anyhow::Context;
@@ -1224,28 +1222,13 @@ fn generate_mod(
         #nodes
     };
 
-    let out_dir = std::path::PathBuf::from(std::env::var("OUT_DIR")?);
-    let dir = out_dir.join("xsds");
-
-    std::fs::create_dir_all(&dir)?;
-
-    let path = dir.join(format!("{mod_name}.rs"));
-
-    std::fs::write(&path, file_ast.to_token_stream().to_string())?;
-
-    let output = std::process::Command::new("rustfmt").arg(&path).output()?;
-    if !output.status.success() {
-        anyhow::bail!("Failed to run rustfmt on {}", path.display());
-    }
-
-    Ok(())
+    Ok(file_ast.to_token_stream().to_string())
 }
 
 type EnumVariantRenames = Vec<(String, Vec<(String, String)>)>;
 
 pub struct Builder {
-    root_tag: String,
-    root_type: String,
+    root: Root,
     path: PathBuf,
     module: Option<String>,
     enum_variant_renames: EnumVariantRenames,
@@ -1253,11 +1236,10 @@ pub struct Builder {
 }
 
 impl Builder {
-    pub fn new(path: PathBuf, root_tag: String, root_type: String) -> Self {
+    pub fn new(path: PathBuf, root: Root) -> Self {
         Self {
             path,
-            root_tag,
-            root_type,
+            root,
             module: None,
             enum_variant_renames: Vec::new(),
             skip_types: HashSet::new(),
@@ -1296,12 +1278,23 @@ impl Builder {
             skip_types: self.skip_types,
         };
 
-        generate_mod(
-            context,
-            &self.root_tag,
-            &self.root_type,
-            &module,
-            &self.path,
-        )
+        let xsd_str = std::fs::read_to_string(&self.path)?;
+        let code_string = generate(context, self.root, &xsd_str)?;
+
+        let out_dir = std::path::PathBuf::from(std::env::var("OUT_DIR")?);
+        let dir = out_dir.join("xsds");
+
+        std::fs::create_dir_all(&dir)?;
+
+        let path = dir.join(format!("{module}.rs"));
+
+        std::fs::write(&path, code_string)?;
+
+        let output = std::process::Command::new("rustfmt").arg(&path).output()?;
+        if !output.status.success() {
+            anyhow::bail!("Failed to run rustfmt on {}", path.display());
+        }
+
+        Ok(())
     }
 }
