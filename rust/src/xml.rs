@@ -10,6 +10,8 @@ pub fn parse_text(reader: &mut Reader<&[u8]>) -> anyhow::Result<String> {
         Ok(Event::Text(text)) => {
             String::from_utf8(text.to_vec()).map_err(|err| anyhow!("{:?}", err))
         }
+        // TODO: Check that the tag is the same as the start tag
+        Ok(Event::End(_tag)) => Ok(String::new()),
         event => Err(anyhow!(
             "parse_text called on non-text node resulting in event: {event:?}"
         )),
@@ -20,20 +22,18 @@ pub fn get_optional_attribute<'a>(
     name: &[u8],
     tag: &'a BytesStart<'a>,
 ) -> anyhow::Result<Option<Attribute<'a>>> {
-    Ok(tag
-        .attributes()
-        .find(|result| {
-            result
-                .as_ref()
-                .map(|attr| attr.key.local_name().as_ref() == name)
-                .unwrap_or(false)
-        })
-        .transpose()?)
+    let attr = tag.try_get_attribute(name)?;
+    Ok(attr)
 }
 
 pub fn get_attribute<'a>(name: &[u8], tag: &'a BytesStart<'a>) -> anyhow::Result<Attribute<'a>> {
-    get_optional_attribute(name, tag)?
-        .ok_or_else(|| anyhow!("Unable to find {}", String::from_utf8_lossy(name)))
+    get_optional_attribute(name, tag)?.ok_or_else(|| {
+        anyhow!(
+            "Unable to find attribute '{}' on tag '{:?}'",
+            String::from_utf8_lossy(name),
+            tag
+        )
+    })
 }
 
 pub fn get_optional_attribute_string<'a>(
@@ -56,5 +56,26 @@ pub fn get_attribute_enum<'a, T: FromStr>(
 ) -> anyhow::Result<T> {
     let attr = get_attribute(name, tag)?;
     let str = String::from_utf8(attr.value.into_owned())?;
-    T::from_str(&str).map_err(|_| anyhow::anyhow!("Failed to parse string '{str}' to enum"))
+    T::from_str(&str).map_err(|_| {
+        anyhow::anyhow!(
+            "Failed to parse string '{str}' to enum '{}'",
+            std::any::type_name::<T>()
+        )
+    })
+}
+
+pub fn get_optional_attribute_enum<'a, T: FromStr>(
+    name: &[u8],
+    tag: &'a BytesStart<'a>,
+) -> anyhow::Result<Option<T>> {
+    get_optional_attribute(name, tag)?
+        .map(|attr| {
+            String::from_utf8(attr.value.into_owned())
+                .map_err(|_| anyhow::anyhow!("Failed to parse to enum"))
+                .and_then(|str| {
+                    T::from_str(&str)
+                        .map_err(|_| anyhow::anyhow!("Failed to parse string '{str}' to enum"))
+                })
+        })
+        .transpose()
 }

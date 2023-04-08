@@ -8,13 +8,13 @@ use std::path::PathBuf;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 
-use crate::doxygen::index::elements::{CompoundKind, DoxygenType, MemberKind};
+use crate::doxygen::index::generated as e;
 use crate::nodes::Node;
 
 /// Cache for xml files so that we don't have to keep re-reading them
 #[pyclass]
 struct Cache {
-    index_cache: HashMap<PathBuf, DoxygenType>,
+    index_cache: HashMap<PathBuf, e::DoxygenType>,
 }
 
 #[pymethods]
@@ -28,7 +28,7 @@ impl Cache {
 }
 
 impl Cache {
-    fn parse_index(&mut self, path: PathBuf) -> anyhow::Result<&DoxygenType> {
+    fn parse_index(&mut self, path: PathBuf) -> anyhow::Result<&e::DoxygenType> {
         // TODO: Figure out how to avoid double lookup - previous attempt led to borrow checker errors
         if self.index_cache.contains_key(&path) {
             return Ok(self.index_cache.get(&path).unwrap());
@@ -62,11 +62,11 @@ fn render_class(name: String, path: String, cache: &mut Cache) -> PyResult<Vec<N
     let compound = index
         .compound
         .iter()
-        .find(|compound| compound.name == name && compound.kind == CompoundKind::Class);
+        .find(|compound| compound.name == name && compound.kind == e::CompoundKind::Class);
 
     match compound {
         Some(compound) => {
-            let ref_id = &compound.ref_id;
+            let ref_id = &compound.refid;
             let compound_xml_path = std::fs::canonicalize(xml_path.join(format!("{ref_id}.xml")))?;
             let root = doxygen::compound::parse_file(&compound_xml_path)?;
 
@@ -94,11 +94,11 @@ fn render_struct(name: String, path: String, _cache: &mut Cache) -> PyResult<Vec
     let compound = index
         .compound
         .iter()
-        .find(|compound| compound.name == name && compound.kind == CompoundKind::Struct);
+        .find(|compound| compound.name == name && compound.kind == e::CompoundKind::Struct);
 
     match compound {
         Some(compound) => {
-            let ref_id = &compound.ref_id;
+            let ref_id = &compound.refid;
             let compound_xml_path = std::fs::canonicalize(xml_path.join(format!("{ref_id}.xml")))?;
             let root = doxygen::compound::parse_file(&compound_xml_path)?;
 
@@ -113,18 +113,18 @@ fn render_struct(name: String, path: String, _cache: &mut Cache) -> PyResult<Vec
 #[pyfunction]
 fn render_enum(name: String, path: String, cache: &mut Cache) -> PyResult<Vec<Node>> {
     tracing::info!("render_enum {} {}", name, path);
-    render_member(name, MemberKind::Enum, path, cache)
+    render_member(name, e::MemberKind::Enum, path, cache)
 }
 
 #[pyfunction]
 fn render_function(name: String, path: String, cache: &mut Cache) -> PyResult<Vec<Node>> {
     tracing::info!("render_function {} {}", name, path);
-    render_member(name, MemberKind::Function, path, cache)
+    render_member(name, e::MemberKind::Function, path, cache)
 }
 
 fn render_member(
     name: String,
-    kind: MemberKind,
+    kind: e::MemberKind,
     path: String,
     _cache: &mut Cache,
 ) -> PyResult<Vec<Node>> {
@@ -149,11 +149,11 @@ fn render_member(
 
     match found {
         Some((compound, member)) => {
-            let ref_id = &compound.ref_id;
+            let ref_id = &compound.refid;
             let compound_xml_path = std::fs::canonicalize(xml_path.join(format!("{ref_id}.xml")))?;
             let root = doxygen::compound::parse_file(&compound_xml_path)?;
 
-            Ok(doxygen::render::render_member(root, &member.ref_id))
+            Ok(doxygen::render::render_member(root, &member.refid))
         }
         None => Err(PyValueError::new_err(format!(
             "Unable to find {kind:?} matching '{name}'"
@@ -177,11 +177,11 @@ fn render_group(name: String, path: String, _cache: &mut Cache) -> PyResult<Vec<
     let compound = index
         .compound
         .iter()
-        .find(|compound| compound.name == name && compound.kind == CompoundKind::Group);
+        .find(|compound| compound.name == name && compound.kind == e::CompoundKind::Group);
 
     match compound {
         Some(compound) => {
-            let ref_id = &compound.ref_id;
+            let ref_id = &compound.refid;
             let compound_xml_path = std::fs::canonicalize(xml_path.join(format!("{ref_id}.xml")))?;
             let root = doxygen::compound::parse_file(&compound_xml_path)?;
 
