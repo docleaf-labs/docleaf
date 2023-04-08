@@ -296,7 +296,11 @@ pub fn render_description(description: e::DescriptionType) -> Vec<Node> {
                 nodes.push(Node::Paragraph(render_para(content)))
             }
             e::DescriptionTypeItem::Text(text) => nodes.push(Node::Text(text)),
-            _ => {}
+            _ => {
+                tracing::error!(
+                    "Unhandled description content node: {entry:?} in render_description"
+                );
+            }
         }
     }
 
@@ -308,13 +312,6 @@ pub fn render_para(element: e::DocParaType) -> Vec<Node> {
 
     for entry in element.content {
         match entry {
-            // TODO: Render list
-            e::DocParaTypeItem::DocCmdGroup(e::DocCmdGroup::Parameterlist(_)) => {}
-            // TODO: Handle title & paragraph block
-            e::DocParaTypeItem::DocCmdGroup(e::DocCmdGroup::Simplesect(e::DocSimpleSectType {
-                para,
-                ..
-            })) => nodes.append(&mut para.into_iter().flat_map(render_para).collect()),
             e::DocParaTypeItem::DocCmdGroup(element) => nodes.push(render_doc_cmd_group(element)),
             e::DocParaTypeItem::Text(text) => nodes.push(Node::Text(text)),
         }
@@ -327,7 +324,10 @@ fn render_doc_cmd_group(element: e::DocCmdGroup) -> Node {
     match element {
         e::DocCmdGroup::DocTitleCmdGroup(element) => render_doc_title_cmd_group(element),
         // TODO: Change to panic
-        _ => Node::Unknown,
+        _ => {
+            tracing::error!("Unhandled DocCmdGroup node: {element:?} in render_doc_cmd_group");
+            Node::Unknown
+        }
     }
 }
 
@@ -392,7 +392,7 @@ fn render_doc_title_cmd_group(doc_title_cmd_group: e::DocTitleCmdGroup) -> Node 
         | e::DocTitleCmdGroup::Del(element)
         | e::DocTitleCmdGroup::Ins(element)
         | e::DocTitleCmdGroup::Summary(element) => {
-            tracing::warn!(
+            tracing::error!(
                 "Unhandled inline doc_markup node: {element:?} in render_doc_title_cmd_group"
             );
             Node::UnknownInline(render_doc_markup_type(element))
