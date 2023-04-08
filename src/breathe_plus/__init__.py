@@ -154,6 +154,8 @@ class GroupDirective(Directive):
     final_argument_whitespace = True
     option_spec = {
         "project": directives.unchanged,
+        "content-only": directives.flag,  # TODO: Implement
+        "inner": directives.flag,         # TODO: Implement
     }
 
     def run(self) -> List[Node]:
