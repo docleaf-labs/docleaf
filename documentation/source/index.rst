@@ -10,58 +10,16 @@ Welcome to Breathe Plus' documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   class
+   enum
    functions
    groups
+   paragraphs
    program-listings
    lists
+   references
+   struct
    text-formatting
-
-Class
------
-
-.. doxygenclass:: Nutshell
-   :project: nutshell
-
-Struct
-------
-
-.. doxygenstruct:: ExampleStruct
-   :project: structs
-
-Enum
-----
-
-.. doxygenenum:: ExampleEnum
-   :project: enums
-
-
-Methods
--------
-
-.. doxygenclass:: Example
-   :project: class_methods
-
-
-References
-----------
-
-.. doxygenclass:: ReferenceExample
-   :project: references
-
-.. doxygenclass:: OtherReferenceExample
-   :project: references
-
-.. doxygenclass:: DocReferenceExample
-   :project: references
-
-
-Paragraphs
-----------
-
-.. doxygenclass:: ParagraphExample
-   :project: paragraphs
-
-
 
 
 Indices and tables
