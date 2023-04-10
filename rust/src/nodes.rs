@@ -75,7 +75,7 @@ pub enum Node {
     Text(String),
 
     // Nodes
-    BulletList(Vec<Node>),
+    /// Used in this code base like an html5 div - just a block level wrapper
     Container(Vec<Node>),
     Desc(Vec<Node>, Box<Node>),
     DescContent(Vec<Node>),
@@ -89,8 +89,8 @@ pub enum Node {
     // DescSignaturePunctuation(String),
     DescSignatureSpace,
     Emphasis(Vec<Node>),
-    ListItem(Vec<Node>),
     Literal(Vec<Node>),
+    LiteralBlock(Vec<Node>),
     LiteralStrong(Vec<Node>),
     // Index,
     Paragraph(Vec<Node>),
@@ -106,6 +106,11 @@ pub enum Node {
         names: String,
     },
 
+    // Lists
+    BulletList(Vec<Node>),
+    EnumeratedList(Vec<Node>),
+    ListItem(Vec<Node>),
+
     // Placeholder node for when we haven't handled the case
     UnknownInline(Vec<Node>),
     Unknown,
@@ -120,9 +125,6 @@ impl IntoPy<PyObject> for Node {
             // Nodes
             Self::Strong(nodes) => {
                 node(py, "strong", CallAs::Source, Attributes::new(), nodes).into_py(py)
-            }
-            Self::BulletList(nodes) => {
-                node(py, "bullet_list", CallAs::Source, Attributes::new(), nodes).into_py(py)
             }
             Self::Container(nodes) => {
                 node(py, "container", CallAs::Source, Attributes::new(), nodes).into_py(py)
@@ -227,12 +229,17 @@ impl IntoPy<PyObject> for Node {
             Self::Emphasis(nodes) => {
                 node(py, "emphasis", CallAs::Source, Attributes::new(), nodes).into_py(py)
             }
-            Self::ListItem(nodes) => {
-                node(py, "list_item", CallAs::Source, Attributes::new(), nodes).into_py(py)
-            }
             Self::Literal(nodes) => {
                 node(py, "literal", CallAs::Source, Attributes::new(), nodes).into_py(py)
             }
+            Self::LiteralBlock(nodes) => node(
+                py,
+                "literal_block",
+                CallAs::Source,
+                Attributes::new(),
+                nodes,
+            )
+            .into_py(py),
             Self::LiteralStrong(nodes) => node(
                 py,
                 "literal_strong",
@@ -274,6 +281,22 @@ impl IntoPy<PyObject> for Node {
                 Vec::<Node>::new(),
             )
             .into_py(py),
+
+            // Lists
+            Self::BulletList(nodes) => {
+                node(py, "bullet_list", CallAs::Source, Attributes::new(), nodes).into_py(py)
+            }
+            Self::EnumeratedList(nodes) => node(
+                py,
+                "enumerated_list",
+                CallAs::Source,
+                Attributes::new(),
+                nodes,
+            )
+            .into_py(py),
+            Self::ListItem(nodes) => {
+                node(py, "list_item", CallAs::Source, Attributes::new(), nodes).into_py(py)
+            }
 
             // Just show empty text at the moment
             Self::UnknownInline(nodes) => {

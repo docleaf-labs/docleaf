@@ -288,7 +288,7 @@ pub fn render_enum_value(enum_value: e::EnumvalueType) -> Node {
 }
 
 fn render_description(element: e::DescriptionType) -> Vec<Node> {
-    element.para.into_iter().map(render_para).collect()
+    element.para.into_iter().map(render_doc_para_type).collect()
 }
 
 fn extract_inner_description(nodes: Vec<Node>) -> Vec<Node> {
@@ -312,7 +312,7 @@ fn extract_inner_description(nodes: Vec<Node>) -> Vec<Node> {
     }
 }
 
-fn render_para(element: e::DocParaType) -> Node {
+fn render_doc_para_type(element: e::DocParaType) -> Node {
     let mut nodes = Vec::new();
 
     for entry in element.content {
@@ -331,12 +331,77 @@ fn render_doc_cmd_group(element: e::DocCmdGroup) -> Node {
         e::DocCmdGroup::Parameterlist(element) => {
             Node::BulletList(render_doc_param_list_type(element))
         }
+        e::DocCmdGroup::Simplesect(element) => {
+            Node::Container(render_doc_simple_sect_type(element))
+        }
+        e::DocCmdGroup::Itemizedlist(element) => render_doc_list_type(element),
+        e::DocCmdGroup::Orderedlist(element) => render_doc_list_type(element),
+        e::DocCmdGroup::Programlisting(element) => render_listing_type(element),
         // TODO: Change to panic
         _ => {
             tracing::error!("Unhandled DocCmdGroup node: {element:?} in render_doc_cmd_group");
             Node::Unknown
         }
     }
+}
+
+fn render_listing_type(element: e::ListingType) -> Node {
+    let lines: Vec<Vec<Node>> = element
+        .codeline
+        .into_iter()
+        .map(render_code_line_type)
+        .collect();
+
+    let nodes = itertools::intersperse(lines.into_iter(), vec![Node::Text("\n".to_string())])
+        .flat_map(|vec| vec.into_iter())
+        .collect();
+
+    Node::LiteralBlock(nodes)
+}
+
+fn render_code_line_type(element: e::CodelineType) -> Vec<Node> {
+    element
+        .highlight
+        .into_iter()
+        .flat_map(render_highlight_type)
+        .collect()
+}
+
+fn render_highlight_type(element: e::HighlightType) -> Vec<Node> {
+    let mut nodes = Vec::new();
+
+    for entry in element.content {
+        match entry {
+            e::HighlightTypeItem::Sp(content) => nodes.push(render_sp_type(content)),
+            e::HighlightTypeItem::Ref(content) => nodes.push(render_ref_text_type(content)),
+            e::HighlightTypeItem::Text(text) => nodes.push(Node::Text(text)),
+        }
+    }
+
+    nodes
+}
+
+fn render_sp_type(element: e::SpType) -> Node {
+    Node::Text(" ".to_string())
+}
+
+fn render_doc_list_type(element: e::DocListType) -> Node {
+    let items = element
+        .listitem
+        .into_iter()
+        .map(render_doc_list_item_type)
+        .collect();
+    Node::EnumeratedList(items)
+}
+
+fn render_doc_list_item_type(element: e::DocListItemType) -> Node {
+    let contents = element.para.into_iter().map(render_doc_para_type).collect();
+    Node::ListItem(contents)
+}
+
+/// Incomplete - just renders the para blocks at the moment
+fn render_doc_simple_sect_type(element: e::DocSimpleSectType) -> Vec<Node> {
+    element.para.into_iter().map(render_doc_para_type).collect()
 }
 
 fn render_doc_param_list_type(element: e::DocParamListType) -> Vec<Node> {
@@ -428,6 +493,8 @@ fn render_doc_title_cmd_group(doc_title_cmd_group: e::DocTitleCmdGroup) -> Node 
         e::DocTitleCmdGroup::Computeroutput(element) => {
             Node::Literal(render_doc_markup_type(element))
         }
+        // This might not be the correct way to handle it but there isn't a reStructuredText line break node
+        e::DocTitleCmdGroup::Linebreak => Node::Text("\n".to_string()),
 
         e::DocTitleCmdGroup::S(element)
         | e::DocTitleCmdGroup::Strike(element)
