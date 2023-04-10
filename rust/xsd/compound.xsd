@@ -213,7 +213,8 @@
 
   </xsd:complexType>
 
-  <xsd:complexType name="descriptionType" mixed="true">
+  <!-- Removed mixed=True as it seems like all free formatting should be within the 'para' but we'll see -->
+  <xsd:complexType name="descriptionType">
     <xsd:sequence>
       <xsd:element name="title" type="xsd:string" minOccurs="0"/>	    
       <xsd:element name="para" type="docParaType" minOccurs="0" maxOccurs="unbounded" />

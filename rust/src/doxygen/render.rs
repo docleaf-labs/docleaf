@@ -287,27 +287,32 @@ pub fn render_enum_value(enum_value: e::EnumvalueType) -> Node {
     )
 }
 
-pub fn render_description(description: e::DescriptionType) -> Vec<Node> {
-    let mut nodes = Vec::new();
-
-    for entry in description.content {
-        match entry {
-            e::DescriptionTypeItem::Para(content) => {
-                nodes.push(Node::Paragraph(render_para(content)))
-            }
-            e::DescriptionTypeItem::Text(text) => nodes.push(Node::Text(text)),
-            _ => {
-                tracing::error!(
-                    "Unhandled description content node: {entry:?} in render_description"
-                );
-            }
-        }
-    }
-
-    nodes
+fn render_description(element: e::DescriptionType) -> Vec<Node> {
+    element.para.into_iter().map(render_para).collect()
 }
 
-pub fn render_para(element: e::DocParaType) -> Vec<Node> {
+fn extract_inner_description(nodes: Vec<Node>) -> Vec<Node> {
+    tracing::debug!("extract_inner_description: {nodes:#?}");
+    if nodes.len() == 1 {
+        // Check without taking ownership
+        match nodes.first() {
+            Some(Node::Paragraph(_)) => {
+                // Extract and take ownership
+                if let Some(Node::Paragraph(inner)) = nodes.into_iter().next() {
+                    return inner;
+                } else {
+                    // Can't happen
+                    panic!("Should not occur - condition already checked")
+                }
+            }
+            _ => nodes,
+        }
+    } else {
+        nodes
+    }
+}
+
+fn render_para(element: e::DocParaType) -> Node {
     let mut nodes = Vec::new();
 
     for entry in element.content {
@@ -317,7 +322,7 @@ pub fn render_para(element: e::DocParaType) -> Vec<Node> {
         }
     }
 
-    nodes
+    Node::Paragraph(nodes)
 }
 
 fn render_doc_cmd_group(element: e::DocCmdGroup) -> Node {
@@ -339,8 +344,11 @@ fn render_doc_param_list_type(element: e::DocParamListType) -> Vec<Node> {
 
     for item in element.parameteritem {
         let mut contents = render_doc_param_name_list(item.parameternamelist);
+        contents.push(Node::Text(" - ".to_string()));
 
-        contents.append(&mut render_description(item.parameterdescription));
+        let description = render_description(item.parameterdescription);
+        let mut inner_description = extract_inner_description(description);
+        contents.append(&mut inner_description);
 
         nodes.push(Node::ListItem(contents))
     }
