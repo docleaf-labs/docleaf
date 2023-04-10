@@ -119,13 +119,14 @@ fn get_wrapper(element: &rx::Node) -> anyhow::Result<Option<Wrapper>> {
 
 struct Element {
     name: String,
+    safe_name: String,
     type_: Type,
     wrapper: Option<Wrapper>,
 }
 
 impl Element {
     fn to_field(&self) -> TokenStream {
-        let name = id(&self.name.clone());
+        let name = id(&self.safe_name.clone());
         let type_ = self.type_.to_type_id();
 
         match self.wrapper {
@@ -145,7 +146,7 @@ impl Element {
     }
 
     fn to_mut_init(&self) -> TokenStream {
-        let name = id(&self.name.clone());
+        let name = id(&self.safe_name.clone());
         match self.wrapper {
             Some(Wrapper::Vec) => {
                 quote! { let mut #name = Vec::new() }
@@ -167,7 +168,7 @@ impl Element {
     }
 
     fn to_init(&self) -> TokenStream {
-        let name = id(&self.name.clone());
+        let name = id(&self.safe_name.clone());
         match self.wrapper {
             Some(Wrapper::Vec) => {
                 quote! { let #name = Vec::new() }
@@ -189,7 +190,7 @@ impl Element {
     }
 
     fn to_unpack(&self) -> Option<TokenStream> {
-        let name = id(&self.name.clone());
+        let name = id(&self.safe_name.clone());
 
         match self.wrapper {
             Some(Wrapper::Vec) => None,
@@ -198,7 +199,7 @@ impl Element {
             ),
             Some(Wrapper::Option) => None,
             None => {
-                let name_str = self.name.clone();
+                let name_str = self.safe_name.clone();
                 Some(
                     quote! { let #name = #name.with_context(|| format!("Failed to find value for {}", #name_str))?; },
                 )
@@ -208,7 +209,7 @@ impl Element {
 
     fn to_match(&self) -> TokenStream {
         let name_string = proc_macro2::Literal::byte_string(self.name.as_bytes());
-        let name_var = id(&self.name);
+        let name_var = id(&self.safe_name);
 
         let parse_call = self.type_.to_parse_call();
 
@@ -251,7 +252,7 @@ impl ElementTokenStream for Vec<Element> {
         if self.is_empty() {
             TokenStream::new()
         } else {
-            let entries = self.iter().map(|element| id(&element.name));
+            let entries = self.iter().map(|element| id(&element.safe_name));
             // Include trailing comma here as we know we have fields
             quote! { #(#entries),*, }
         }
@@ -870,11 +871,12 @@ fn get_elements(element: &rx::Node) -> anyhow::Result<Vec<Element>> {
             "choice" => elements.extend(get_elements(&child)?),
             "element" => {
                 if let Some(name) = child.attribute("name") {
-                    let name = convert_field_name(name);
+                    let safe_name = convert_field_name(name);
                     // Default to string if no type is present
                     let type_ = Type::from_str(child.attribute("type").unwrap_or("xsd:string"));
                     elements.push(Element {
-                        name,
+                        name: name.to_string(),
+                        safe_name,
                         type_,
                         wrapper: get_wrapper(&child)?,
                     })
