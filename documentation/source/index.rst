@@ -20,6 +20,7 @@ Welcome to Breathe Plus' documentation!
    references
    struct
    text-formatting
+   verbatim
 
 
 Indices and tables

@@ -337,6 +337,7 @@ fn render_doc_cmd_group(element: e::DocCmdGroup) -> Node {
         e::DocCmdGroup::Itemizedlist(element) => render_doc_list_type(element),
         e::DocCmdGroup::Orderedlist(element) => render_doc_list_type(element),
         e::DocCmdGroup::Programlisting(element) => render_listing_type(element),
+        e::DocCmdGroup::Verbatim(text) => Node::LiteralBlock(vec![Node::Text(text)]),
         // TODO: Change to panic
         _ => {
             tracing::error!("Unhandled DocCmdGroup node: {element:?} in render_doc_cmd_group");
