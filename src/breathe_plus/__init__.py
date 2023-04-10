@@ -16,6 +16,7 @@ class NodeManager:
     def __init__(self, document):
         self.document = document
         self.lookup = {
+            "bullet_list": nodes.bullet_list,
             "container": nodes.container,
             "desc": sphinx.addnodes.desc,
             "desc_content": sphinx.addnodes.desc_content,
@@ -30,7 +31,9 @@ class NodeManager:
             "emphasis": nodes.emphasis,
             "index": sphinx.addnodes.index,
             "inline": nodes.inline,
+            "list_item": nodes.list_item,
             "literal": nodes.literal,
+            "literal_strong": sphinx.addnodes.literal_strong,
             "paragraph": nodes.paragraph,
             "reference": nodes.reference,
             "rubric": nodes.rubric,

@@ -75,7 +75,7 @@ pub enum Node {
     Text(String),
 
     // Nodes
-    Bold(Vec<Node>),
+    BulletList(Vec<Node>),
     Container(Vec<Node>),
     Desc(Vec<Node>, Box<Node>),
     DescContent(Vec<Node>),
@@ -89,7 +89,9 @@ pub enum Node {
     // DescSignaturePunctuation(String),
     DescSignatureSpace,
     Emphasis(Vec<Node>),
+    ListItem(Vec<Node>),
     Literal(Vec<Node>),
+    LiteralStrong(Vec<Node>),
     // Index,
     Paragraph(Vec<Node>),
     Reference {
@@ -98,6 +100,7 @@ pub enum Node {
         children: Vec<Node>,
     },
     Rubric(Vec<Node>),
+    Strong(Vec<Node>),
     Target {
         ids: String,
         names: String,
@@ -115,8 +118,11 @@ impl IntoPy<PyObject> for Node {
             Self::Text(text_) => text(text_).into_py(py),
 
             // Nodes
-            Self::Bold(nodes) => {
+            Self::Strong(nodes) => {
                 node(py, "strong", CallAs::Source, Attributes::new(), nodes).into_py(py)
+            }
+            Self::BulletList(nodes) => {
+                node(py, "bullet_list", CallAs::Source, Attributes::new(), nodes).into_py(py)
             }
             Self::Container(nodes) => {
                 node(py, "container", CallAs::Source, Attributes::new(), nodes).into_py(py)
@@ -221,9 +227,20 @@ impl IntoPy<PyObject> for Node {
             Self::Emphasis(nodes) => {
                 node(py, "emphasis", CallAs::Source, Attributes::new(), nodes).into_py(py)
             }
+            Self::ListItem(nodes) => {
+                node(py, "list_item", CallAs::Source, Attributes::new(), nodes).into_py(py)
+            }
             Self::Literal(nodes) => {
                 node(py, "literal", CallAs::Source, Attributes::new(), nodes).into_py(py)
             }
+            Self::LiteralStrong(nodes) => node(
+                py,
+                "literal_strong",
+                CallAs::Source,
+                Attributes::new(),
+                nodes,
+            )
+            .into_py(py),
             Self::Paragraph(children) => node(
                 py,
                 "paragraph",

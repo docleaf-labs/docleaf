@@ -8,3 +8,10 @@
   \param arg2 the second arg
 */
 void example_function(int arg1, bool arg2);
+
+/*! Parameters with directions
+ *  \param[out]     a output
+ *  \param[in]      b input
+ *  \param[in, out] c input and output
+ */
+void example_function_directions(int* a, int* b, int* c);

@@ -10,6 +10,7 @@ Welcome to Breathe Plus' documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   functions
    groups
    program-listings
    lists
@@ -26,12 +27,6 @@ Struct
 
 .. doxygenstruct:: ExampleStruct
    :project: structs
-
-Function
---------
-
-.. doxygenfunction:: example_function
-   :project: functions
 
 Enum
 ----

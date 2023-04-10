@@ -323,6 +323,9 @@ pub fn render_para(element: e::DocParaType) -> Vec<Node> {
 fn render_doc_cmd_group(element: e::DocCmdGroup) -> Node {
     match element {
         e::DocCmdGroup::DocTitleCmdGroup(element) => render_doc_title_cmd_group(element),
+        e::DocCmdGroup::Parameterlist(element) => {
+            Node::BulletList(render_doc_param_list_type(element))
+        }
         // TODO: Change to panic
         _ => {
             tracing::error!("Unhandled DocCmdGroup node: {element:?} in render_doc_cmd_group");
@@ -331,6 +334,43 @@ fn render_doc_cmd_group(element: e::DocCmdGroup) -> Node {
     }
 }
 
+fn render_doc_param_list_type(element: e::DocParamListType) -> Vec<Node> {
+    let mut nodes = Vec::new();
+
+    for item in element.parameteritem {
+        let mut contents = render_doc_param_name_list(item.parameternamelist);
+
+        contents.append(&mut render_description(item.parameterdescription));
+
+        nodes.push(Node::ListItem(contents))
+    }
+
+    nodes
+}
+
+fn render_doc_param_name_list(element: e::DocParamNameList) -> Vec<Node> {
+    element
+        .parametername
+        .into_iter()
+        .flat_map(render_doc_param_name)
+        .collect()
+}
+
+// TODO: Create macros or abstraction for this Ref + Text pattern
+fn render_doc_param_name(element: e::DocParamName) -> Vec<Node> {
+    let mut nodes = Vec::new();
+
+    for entry in element.content {
+        match entry {
+            e::DocParamNameItem::Ref(content) => nodes.push(render_ref_text_type(content)),
+            e::DocParamNameItem::Text(text) => nodes.push(Node::Text(text)),
+        }
+    }
+
+    nodes
+}
+
+// TODO: Create macros or abstraction for this Ref + Text pattern
 fn render_linked_text_type(linked_text_type: e::LinkedTextType) -> Vec<Node> {
     let mut nodes = Vec::new();
 
@@ -375,7 +415,7 @@ fn render_doc_title_cmd_group(doc_title_cmd_group: e::DocTitleCmdGroup) -> Node 
     tracing::debug!("render_doc_title_cmd_group {doc_title_cmd_group:?}");
     match doc_title_cmd_group {
         e::DocTitleCmdGroup::Ref(element) => render_doc_ref_text_type(element),
-        e::DocTitleCmdGroup::Bold(element) => Node::Bold(render_doc_markup_type(element)),
+        e::DocTitleCmdGroup::Bold(element) => Node::Strong(render_doc_markup_type(element)),
         e::DocTitleCmdGroup::Emphasis(element) => Node::Emphasis(render_doc_markup_type(element)),
         e::DocTitleCmdGroup::Computeroutput(element) => {
             Node::Literal(render_doc_markup_type(element))

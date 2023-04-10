@@ -919,7 +919,8 @@
 
   <xsd:complexType name="docParamListItem">
     <xsd:sequence>
-      <xsd:element name="parameternamelist" type="docParamNameList" minOccurs="0" maxOccurs="unbounded" />
+      <!-- Code seems to only & always have one instance: https://github.com/doxygen/doxygen/blob/dccfb33736fa9dd571ec7a5a0ebe51eccf2c2fe0/src/xmldocvisitor.cpp#L1048 -->
+      <xsd:element name="parameternamelist" type="docParamNameList"/>
       <xsd:element name="parameterdescription" type="descriptionType" />
     </xsd:sequence>
   </xsd:complexType>
