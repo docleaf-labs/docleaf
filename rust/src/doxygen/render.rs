@@ -337,11 +337,47 @@ fn render_doc_cmd_group(element: e::DocCmdGroup) -> Node {
         e::DocCmdGroup::Itemizedlist(element) => render_doc_list_type(element),
         e::DocCmdGroup::Orderedlist(element) => render_doc_list_type(element),
         e::DocCmdGroup::Programlisting(element) => render_listing_type(element),
-        e::DocCmdGroup::Verbatim(text) => Node::LiteralBlock(vec![Node::Text(text)]),
+        e::DocCmdGroup::Verbatim(text) => render_verbatim_text(text),
         // TODO: Change to panic
         _ => {
             tracing::error!("Unhandled DocCmdGroup node: {element:?} in render_doc_cmd_group");
             Node::Unknown
+        }
+    }
+}
+
+fn render_verbatim_text(text: String) -> Node {
+    let trimmed = text.trim_start();
+    if !trimmed.starts_with("embed:rst") {
+        return Node::LiteralBlock(vec![Node::Text(text)]);
+    }
+
+    if trimmed.starts_with("embed:rst:leading-asterisk") {
+        let text = text
+            .lines()
+            .skip(1) // skip the line with 'embed:rst' on it
+            .map(|line| line.replacen("*", " ", 1))
+            .collect::<Vec<_>>()
+            .join("\n");
+        Node::ReStructuredTextBlock(text)
+    } else if trimmed.starts_with("embed:rst:leading-slashes") {
+        let text = text
+            .lines()
+            .skip(1) // skip the line with 'embed:rst' on it
+            .map(|line| line.replacen("///", " ", 1))
+            .collect::<Vec<_>>()
+            .join("\n");
+        Node::ReStructuredTextBlock(text)
+    } else if trimmed.starts_with("embed:rst:inline") {
+        let text = text.replacen("embed:rst:inline", "", 1).replace("\n", "");
+        Node::ReStructuredTextInline(text)
+    } else {
+        // Attempt to split off the first line to remove the 'embed:rst'
+        match text.split_once('\n') {
+            // If we find a \n then use the rest
+            Some((_first_line, rest)) => Node::ReStructuredTextBlock(rest.to_string()),
+            // If we don't find one, then remove the embed:rst and use the text
+            None => Node::ReStructuredTextBlock(text.replacen("embed:rst", "", 1)),
         }
     }
 }

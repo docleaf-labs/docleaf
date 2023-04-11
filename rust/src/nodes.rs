@@ -6,7 +6,7 @@ use pyo3::prelude::*;
 pub enum CallAs {
     Source,
     SourceText,
-    // Args,
+    Args,
 }
 
 impl IntoPy<PyObject> for CallAs {
@@ -14,7 +14,7 @@ impl IntoPy<PyObject> for CallAs {
         match self {
             Self::Source => "source".into_py(py),
             Self::SourceText => "source-text".into_py(py),
-            // Self::Args => "args".into_py(py),
+            Self::Args => "args".into_py(py),
         }
     }
 }
@@ -110,6 +110,10 @@ pub enum Node {
     BulletList(Vec<Node>),
     EnumeratedList(Vec<Node>),
     ListItem(Vec<Node>),
+
+    // Embedded ReStructuredText
+    ReStructuredTextBlock(String),
+    ReStructuredTextInline(String),
 
     // Placeholder node for when we haven't handled the case
     UnknownInline(Vec<Node>),
@@ -297,6 +301,24 @@ impl IntoPy<PyObject> for Node {
             Self::ListItem(nodes) => {
                 node(py, "list_item", CallAs::Source, Attributes::new(), nodes).into_py(py)
             }
+
+            // Embedded ReStructuredText
+            Self::ReStructuredTextBlock(text_) => node(
+                py,
+                "restructured_text_block",
+                CallAs::Args,
+                Attributes::new(),
+                vec![text(text_)],
+            )
+            .into_py(py),
+            Self::ReStructuredTextInline(text_) => node(
+                py,
+                "restructured_text_inline",
+                CallAs::Args,
+                Attributes::new(),
+                vec![text(text_)],
+            )
+            .into_py(py),
 
             // Just show empty text at the moment
             Self::UnknownInline(nodes) => {
