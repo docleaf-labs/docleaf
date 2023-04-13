@@ -532,6 +532,9 @@ fn render_doc_title_cmd_group(doc_title_cmd_group: e::DocTitleCmdGroup) -> Node 
         }
         // This might not be the correct way to handle it but there isn't a reStructuredText line break node
         e::DocTitleCmdGroup::Linebreak => Node::Text("\n".to_string()),
+        e::DocTitleCmdGroup::Htmlonly(element) => {
+            Node::HtmlOnly(vec![Node::RawHtml(element.content)])
+        }
 
         e::DocTitleCmdGroup::S(element)
         | e::DocTitleCmdGroup::Strike(element)

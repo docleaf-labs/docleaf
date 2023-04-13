@@ -14,6 +14,7 @@ Welcome to Breathe Plus' documentation!
    enum
    functions
    groups
+   htmlonly
    paragraphs
    program-listings
    lists

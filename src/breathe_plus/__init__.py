@@ -111,7 +111,9 @@ class NodeManager:
             "literal": nodes.literal,
             "literal_block": nodes.literal_block,
             "literal_strong": sphinx.addnodes.literal_strong,
+            "only": sphinx.addnodes.only,
             "paragraph": nodes.paragraph,
+            "raw": nodes.raw,
             "reference": nodes.reference,
             "restructured_text_block": self.build_restructured_text_block,
             "restructured_text_inline": self.build_restructured_text_inline,
@@ -177,7 +179,7 @@ def render_node(node, node_manager):
     elif node.call_as == "args":
         return node_builder(*children, **node.attributes)
     else:
-        raise Exception("Call As not implemented" + node.call_as)
+        raise Exception("Call As not implemented: " + node.call_as)
 
 
 class ClassDirective(Directive):

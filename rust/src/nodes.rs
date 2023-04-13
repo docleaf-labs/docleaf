@@ -89,11 +89,13 @@ pub enum Node {
     // DescSignaturePunctuation(String),
     DescSignatureSpace,
     Emphasis(Vec<Node>),
+    HtmlOnly(Vec<Node>),
     Literal(Vec<Node>),
     LiteralBlock(Vec<Node>),
     LiteralStrong(Vec<Node>),
     // Index,
     Paragraph(Vec<Node>),
+    RawHtml(String),
     Reference {
         internal: bool,
         refid: String,
@@ -233,6 +235,14 @@ impl IntoPy<PyObject> for Node {
             Self::Emphasis(nodes) => {
                 node(py, "emphasis", CallAs::Source, Attributes::new(), nodes).into_py(py)
             }
+            Self::HtmlOnly(nodes) => node(
+                py,
+                "only",
+                CallAs::Source,
+                Attributes::from([("expr".into(), "html".into_py(py))]),
+                nodes,
+            )
+            .into_py(py),
             Self::Literal(nodes) => {
                 node(py, "literal", CallAs::Source, Attributes::new(), nodes).into_py(py)
             }
@@ -258,6 +268,14 @@ impl IntoPy<PyObject> for Node {
                 CallAs::SourceText,
                 Attributes::new(),
                 children,
+            )
+            .into_py(py),
+            Self::RawHtml(content) => node(
+                py,
+                "raw",
+                CallAs::Source,
+                Attributes::from([("format".into(), "html".into_py(py))]),
+                vec![text(content).into_py(py)],
             )
             .into_py(py),
             Self::Reference {

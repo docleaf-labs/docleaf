@@ -35,6 +35,7 @@ breathe_projects = {
     "enums": "../../examples/enums/xml/",
     "functions": "../../examples/functions/xml/",
     "groups": "../../examples/groups/xml/",
+    "html-only": "../../examples/html-only/xml/",
     "lists": "../../examples/lists/xml/",
     "nutshell": "../../examples/nutshell/xml/",
     "paragraphs": "../../examples/paragraphs/xml/",
