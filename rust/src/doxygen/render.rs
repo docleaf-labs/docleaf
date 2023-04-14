@@ -53,7 +53,7 @@ pub fn render_compound(ctx: &Context, root: e::DoxygenType) -> Vec<Node> {
     )]
 }
 
-fn render_compound_kind(ctx: &Context, kind: e::DoxCompoundKind) -> &'static str {
+fn render_compound_kind(_ctx: &Context, kind: e::DoxCompoundKind) -> &'static str {
     match kind {
         e::DoxCompoundKind::Class => "class",
         e::DoxCompoundKind::Struct => "struct",
@@ -359,7 +359,7 @@ fn render_doc_cmd_group(ctx: &Context, element: e::DocCmdGroup) -> Option<Node> 
     }
 }
 
-fn render_verbatim_text(ctx: &Context, text: String) -> Node {
+fn render_verbatim_text(_ctx: &Context, text: String) -> Node {
     let trimmed = text.trim_start();
     if !trimmed.starts_with("embed:rst") {
         return Node::LiteralBlock(vec![Node::Text(text)]);
@@ -431,7 +431,7 @@ fn render_highlight_type(ctx: &Context, element: e::HighlightType) -> Vec<Node> 
     nodes
 }
 
-fn render_sp_type(ctx: &Context, element: e::SpType) -> Node {
+fn render_sp_type(_ctx: &Context, _elementt: e::SpType) -> Node {
     Node::Text(" ".to_string())
 }
 
@@ -515,7 +515,7 @@ fn render_linked_text_type(ctx: &Context, linked_text_type: e::LinkedTextType) -
     nodes
 }
 
-fn render_ref_text_type(ctx: &Context, ref_text_type: e::RefTextType) -> Node {
+fn render_ref_text_type(_ctx: &Context, ref_text_type: e::RefTextType) -> Node {
     Node::Reference {
         internal: true,
         refid: ref_text_type.refid,
