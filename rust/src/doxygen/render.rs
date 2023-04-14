@@ -2,7 +2,14 @@ use crate::nodes::{Node, SignatureType};
 
 use crate::doxygen::compound::generated as e;
 
-pub fn render_compound(root: e::DoxygenType) -> Vec<Node> {
+/// Information and options for rendering
+#[derive(Default)]
+pub struct Context {
+    /// A list of Doxygen xml nodes names to ignore when rendering. Limited support.
+    pub skip_xml_nodes: Vec<String>,
+}
+
+pub fn render_compound(ctx: &Context, root: e::DoxygenType) -> Vec<Node> {
     let Some(compound_def) = root.compounddef else {
         return Vec::new();
     };
@@ -10,18 +17,18 @@ pub fn render_compound(root: e::DoxygenType) -> Vec<Node> {
     let mut content_nodes = Vec::new();
 
     if let Some(description) = compound_def.briefdescription {
-        content_nodes.append(&mut render_description(description));
+        content_nodes.append(&mut render_description(ctx, description));
     }
 
     if let Some(description) = compound_def.detaileddescription {
-        content_nodes.append(&mut render_description(description));
+        content_nodes.append(&mut render_description(ctx, description));
     }
 
     content_nodes.append(
         &mut compound_def
             .sectiondef
             .into_iter()
-            .map(render_section_def)
+            .map(|section_def| render_section_def(ctx, section_def))
             .collect(),
     );
 
@@ -30,7 +37,7 @@ pub fn render_compound(root: e::DoxygenType) -> Vec<Node> {
     let ids = compound_def.id.clone();
     let names = compound_def.id;
 
-    let kind = render_compound_kind(compound_def.kind);
+    let kind = render_compound_kind(ctx, compound_def.kind);
 
     vec![Node::Desc(
         vec![Node::DescSignature(
@@ -46,7 +53,7 @@ pub fn render_compound(root: e::DoxygenType) -> Vec<Node> {
     )]
 }
 
-fn render_compound_kind(kind: e::DoxCompoundKind) -> &'static str {
+fn render_compound_kind(ctx: &Context, kind: e::DoxCompoundKind) -> &'static str {
     match kind {
         e::DoxCompoundKind::Class => "class",
         e::DoxCompoundKind::Struct => "struct",
@@ -69,7 +76,7 @@ fn render_compound_kind(kind: e::DoxCompoundKind) -> &'static str {
     }
 }
 
-pub fn render_member(root: e::DoxygenType, member_ref_id: &str) -> Vec<Node> {
+pub fn render_member(ctx: &Context, root: e::DoxygenType, member_ref_id: &str) -> Vec<Node> {
     let Some(compound_def) = root.compounddef else {
         return Vec::new();
     };
@@ -83,7 +90,7 @@ pub fn render_member(root: e::DoxygenType, member_ref_id: &str) -> Vec<Node> {
 
     match member_def {
         Some(member_def) => {
-            vec![render_member_def(member_def)]
+            vec![render_member_def(ctx, member_def)]
         }
         None => {
             vec![]
@@ -91,7 +98,7 @@ pub fn render_member(root: e::DoxygenType, member_ref_id: &str) -> Vec<Node> {
     }
 }
 
-fn render_section_def(section_def: e::SectiondefType) -> Node {
+fn render_section_def(ctx: &Context, section_def: e::SectiondefType) -> Node {
     let mut content_nodes = vec![Node::Rubric(vec![Node::Text(section_title(
         &section_def.kind,
     ))])];
@@ -99,7 +106,7 @@ fn render_section_def(section_def: e::SectiondefType) -> Node {
         &mut section_def
             .memberdef
             .into_iter()
-            .map(render_member_def)
+            .map(|element| render_member_def(ctx, element))
             .collect(),
     );
 
@@ -147,15 +154,15 @@ fn section_title(section_kind: &e::DoxSectionKind) -> String {
     }
 }
 
-pub fn render_member_def(member_def: e::MemberdefType) -> Node {
+pub fn render_member_def(ctx: &Context, member_def: e::MemberdefType) -> Node {
     let name = member_kind_name(&member_def.kind);
     let mut content_nodes = Vec::new();
 
     if let Some(description) = member_def.briefdescription {
-        content_nodes.append(&mut render_description(description));
+        content_nodes.append(&mut render_description(ctx, description));
     }
     if let Some(description) = member_def.detaileddescription {
-        content_nodes.append(&mut render_description(description));
+        content_nodes.append(&mut render_description(ctx, description));
     }
 
     let ids = member_def.id.clone();
@@ -176,7 +183,7 @@ pub fn render_member_def(member_def: e::MemberdefType) -> Node {
                 &mut member_def
                     .enumvalue
                     .into_iter()
-                    .map(render_enum_value)
+                    .map(|element| render_enum_value(ctx, element))
                     .collect(),
             );
         }
@@ -189,12 +196,12 @@ pub fn render_member_def(member_def: e::MemberdefType) -> Node {
 
                     match (param.type_, param.declname) {
                         (Some(type_), Some(declname)) => {
-                            param_contents.append(&mut render_linked_text_type(type_));
+                            param_contents.append(&mut render_linked_text_type(ctx, type_));
                             param_contents.push(Node::DescSignatureSpace);
                             param_contents.push(Node::DescSignatureName(declname));
                         }
                         (Some(type_), None) => {
-                            param_contents.append(&mut render_linked_text_type(type_));
+                            param_contents.append(&mut render_linked_text_type(ctx, type_));
                         }
                         (None, Some(declname)) => {
                             param_contents.push(Node::DescSignatureName(declname));
@@ -210,7 +217,7 @@ pub fn render_member_def(member_def: e::MemberdefType) -> Node {
                 Some(type_) => {
                     signature_line = vec![
                         Node::Target { ids, names },
-                        Node::DescSignatureKeyword(render_linked_text_type(type_)),
+                        Node::DescSignatureKeyword(render_linked_text_type(ctx, type_)),
                         Node::DescSignatureSpace,
                         Node::DescName(Box::new(Node::DescSignatureName(member_def.name))),
                         Node::DescParameterList(parameter_list_items),
@@ -265,14 +272,14 @@ fn member_kind_name(member_kind: &e::DoxMemberKind) -> String {
     }
 }
 
-pub fn render_enum_value(enum_value: e::EnumvalueType) -> Node {
+pub fn render_enum_value(ctx: &Context, enum_value: e::EnumvalueType) -> Node {
     let mut content_nodes = Vec::new();
 
     if let Some(description) = enum_value.briefdescription {
-        content_nodes.append(&mut render_description(description));
+        content_nodes.append(&mut render_description(ctx, description));
     }
     if let Some(description) = enum_value.detaileddescription {
-        content_nodes.append(&mut render_description(description));
+        content_nodes.append(&mut render_description(ctx, description));
     }
 
     let content = Node::DescContent(content_nodes);
@@ -287,8 +294,12 @@ pub fn render_enum_value(enum_value: e::EnumvalueType) -> Node {
     )
 }
 
-fn render_description(element: e::DescriptionType) -> Vec<Node> {
-    element.para.into_iter().map(render_doc_para_type).collect()
+fn render_description(ctx: &Context, element: e::DescriptionType) -> Vec<Node> {
+    element
+        .para
+        .into_iter()
+        .map(|element| render_doc_para_type(ctx, element))
+        .collect()
 }
 
 fn extract_inner_description(nodes: Vec<Node>) -> Vec<Node> {
@@ -312,12 +323,14 @@ fn extract_inner_description(nodes: Vec<Node>) -> Vec<Node> {
     }
 }
 
-fn render_doc_para_type(element: e::DocParaType) -> Node {
+fn render_doc_para_type(ctx: &Context, element: e::DocParaType) -> Node {
     let mut nodes = Vec::new();
 
     for entry in element.content {
         match entry {
-            e::DocParaTypeItem::DocCmdGroup(element) => nodes.push(render_doc_cmd_group(element)),
+            e::DocParaTypeItem::DocCmdGroup(element) => {
+                render_doc_cmd_group(ctx, element).map(|node| nodes.push(node));
+            }
             e::DocParaTypeItem::Text(text) => nodes.push(Node::Text(text)),
         }
     }
@@ -325,28 +338,28 @@ fn render_doc_para_type(element: e::DocParaType) -> Node {
     Node::Paragraph(nodes)
 }
 
-fn render_doc_cmd_group(element: e::DocCmdGroup) -> Node {
+fn render_doc_cmd_group(ctx: &Context, element: e::DocCmdGroup) -> Option<Node> {
     match element {
-        e::DocCmdGroup::DocTitleCmdGroup(element) => render_doc_title_cmd_group(element),
+        e::DocCmdGroup::DocTitleCmdGroup(element) => render_doc_title_cmd_group(ctx, element),
         e::DocCmdGroup::Parameterlist(element) => {
-            Node::BulletList(render_doc_param_list_type(element))
+            Some(Node::BulletList(render_doc_param_list_type(ctx, element)))
         }
         e::DocCmdGroup::Simplesect(element) => {
-            Node::Container(render_doc_simple_sect_type(element))
+            Some(Node::Container(render_doc_simple_sect_type(ctx, element)))
         }
-        e::DocCmdGroup::Itemizedlist(element) => render_doc_list_type(element),
-        e::DocCmdGroup::Orderedlist(element) => render_doc_list_type(element),
-        e::DocCmdGroup::Programlisting(element) => render_listing_type(element),
-        e::DocCmdGroup::Verbatim(text) => render_verbatim_text(text),
+        e::DocCmdGroup::Itemizedlist(element) => Some(render_doc_list_type(ctx, element)),
+        e::DocCmdGroup::Orderedlist(element) => Some(render_doc_list_type(ctx, element)),
+        e::DocCmdGroup::Programlisting(element) => Some(render_listing_type(ctx, element)),
+        e::DocCmdGroup::Verbatim(text) => Some(render_verbatim_text(ctx, text)),
         // TODO: Change to panic
         _ => {
             tracing::error!("Unhandled DocCmdGroup node: {element:?} in render_doc_cmd_group");
-            Node::Unknown
+            None
         }
     }
 }
 
-fn render_verbatim_text(text: String) -> Node {
+fn render_verbatim_text(ctx: &Context, text: String) -> Node {
     let trimmed = text.trim_start();
     if !trimmed.starts_with("embed:rst") {
         return Node::LiteralBlock(vec![Node::Text(text)]);
@@ -382,11 +395,11 @@ fn render_verbatim_text(text: String) -> Node {
     }
 }
 
-fn render_listing_type(element: e::ListingType) -> Node {
+fn render_listing_type(ctx: &Context, element: e::ListingType) -> Node {
     let lines: Vec<Vec<Node>> = element
         .codeline
         .into_iter()
-        .map(render_code_line_type)
+        .map(|element| render_code_line_type(ctx, element))
         .collect();
 
     let nodes = itertools::intersperse(lines.into_iter(), vec![Node::Text("\n".to_string())])
@@ -396,21 +409,21 @@ fn render_listing_type(element: e::ListingType) -> Node {
     Node::LiteralBlock(nodes)
 }
 
-fn render_code_line_type(element: e::CodelineType) -> Vec<Node> {
+fn render_code_line_type(ctx: &Context, element: e::CodelineType) -> Vec<Node> {
     element
         .highlight
         .into_iter()
-        .flat_map(render_highlight_type)
+        .flat_map(|element| render_highlight_type(ctx, element))
         .collect()
 }
 
-fn render_highlight_type(element: e::HighlightType) -> Vec<Node> {
+fn render_highlight_type(ctx: &Context, element: e::HighlightType) -> Vec<Node> {
     let mut nodes = Vec::new();
 
     for entry in element.content {
         match entry {
-            e::HighlightTypeItem::Sp(content) => nodes.push(render_sp_type(content)),
-            e::HighlightTypeItem::Ref(content) => nodes.push(render_ref_text_type(content)),
+            e::HighlightTypeItem::Sp(content) => nodes.push(render_sp_type(ctx, content)),
+            e::HighlightTypeItem::Ref(content) => nodes.push(render_ref_text_type(ctx, content)),
             e::HighlightTypeItem::Text(text) => nodes.push(Node::Text(text)),
         }
     }
@@ -418,37 +431,45 @@ fn render_highlight_type(element: e::HighlightType) -> Vec<Node> {
     nodes
 }
 
-fn render_sp_type(element: e::SpType) -> Node {
+fn render_sp_type(ctx: &Context, element: e::SpType) -> Node {
     Node::Text(" ".to_string())
 }
 
-fn render_doc_list_type(element: e::DocListType) -> Node {
+fn render_doc_list_type(ctx: &Context, element: e::DocListType) -> Node {
     let items = element
         .listitem
         .into_iter()
-        .map(render_doc_list_item_type)
+        .map(|element| render_doc_list_item_type(ctx, element))
         .collect();
     Node::EnumeratedList(items)
 }
 
-fn render_doc_list_item_type(element: e::DocListItemType) -> Node {
-    let contents = element.para.into_iter().map(render_doc_para_type).collect();
+fn render_doc_list_item_type(ctx: &Context, element: e::DocListItemType) -> Node {
+    let contents = element
+        .para
+        .into_iter()
+        .map(|element| render_doc_para_type(ctx, element))
+        .collect();
     Node::ListItem(contents)
 }
 
 /// Incomplete - just renders the para blocks at the moment
-fn render_doc_simple_sect_type(element: e::DocSimpleSectType) -> Vec<Node> {
-    element.para.into_iter().map(render_doc_para_type).collect()
+fn render_doc_simple_sect_type(ctx: &Context, element: e::DocSimpleSectType) -> Vec<Node> {
+    element
+        .para
+        .into_iter()
+        .map(|element| render_doc_para_type(ctx, element))
+        .collect()
 }
 
-fn render_doc_param_list_type(element: e::DocParamListType) -> Vec<Node> {
+fn render_doc_param_list_type(ctx: &Context, element: e::DocParamListType) -> Vec<Node> {
     let mut nodes = Vec::new();
 
     for item in element.parameteritem {
-        let mut contents = render_doc_param_name_list(item.parameternamelist);
+        let mut contents = render_doc_param_name_list(ctx, item.parameternamelist);
         contents.push(Node::Text(" - ".to_string()));
 
-        let description = render_description(item.parameterdescription);
+        let description = render_description(ctx, item.parameterdescription);
         let mut inner_description = extract_inner_description(description);
         contents.append(&mut inner_description);
 
@@ -458,21 +479,21 @@ fn render_doc_param_list_type(element: e::DocParamListType) -> Vec<Node> {
     nodes
 }
 
-fn render_doc_param_name_list(element: e::DocParamNameList) -> Vec<Node> {
+fn render_doc_param_name_list(ctx: &Context, element: e::DocParamNameList) -> Vec<Node> {
     element
         .parametername
         .into_iter()
-        .flat_map(render_doc_param_name)
+        .flat_map(|element| render_doc_param_name(ctx, element))
         .collect()
 }
 
 // TODO: Create macros or abstraction for this Ref + Text pattern
-fn render_doc_param_name(element: e::DocParamName) -> Vec<Node> {
+fn render_doc_param_name(ctx: &Context, element: e::DocParamName) -> Vec<Node> {
     let mut nodes = Vec::new();
 
     for entry in element.content {
         match entry {
-            e::DocParamNameItem::Ref(content) => nodes.push(render_ref_text_type(content)),
+            e::DocParamNameItem::Ref(content) => nodes.push(render_ref_text_type(ctx, content)),
             e::DocParamNameItem::Text(text) => nodes.push(Node::Text(text)),
         }
     }
@@ -481,12 +502,12 @@ fn render_doc_param_name(element: e::DocParamName) -> Vec<Node> {
 }
 
 // TODO: Create macros or abstraction for this Ref + Text pattern
-fn render_linked_text_type(linked_text_type: e::LinkedTextType) -> Vec<Node> {
+fn render_linked_text_type(ctx: &Context, linked_text_type: e::LinkedTextType) -> Vec<Node> {
     let mut nodes = Vec::new();
 
     for entry in linked_text_type.content {
         match entry {
-            e::LinkedTextTypeItem::Ref(content) => nodes.push(render_ref_text_type(content)),
+            e::LinkedTextTypeItem::Ref(content) => nodes.push(render_ref_text_type(ctx, content)),
             e::LinkedTextTypeItem::Text(text) => nodes.push(Node::Text(text)),
         }
     }
@@ -494,7 +515,7 @@ fn render_linked_text_type(linked_text_type: e::LinkedTextType) -> Vec<Node> {
     nodes
 }
 
-fn render_ref_text_type(ref_text_type: e::RefTextType) -> Node {
+fn render_ref_text_type(ctx: &Context, ref_text_type: e::RefTextType) -> Node {
     Node::Reference {
         internal: true,
         refid: ref_text_type.refid,
@@ -502,13 +523,13 @@ fn render_ref_text_type(ref_text_type: e::RefTextType) -> Node {
     }
 }
 
-fn render_doc_ref_text_type(doc_ref_text_type: e::DocRefTextType) -> Node {
+fn render_doc_ref_text_type(ctx: &Context, doc_ref_text_type: e::DocRefTextType) -> Node {
     let mut nodes = Vec::new();
 
     for entry in doc_ref_text_type.content {
         match entry {
             e::DocRefTextTypeItem::DocTitleCmdGroup(content) => {
-                nodes.push(render_doc_title_cmd_group(content))
+                render_doc_title_cmd_group(ctx, content).map(|node| nodes.push(node));
             }
             e::DocRefTextTypeItem::Text(text) => nodes.push(Node::Text(text)),
         }
@@ -521,19 +542,30 @@ fn render_doc_ref_text_type(doc_ref_text_type: e::DocRefTextType) -> Node {
     }
 }
 
-fn render_doc_title_cmd_group(doc_title_cmd_group: e::DocTitleCmdGroup) -> Node {
+fn render_doc_title_cmd_group(
+    ctx: &Context,
+    doc_title_cmd_group: e::DocTitleCmdGroup,
+) -> Option<Node> {
     tracing::debug!("render_doc_title_cmd_group {doc_title_cmd_group:?}");
     match doc_title_cmd_group {
-        e::DocTitleCmdGroup::Ref(element) => render_doc_ref_text_type(element),
-        e::DocTitleCmdGroup::Bold(element) => Node::Strong(render_doc_markup_type(element)),
-        e::DocTitleCmdGroup::Emphasis(element) => Node::Emphasis(render_doc_markup_type(element)),
+        e::DocTitleCmdGroup::Ref(element) => Some(render_doc_ref_text_type(ctx, element)),
+        e::DocTitleCmdGroup::Bold(element) => {
+            Some(Node::Strong(render_doc_markup_type(ctx, element)))
+        }
+        e::DocTitleCmdGroup::Emphasis(element) => {
+            Some(Node::Emphasis(render_doc_markup_type(ctx, element)))
+        }
         e::DocTitleCmdGroup::Computeroutput(element) => {
-            Node::Literal(render_doc_markup_type(element))
+            Some(Node::Literal(render_doc_markup_type(ctx, element)))
         }
         // This might not be the correct way to handle it but there isn't a reStructuredText line break node
-        e::DocTitleCmdGroup::Linebreak => Node::Text("\n".to_string()),
+        e::DocTitleCmdGroup::Linebreak => Some(Node::Text("\n".to_string())),
         e::DocTitleCmdGroup::Htmlonly(element) => {
-            Node::HtmlOnly(vec![Node::RawHtml(element.content)])
+            if ctx.skip_xml_nodes.contains(&"htmlonly".to_string()) {
+                None
+            } else {
+                Some(Node::HtmlOnly(vec![Node::RawHtml(element.content)]))
+            }
         }
 
         e::DocTitleCmdGroup::S(element)
@@ -550,21 +582,23 @@ fn render_doc_title_cmd_group(doc_title_cmd_group: e::DocTitleCmdGroup) -> Node 
             tracing::error!(
                 "Unhandled inline doc_markup node: {element:?} in render_doc_title_cmd_group"
             );
-            Node::UnknownInline(render_doc_markup_type(element))
+            Some(Node::UnknownInline(render_doc_markup_type(ctx, element)))
         }
         element => {
             tracing::error!("No render handled for {element:?} in render_doc_title_cmd_group");
-            Node::Unknown
+            None
         }
     }
 }
 
-fn render_doc_markup_type(element: e::DocMarkupType) -> Vec<Node> {
+fn render_doc_markup_type(ctx: &Context, element: e::DocMarkupType) -> Vec<Node> {
     let mut nodes = Vec::new();
 
     for entry in element.content {
         match entry {
-            e::DocMarkupTypeItem::DocCmdGroup(content) => nodes.push(render_doc_cmd_group(content)),
+            e::DocMarkupTypeItem::DocCmdGroup(content) => {
+                render_doc_cmd_group(ctx, content).map(|node| nodes.push(node));
+            }
             e::DocMarkupTypeItem::Text(text) => nodes.push(Node::Text(text)),
         }
     }

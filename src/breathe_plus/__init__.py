@@ -227,13 +227,18 @@ class EnumDirective(Directive):
     final_argument_whitespace = True
     option_spec = {
         "project": directives.unchanged,
+        "skip-xml-nodes": directives.unchanged,
     }
 
     def run(self) -> List[Node]:
         name = self.arguments[0]
         project = self.options["project"] or self.app.config.breathe_default_project
         path = self.app.config.breathe_projects[project]
-        node_list = backend.render_enum(name, path, self.cache)
+        skip_xml_nodes = self.options.get("skip-xml-nodes", "")
+        skip_xml_nodes = skip_xml_nodes.split(",")
+
+        context = backend.Context(skip_xml_nodes)
+        node_list = backend.render_enum(name, path, context, self.cache)
 
         node_builder = NodeManager(self.state)
         return render_node_list(node_list, node_builder)
@@ -246,13 +251,18 @@ class FunctionDirective(Directive):
     final_argument_whitespace = True
     option_spec = {
         "project": directives.unchanged,
+        "skip-xml-nodes": directives.unchanged,
     }
 
     def run(self) -> List[Node]:
         name = self.arguments[0]
         project = self.options["project"] or self.app.config.breathe_default_project
         path = self.app.config.breathe_projects[project]
-        node_list = backend.render_function(name, path, self.cache)
+        skip_xml_nodes = self.options.get("skip-xml-nodes", "")
+        skip_xml_nodes = skip_xml_nodes.split(",")
+
+        context = backend.Context(skip_xml_nodes)
+        node_list = backend.render_function(name, path, context, self.cache)
 
         node_builder = NodeManager(self.state)
         return render_node_list(node_list, node_builder)
@@ -267,13 +277,19 @@ class GroupDirective(Directive):
         "project": directives.unchanged,
         "content-only": directives.flag,  # TODO: Implement
         "inner": directives.flag,  # TODO: Implement
+        "skip-xml-nodes": directives.unchanged,
     }
 
     def run(self) -> List[Node]:
         name = self.arguments[0]
         project = self.options.get("project", self.app.config.breathe_default_project)
         path = self.app.config.breathe_projects[project]
-        node_list = backend.render_group(name, path, self.cache)
+
+        skip_xml_nodes = self.options.get("skip-xml-nodes", "")
+        skip_xml_nodes = skip_xml_nodes.split(",")
+
+        context = backend.Context(skip_xml_nodes)
+        node_list = backend.render_group(name, path, context, self.cache)
 
         node_builder = NodeManager(self.state)
         return render_node_list(node_list, node_builder)

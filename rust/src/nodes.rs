@@ -119,7 +119,6 @@ pub enum Node {
 
     // Placeholder node for when we haven't handled the case
     UnknownInline(Vec<Node>),
-    Unknown,
 }
 
 impl IntoPy<PyObject> for Node {
@@ -342,7 +341,6 @@ impl IntoPy<PyObject> for Node {
             Self::UnknownInline(nodes) => {
                 node(py, "inline", CallAs::Source, Attributes::new(), nodes).into_py(py)
             }
-            Self::Unknown => text(String::new()).into_py(py),
         }
     }
 }

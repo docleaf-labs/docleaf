@@ -46,6 +46,19 @@ impl Cache {
     }
 }
 
+#[pyclass]
+struct Context {
+    pub skip_xml_nodes: Vec<String>,
+}
+
+#[pymethods]
+impl Context {
+    #[new]
+    fn new(skip_xml_nodes: Vec<String>) -> Self {
+        Self { skip_xml_nodes }
+    }
+}
+
 #[pyfunction]
 fn render_class(name: String, path: String, cache: &mut Cache) -> PyResult<Vec<Node>> {
     tracing::info!("render_class {} {}", name, path);
@@ -70,7 +83,8 @@ fn render_class(name: String, path: String, cache: &mut Cache) -> PyResult<Vec<N
             let compound_xml_path = std::fs::canonicalize(xml_path.join(format!("{ref_id}.xml")))?;
             let root = doxygen::compound::parse_file(&compound_xml_path)?;
 
-            Ok(doxygen::render::render_compound(root))
+            let context = doxygen::render::Context::default();
+            Ok(doxygen::render::render_compound(&context, root))
         }
         None => Err(PyValueError::new_err(format!(
             "Unable to find class matching '{name}'"
@@ -102,7 +116,8 @@ fn render_struct(name: String, path: String, _cache: &mut Cache) -> PyResult<Vec
             let compound_xml_path = std::fs::canonicalize(xml_path.join(format!("{ref_id}.xml")))?;
             let root = doxygen::compound::parse_file(&compound_xml_path)?;
 
-            Ok(doxygen::render::render_compound(root))
+            let context = doxygen::render::Context::default();
+            Ok(doxygen::render::render_compound(&context, root))
         }
         None => Err(PyValueError::new_err(format!(
             "Unable to find struct matching '{name}'"
@@ -111,21 +126,32 @@ fn render_struct(name: String, path: String, _cache: &mut Cache) -> PyResult<Vec
 }
 
 #[pyfunction]
-fn render_enum(name: String, path: String, cache: &mut Cache) -> PyResult<Vec<Node>> {
+fn render_enum(
+    name: String,
+    path: String,
+    context: &Context,
+    cache: &mut Cache,
+) -> PyResult<Vec<Node>> {
     tracing::info!("render_enum {} {}", name, path);
-    render_member(name, e::MemberKind::Enum, path, cache)
+    render_member(name, e::MemberKind::Enum, path, context, cache)
 }
 
 #[pyfunction]
-fn render_function(name: String, path: String, cache: &mut Cache) -> PyResult<Vec<Node>> {
+fn render_function(
+    name: String,
+    path: String,
+    context: &Context,
+    cache: &mut Cache,
+) -> PyResult<Vec<Node>> {
     tracing::info!("render_function {} {}", name, path);
-    render_member(name, e::MemberKind::Function, path, cache)
+    render_member(name, e::MemberKind::Function, path, context, cache)
 }
 
 fn render_member(
     name: String,
     kind: e::MemberKind,
     path: String,
+    context: &Context,
     _cache: &mut Cache,
 ) -> PyResult<Vec<Node>> {
     let xml_directory = PathBuf::from(path);
@@ -153,7 +179,14 @@ fn render_member(
             let compound_xml_path = std::fs::canonicalize(xml_path.join(format!("{ref_id}.xml")))?;
             let root = doxygen::compound::parse_file(&compound_xml_path)?;
 
-            Ok(doxygen::render::render_member(root, &member.refid))
+            let context = doxygen::render::Context {
+                skip_xml_nodes: context.skip_xml_nodes.clone(),
+            };
+            Ok(doxygen::render::render_member(
+                &context,
+                root,
+                &member.refid,
+            ))
         }
         None => Err(PyValueError::new_err(format!(
             "Unable to find {kind:?} matching '{name}'"
@@ -162,7 +195,12 @@ fn render_member(
 }
 
 #[pyfunction]
-fn render_group(name: String, path: String, _cache: &mut Cache) -> PyResult<Vec<Node>> {
+fn render_group(
+    name: String,
+    path: String,
+    context: &Context,
+    _cache: &mut Cache,
+) -> PyResult<Vec<Node>> {
     tracing::info!("render_group {} {}", name, path);
     let xml_directory = PathBuf::from(path);
 
@@ -187,7 +225,10 @@ fn render_group(name: String, path: String, _cache: &mut Cache) -> PyResult<Vec<
 
             tracing::debug!("Compound root: {root:?}");
 
-            Ok(doxygen::render::render_compound(root))
+            let context = doxygen::render::Context {
+                skip_xml_nodes: context.skip_xml_nodes.clone(),
+            };
+            Ok(doxygen::render::render_compound(&context, root))
         }
         None => Err(PyValueError::new_err(format!(
             "Unable to find struct matching '{name}'"
@@ -212,6 +253,7 @@ fn backend(_py: Python, module: &PyModule) -> PyResult<()> {
     }
 
     module.add_class::<Cache>()?;
+    module.add_class::<Context>()?;
 
     module.add_wrapped(pyo3::wrap_pyfunction!(render_class))?;
     module.add_wrapped(pyo3::wrap_pyfunction!(render_struct))?;
