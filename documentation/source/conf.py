@@ -47,3 +47,5 @@ breathe_projects = {
 }
 
 breathe_default_project = "nutshell"
+
+breathe_skip_doxygen_xml_nodes = []

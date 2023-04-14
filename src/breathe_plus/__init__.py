@@ -234,8 +234,7 @@ class EnumDirective(Directive):
         name = self.arguments[0]
         project = self.options["project"] or self.app.config.breathe_default_project
         path = self.app.config.breathe_projects[project]
-        skip_xml_nodes = self.options.get("skip-xml-nodes", "")
-        skip_xml_nodes = skip_xml_nodes.split(",")
+        skip_xml_nodes = get_skip_xml_nodes(self.app, self.options)
 
         context = backend.Context(skip_xml_nodes)
         node_list = backend.render_enum(name, path, context, self.cache)
@@ -258,8 +257,7 @@ class FunctionDirective(Directive):
         name = self.arguments[0]
         project = self.options["project"] or self.app.config.breathe_default_project
         path = self.app.config.breathe_projects[project]
-        skip_xml_nodes = self.options.get("skip-xml-nodes", "")
-        skip_xml_nodes = skip_xml_nodes.split(",")
+        skip_xml_nodes = get_skip_xml_nodes(self.app, self.options)
 
         context = backend.Context(skip_xml_nodes)
         node_list = backend.render_function(name, path, context, self.cache)
@@ -285,14 +283,24 @@ class GroupDirective(Directive):
         project = self.options.get("project", self.app.config.breathe_default_project)
         path = self.app.config.breathe_projects[project]
 
-        skip_xml_nodes = self.options.get("skip-xml-nodes", "")
-        skip_xml_nodes = skip_xml_nodes.split(",")
-
+        skip_xml_nodes = get_skip_xml_nodes(self.app, self.options)
         context = backend.Context(skip_xml_nodes)
         node_list = backend.render_group(name, path, context, self.cache)
 
         node_builder = NodeManager(self.state)
         return render_node_list(node_list, node_builder)
+
+
+def get_skip_xml_nodes(app, options):
+    """
+    Get the option for the directive and fallback to the app option if not defined on the directive
+    """
+    skip_xml_nodes = options.get("skip-xml-nodes", None)
+    if skip_xml_nodes is None:
+        skip_xml_nodes = app.config.breathe_skip_doxygen_xml_nodes
+    else:
+        skip_xml_nodes = skip_xml_nodes.split(",")
+    return skip_xml_nodes
 
 
 class Context:
@@ -320,5 +328,6 @@ def setup(app: Sphinx):
 
     app.add_config_value("breathe_projects", {}, "env")
     app.add_config_value("breathe_default_project", None, "env")
+    app.add_config_value("breathe_skip_doxygen_xml_nodes", [], "env")
 
     return {"version": __version__}
