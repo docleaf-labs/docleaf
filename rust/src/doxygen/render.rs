@@ -585,6 +585,14 @@ fn render_doc_title_cmd_group(
             }
         }
 
+        // Simple characters
+        // Use unicode sequence as rustfmt doesn't seem to like the en-dash character
+        e::DocTitleCmdGroup::Mdash => Some(Node::Text("\u{2014}".to_string())),
+        e::DocTitleCmdGroup::Ndash => Some(Node::Text("\u{2013}".to_string())),
+        e::DocTitleCmdGroup::Lsquo => Some(Node::Text("\u{2018}".to_string())),
+        e::DocTitleCmdGroup::Rsquo=> Some(Node::Text("\u{2019}".to_string())),
+        e::DocTitleCmdGroup::Nonbreakablespace=> Some(Node::Text("\u{00A0}".to_string())),
+
         e::DocTitleCmdGroup::S(element)
         | e::DocTitleCmdGroup::Strike(element)
         | e::DocTitleCmdGroup::Underline(element)
