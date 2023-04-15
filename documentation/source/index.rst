@@ -22,6 +22,7 @@ Welcome to Breathe Plus' documentation!
    struct
    text-formatting
    verbatim
+   xrefsect
 
 
 Indices and tables

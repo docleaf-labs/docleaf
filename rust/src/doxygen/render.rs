@@ -351,12 +351,29 @@ fn render_doc_cmd_group(ctx: &Context, element: e::DocCmdGroup) -> Option<Node> 
         e::DocCmdGroup::Orderedlist(element) => Some(render_doc_list_type(ctx, element)),
         e::DocCmdGroup::Programlisting(element) => Some(render_listing_type(ctx, element)),
         e::DocCmdGroup::Verbatim(text) => Some(render_verbatim_text(ctx, text)),
+        e::DocCmdGroup::Xrefsect(element) => Some(render_doc_xref_sect_type(ctx, element)),
         // TODO: Change to panic
         _ => {
             tracing::error!("Unhandled DocCmdGroup node: {element:?} in render_doc_cmd_group");
             None
         }
     }
+}
+
+fn render_doc_xref_sect_type(ctx: &Context, element: e::DocXRefSectType) -> Node {
+    Node::Desc(
+        vec![Node::DescSignature(
+            SignatureType::MultiLine,
+            vec![Node::Emphasis(vec![Node::Text(format!(
+                "{}:",
+                element.xreftitle
+            ))])],
+        )],
+        Box::new(Node::DescContent(render_description(
+            ctx,
+            element.xrefdescription,
+        ))),
+    )
 }
 
 fn render_verbatim_text(_ctx: &Context, text: String) -> Node {

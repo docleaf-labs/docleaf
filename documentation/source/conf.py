@@ -44,6 +44,7 @@ breathe_projects = {
     "structs": "../../examples/structs/xml/",
     "text-formatting": "../../examples/text-formatting/xml/",
     "verbatim": "../../examples/verbatim/xml/",
+    "xrefsect": "../../examples/xrefsect/xml/",
 }
 
 breathe_default_project = "nutshell"
