@@ -126,7 +126,9 @@ impl IntoPy<PyObject> for Node {
     fn into_py(self, py: Python<'_>) -> PyObject {
         match self {
             // Plain text
-            Self::Text(text_) => text(text_).into_py(py),
+            Self::Text(text_) => {
+                text(html_escape::decode_html_entities(&text_).into_owned()).into_py(py)
+            }
 
             // Nodes
             Self::Strong(nodes) => {
