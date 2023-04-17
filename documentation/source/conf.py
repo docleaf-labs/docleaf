@@ -43,6 +43,7 @@ breathe_projects = {
     "references": "../../examples/references/xml/",
     "structs": "../../examples/structs/xml/",
     "text-formatting": "../../examples/text-formatting/xml/",
+    "urls": "../../examples/urls/xml/",
     "verbatim": "../../examples/verbatim/xml/",
     "xrefsect": "../../examples/xrefsect/xml/",
 }

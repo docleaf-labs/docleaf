@@ -97,8 +97,9 @@ pub enum Node {
     Paragraph(Vec<Node>),
     RawHtml(String),
     Reference {
-        internal: bool,
-        refid: String,
+        internal: Option<bool>,
+        refid: Option<String>,
+        refuri: Option<String>,
         children: Vec<Node>,
     },
     Rubric(Vec<Node>),
@@ -280,12 +281,17 @@ impl IntoPy<PyObject> for Node {
             Self::Reference {
                 internal,
                 refid,
+                refuri,
                 children,
             } => {
-                let attributes = HashMap::from([
-                    ("internal".to_string(), internal.into_py(py)),
-                    ("refid".to_string(), refid.into_py(py)),
-                ]);
+                let attributes = [
+                    internal.map(|value| ("internal".to_string(), value.into_py(py))),
+                    refid.map(|value| ("refid".to_string(), value.into_py(py))),
+                    refuri.map(|value| ("refuri".to_string(), value.into_py(py))),
+                ]
+                .into_iter()
+                .flatten()
+                .collect::<HashMap<_, _>>();
                 node(py, "reference", CallAs::SourceText, attributes, children).into_py(py)
             }
             Self::Rubric(nodes) => {

@@ -21,6 +21,7 @@ Welcome to Breathe Plus' documentation!
    references
    struct
    text-formatting
+   urls
    verbatim
    xrefsect
 

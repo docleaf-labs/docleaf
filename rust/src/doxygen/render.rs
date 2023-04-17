@@ -534,8 +534,9 @@ fn render_linked_text_type(ctx: &Context, linked_text_type: e::LinkedTextType) -
 
 fn render_ref_text_type(_ctx: &Context, ref_text_type: e::RefTextType) -> Node {
     Node::Reference {
-        internal: true,
-        refid: ref_text_type.refid,
+        internal: Some(true),
+        refid: Some(ref_text_type.refid),
+        refuri: None,
         children: vec![Node::DescSignatureName(ref_text_type.content)],
     }
 }
@@ -553,8 +554,9 @@ fn render_doc_ref_text_type(ctx: &Context, doc_ref_text_type: e::DocRefTextType)
     }
 
     Node::Reference {
-        internal: true,
-        refid: doc_ref_text_type.refid,
+        internal: Some(true),
+        refid: Some(doc_ref_text_type.refid),
+        refuri: None,
         children: nodes,
     }
 }
@@ -584,14 +586,15 @@ fn render_doc_title_cmd_group(
                 Some(Node::HtmlOnly(vec![Node::RawHtml(element.content)]))
             }
         }
+        e::DocTitleCmdGroup::Ulink(element) => Some(render_doc_url_link(ctx, element)),
 
         // Simple characters
         // Use unicode sequence as rustfmt doesn't seem to like the en-dash character
         e::DocTitleCmdGroup::Mdash => Some(Node::Text("\u{2014}".to_string())),
         e::DocTitleCmdGroup::Ndash => Some(Node::Text("\u{2013}".to_string())),
         e::DocTitleCmdGroup::Lsquo => Some(Node::Text("\u{2018}".to_string())),
-        e::DocTitleCmdGroup::Rsquo=> Some(Node::Text("\u{2019}".to_string())),
-        e::DocTitleCmdGroup::Nonbreakablespace=> Some(Node::Text("\u{00A0}".to_string())),
+        e::DocTitleCmdGroup::Rsquo => Some(Node::Text("\u{2019}".to_string())),
+        e::DocTitleCmdGroup::Nonbreakablespace => Some(Node::Text("\u{00A0}".to_string())),
 
         e::DocTitleCmdGroup::S(element)
         | e::DocTitleCmdGroup::Strike(element)
@@ -629,4 +632,24 @@ fn render_doc_markup_type(ctx: &Context, element: e::DocMarkupType) -> Vec<Node>
     }
 
     nodes
+}
+
+fn render_doc_url_link(ctx: &Context, element: e::DocUrlLink) -> Node {
+    let mut nodes = Vec::new();
+
+    for entry in element.content {
+        match entry {
+            e::DocUrlLinkItem::DocTitleCmdGroup(content) => {
+                render_doc_title_cmd_group(ctx, content).map(|node| nodes.push(node));
+            }
+            e::DocUrlLinkItem::Text(text) => nodes.push(Node::Text(text)),
+        }
+    }
+
+    Node::Reference {
+        internal: None,
+        refid: None,
+        refuri: Some(element.url),
+        children: nodes,
+    }
 }
