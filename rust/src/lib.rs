@@ -8,13 +8,15 @@ use std::path::PathBuf;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 
-use crate::doxygen::index::generated as e;
+use crate::doxygen::compound::generated as compound;
+use crate::doxygen::index::generated as index;
 use crate::nodes::Node;
 
 /// Cache for xml files so that we don't have to keep re-reading them
 #[pyclass]
 struct Cache {
-    index_cache: HashMap<PathBuf, e::DoxygenType>,
+    index_cache: HashMap<PathBuf, index::DoxygenType>,
+    compound_cache: HashMap<PathBuf, compound::DoxygenType>,
 }
 
 #[pymethods]
@@ -23,12 +25,13 @@ impl Cache {
     fn new() -> Self {
         Self {
             index_cache: HashMap::new(),
+            compound_cache: HashMap::new(),
         }
     }
 }
 
 impl Cache {
-    fn parse_index(&mut self, path: PathBuf) -> anyhow::Result<&e::DoxygenType> {
+    fn parse_index(&mut self, path: PathBuf) -> anyhow::Result<&index::DoxygenType> {
         // TODO: Figure out how to avoid double lookup - previous attempt led to borrow checker errors
         if self.index_cache.contains_key(&path) {
             return Ok(self.index_cache.get(&path).unwrap());
@@ -39,6 +42,23 @@ impl Cache {
 
                 // Can safely unwrap as we've just inserted it
                 self.index_cache.get(&path).unwrap()
+            };
+
+            Ok(info)
+        }
+    }
+
+    fn parse_compound(&mut self, path: PathBuf) -> anyhow::Result<&compound::DoxygenType> {
+        // TODO: Figure out how to avoid double lookup - previous attempt led to borrow checker errors
+        if self.compound_cache.contains_key(&path) {
+            return Ok(self.compound_cache.get(&path).unwrap());
+        } else {
+            let info = {
+                let info = doxygen::compound::parse_file(&path)?;
+                self.compound_cache.insert(path.clone(), info);
+
+                // Can safely unwrap as we've just inserted it
+                self.compound_cache.get(&path).unwrap()
             };
 
             Ok(info)
@@ -75,13 +95,13 @@ fn render_class(name: String, path: String, cache: &mut Cache) -> PyResult<Vec<N
     let compound = index
         .compound
         .iter()
-        .find(|compound| compound.name == name && compound.kind == e::CompoundKind::Class);
+        .find(|compound| compound.name == name && compound.kind == index::CompoundKind::Class);
 
     match compound {
         Some(compound) => {
             let ref_id = &compound.refid;
             let compound_xml_path = std::fs::canonicalize(xml_path.join(format!("{ref_id}.xml")))?;
-            let root = doxygen::compound::parse_file(&compound_xml_path)?;
+            let root = cache.parse_compound(compound_xml_path)?;
 
             let context = doxygen::render::Context::default();
             Ok(doxygen::render::render_compound(&context, root))
@@ -93,7 +113,7 @@ fn render_class(name: String, path: String, cache: &mut Cache) -> PyResult<Vec<N
 }
 
 #[pyfunction]
-fn render_struct(name: String, path: String, _cache: &mut Cache) -> PyResult<Vec<Node>> {
+fn render_struct(name: String, path: String, cache: &mut Cache) -> PyResult<Vec<Node>> {
     tracing::info!("render_struct {} {}", name, path);
     let xml_directory = PathBuf::from(path);
 
@@ -108,13 +128,13 @@ fn render_struct(name: String, path: String, _cache: &mut Cache) -> PyResult<Vec
     let compound = index
         .compound
         .iter()
-        .find(|compound| compound.name == name && compound.kind == e::CompoundKind::Struct);
+        .find(|compound| compound.name == name && compound.kind == index::CompoundKind::Struct);
 
     match compound {
         Some(compound) => {
             let ref_id = &compound.refid;
             let compound_xml_path = std::fs::canonicalize(xml_path.join(format!("{ref_id}.xml")))?;
-            let root = doxygen::compound::parse_file(&compound_xml_path)?;
+            let root = cache.parse_compound(compound_xml_path)?;
 
             let context = doxygen::render::Context::default();
             Ok(doxygen::render::render_compound(&context, root))
@@ -133,7 +153,7 @@ fn render_enum(
     cache: &mut Cache,
 ) -> PyResult<Vec<Node>> {
     tracing::info!("render_enum {} {}", name, path);
-    render_member(name, e::MemberKind::Enum, path, context, cache)
+    render_member(name, index::MemberKind::Enum, path, context, cache)
 }
 
 #[pyfunction]
@@ -144,15 +164,15 @@ fn render_function(
     cache: &mut Cache,
 ) -> PyResult<Vec<Node>> {
     tracing::info!("render_function {} {}", name, path);
-    render_member(name, e::MemberKind::Function, path, context, cache)
+    render_member(name, index::MemberKind::Function, path, context, cache)
 }
 
 fn render_member(
     name: String,
-    kind: e::MemberKind,
+    kind: index::MemberKind,
     path: String,
     context: &Context,
-    _cache: &mut Cache,
+    cache: &mut Cache,
 ) -> PyResult<Vec<Node>> {
     let xml_directory = PathBuf::from(path);
 
@@ -177,7 +197,7 @@ fn render_member(
         Some((compound, member)) => {
             let ref_id = &compound.refid;
             let compound_xml_path = std::fs::canonicalize(xml_path.join(format!("{ref_id}.xml")))?;
-            let root = doxygen::compound::parse_file(&compound_xml_path)?;
+            let root = cache.parse_compound(compound_xml_path)?;
 
             let context = doxygen::render::Context {
                 skip_xml_nodes: context.skip_xml_nodes.clone(),
@@ -199,7 +219,7 @@ fn render_group(
     name: String,
     path: String,
     context: &Context,
-    _cache: &mut Cache,
+    cache: &mut Cache,
 ) -> PyResult<Vec<Node>> {
     tracing::info!("render_group {} {}", name, path);
     let xml_directory = PathBuf::from(path);
@@ -215,13 +235,13 @@ fn render_group(
     let compound = index
         .compound
         .iter()
-        .find(|compound| compound.name == name && compound.kind == e::CompoundKind::Group);
+        .find(|compound| compound.name == name && compound.kind == index::CompoundKind::Group);
 
     match compound {
         Some(compound) => {
             let ref_id = &compound.refid;
             let compound_xml_path = std::fs::canonicalize(xml_path.join(format!("{ref_id}.xml")))?;
-            let root = doxygen::compound::parse_file(&compound_xml_path)?;
+            let root = cache.parse_compound(compound_xml_path)?;
 
             tracing::debug!("Compound root: {root:?}");
 
