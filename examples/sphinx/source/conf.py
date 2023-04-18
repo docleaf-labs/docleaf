@@ -31,21 +31,21 @@ html_static_path = ["_static"]
 
 # -- Options for Breathe
 breathe_projects = {
-    "class_methods": "../../examples/class_methods/xml/",
-    "enums": "../../examples/enums/xml/",
-    "functions": "../../examples/functions/xml/",
-    "groups": "../../examples/groups/xml/",
-    "html-only": "../../examples/html-only/xml/",
-    "lists": "../../examples/lists/xml/",
-    "nutshell": "../../examples/nutshell/xml/",
-    "paragraphs": "../../examples/paragraphs/xml/",
-    "program-listings": "../../examples/program-listings/xml/",
-    "references": "../../examples/references/xml/",
-    "structs": "../../examples/structs/xml/",
-    "text-formatting": "../../examples/text-formatting/xml/",
-    "urls": "../../examples/urls/xml/",
-    "verbatim": "../../examples/verbatim/xml/",
-    "xrefsect": "../../examples/xrefsect/xml/",
+    "class_methods": "../../code/class_methods/xml/",
+    "enums": "../../code/enums/xml/",
+    "functions": "../../code/functions/xml/",
+    "groups": "../../code/groups/xml/",
+    "html-only": "../../code/html-only/xml/",
+    "lists": "../../code/lists/xml/",
+    "nutshell": "../../code/nutshell/xml/",
+    "paragraphs": "../../code/paragraphs/xml/",
+    "program-listings": "../../code/program-listings/xml/",
+    "references": "../../code/references/xml/",
+    "structs": "../../code/structs/xml/",
+    "text-formatting": "../../code/text-formatting/xml/",
+    "urls": "../../code/urls/xml/",
+    "verbatim": "../../code/verbatim/xml/",
+    "xrefsect": "../../code/xrefsect/xml/",
 }
 
 breathe_default_project = "nutshell"
