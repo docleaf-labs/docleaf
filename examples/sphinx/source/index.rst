@@ -21,6 +21,7 @@ Welcome to Breathe Plus' documentation!
    lists
    references
    struct
+   tables
    text-formatting
    urls
    verbatim

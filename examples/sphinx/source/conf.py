@@ -43,6 +43,7 @@ breathe_projects = {
     "program-listings": "../../code/program-listings/xml/",
     "references": "../../code/references/xml/",
     "structs": "../../code/structs/xml/",
+    "tables": "../../code/tables/xml/",
     "text-formatting": "../../code/text-formatting/xml/",
     "urls": "../../code/urls/xml/",
     "verbatim": "../../code/verbatim/xml/",
