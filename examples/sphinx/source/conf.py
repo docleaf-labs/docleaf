@@ -39,6 +39,7 @@ breathe_projects = {
     "lists": "../../code/lists/xml/",
     "nutshell": "../../code/nutshell/xml/",
     "paragraphs": "../../code/paragraphs/xml/",
+    "preformatted": "../../code/preformatted/xml/",
     "program-listings": "../../code/program-listings/xml/",
     "references": "../../code/references/xml/",
     "structs": "../../code/structs/xml/",

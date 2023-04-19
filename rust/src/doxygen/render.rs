@@ -354,6 +354,9 @@ fn render_doc_cmd_group(ctx: &Context, element: &e::DocCmdGroup) -> Option<Node>
         e::DocCmdGroup::Programlisting(element) => Some(render_listing_type(ctx, element)),
         e::DocCmdGroup::Verbatim(text) => Some(render_verbatim_text(ctx, text)),
         e::DocCmdGroup::Xrefsect(element) => Some(render_doc_xref_sect_type(ctx, element)),
+        e::DocCmdGroup::Preformatted(element) => {
+            Some(Node::LiteralBlock(render_doc_markup_type(ctx, element)))
+        }
         // TODO: Change to panic
         _ => {
             tracing::error!("Unhandled DocCmdGroup node: {element:?} in render_doc_cmd_group");

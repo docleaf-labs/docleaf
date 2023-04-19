@@ -16,6 +16,7 @@ Welcome to Breathe Plus' documentation!
    groups
    htmlonly
    paragraphs
+   preformatted
    program-listings
    lists
    references
