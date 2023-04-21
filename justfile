@@ -3,8 +3,8 @@
 build:
 	maturin develop
 	make -C examples/sphinx clean
-	make -C examples/sphinx html
 	make -C examples/sphinx pseudoxml
+	make -C examples/sphinx html
 
 wheel:
 	maturin build --release

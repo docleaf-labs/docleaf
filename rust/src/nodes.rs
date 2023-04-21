@@ -109,6 +109,23 @@ pub enum Node {
         names: String,
     },
 
+    // Tables
+    Table(Vec<Node>),
+    TableGroup {
+        cols: i32,
+        nodes: Vec<Node>,
+    },
+    TableColSpec {
+        colwidth: String,
+    },
+    TableHead(Vec<Node>),
+    TableBody(Vec<Node>),
+    TableRow(Vec<Node>),
+    TableRowEntry {
+        heading: bool,
+        nodes: Vec<Node>,
+    },
+
     // Lists
     BulletList(Vec<Node>),
     EnumeratedList(Vec<Node>),
@@ -308,6 +325,48 @@ impl IntoPy<PyObject> for Node {
                     ("names".into(), vec![names].into_py(py)),
                 ]),
                 Vec::<Node>::new(),
+            )
+            .into_py(py),
+
+            // Tables
+            Self::Table(nodes) => {
+                node(py, "table", CallAs::Source, Attributes::new(), nodes).into_py(py)
+            }
+            Self::TableGroup { cols, nodes } => node(
+                py,
+                "tgroup",
+                CallAs::Source,
+                Attributes::from([("cols".into(), cols.into_py(py))]),
+                nodes,
+            )
+            .into_py(py),
+            Self::TableColSpec { colwidth } => node(
+                py,
+                "colspec",
+                CallAs::Source,
+                Attributes::from([("colwidth".into(), colwidth.into_py(py))]),
+                Vec::<Node>::new(),
+            )
+            .into_py(py),
+            Self::TableHead(nodes) => {
+                node(py, "thead", CallAs::Source, Attributes::new(), nodes).into_py(py)
+            }
+            Self::TableBody(nodes) => {
+                node(py, "tbody", CallAs::Source, Attributes::new(), nodes).into_py(py)
+            }
+            Self::TableRow(nodes) => {
+                node(py, "row", CallAs::Source, Attributes::new(), nodes).into_py(py)
+            }
+            Self::TableRowEntry { heading, nodes } => node(
+                py,
+                "entry",
+                CallAs::Source,
+                if heading {
+                    Attributes::from([("heading".into(), heading.into_py(py))])
+                } else {
+                    Attributes::new()
+                },
+                nodes,
             )
             .into_py(py),
 

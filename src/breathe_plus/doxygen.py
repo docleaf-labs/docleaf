@@ -93,6 +93,7 @@ class NodeManager:
         self.lookup = {
             "bullet_list": nodes.bullet_list,
             "container": nodes.container,
+            "colspec": nodes.colspec,
             "desc": sphinx.addnodes.desc,
             "desc_content": sphinx.addnodes.desc_content,
             "desc_name": sphinx.addnodes.desc_name,
@@ -104,6 +105,7 @@ class NodeManager:
             "desc_signature": sphinx.addnodes.desc_signature,
             "desc_signature_line": sphinx.addnodes.desc_signature_line,
             "emphasis": nodes.emphasis,
+            "entry": nodes.entry,
             "enumerated_list": nodes.enumerated_list,
             "index": sphinx.addnodes.index,
             "inline": nodes.inline,
@@ -117,8 +119,13 @@ class NodeManager:
             "reference": nodes.reference,
             "restructured_text_block": self.build_restructured_text_block,
             "restructured_text_inline": self.build_restructured_text_inline,
+            "row": nodes.row,
             "rubric": nodes.rubric,
             "strong": nodes.strong,
+            "table": nodes.table,
+            "tbody": nodes.tbody,
+            "tgroup": nodes.tgroup,
+            "thead": nodes.thead,
             "target": self.build_target,
         }
 

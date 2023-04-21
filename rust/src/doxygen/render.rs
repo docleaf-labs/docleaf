@@ -357,11 +357,80 @@ fn render_doc_cmd_group(ctx: &Context, element: &e::DocCmdGroup) -> Option<Node>
         e::DocCmdGroup::Preformatted(element) => {
             Some(Node::LiteralBlock(render_doc_markup_type(ctx, element)))
         }
+        e::DocCmdGroup::Table(element) => Some(render_doc_table_type(ctx, element)),
         // TODO: Change to panic
         _ => {
             tracing::error!("Unhandled DocCmdGroup node: {element:?} in render_doc_cmd_group");
             None
         }
+    }
+}
+
+fn render_doc_table_type(ctx: &Context, element: &e::DocTableType) -> Node {
+    let rows: Vec<_> = element
+        .row
+        .iter()
+        .map(|element| render_doc_row_type(ctx, element))
+        .collect();
+
+    let (header_rows, body_rows): (Vec<_>, Vec<_>) = rows.into_iter().partition(|row| row.heading);
+    let header_nodes = header_rows.into_iter().map(|row| row.entry).collect();
+    let body_nodes = body_rows.into_iter().map(|row| row.entry).collect();
+
+    let mut nodes: Vec<_> = (0..element.cols)
+        .map(|_| Node::TableColSpec {
+            colwidth: "auto".to_string(),
+        })
+        .collect();
+
+    nodes.push(Node::TableHead(header_nodes));
+    nodes.push(Node::TableBody(body_nodes));
+
+    Node::Table(vec![Node::TableGroup {
+        cols: element.cols,
+        nodes,
+    }])
+}
+
+/// Custom structure to allow us to bubble up the 'heading' value from the table cells as whether
+/// or not they are headings impacts what rst nodes we use but that information is only available
+/// on the cells instead of further up on the rows or something
+struct TableRow {
+    heading: bool,
+    entry: Node,
+}
+
+/// Custom structure to allow us to bubble up the 'heading' value from the table cells
+struct TableCell {
+    heading: bool,
+    entry: Node,
+}
+
+fn render_doc_row_type(ctx: &Context, element: &e::DocRowType) -> TableRow {
+    let cells: Vec<_> = element
+        .entry
+        .iter()
+        .map(|element| render_doc_entry_type(ctx, element))
+        .collect();
+
+    TableRow {
+        heading: cells.iter().any(|cell| cell.heading),
+        entry: Node::TableRow(cells.into_iter().map(|cell| cell.entry).collect()),
+    }
+}
+
+fn render_doc_entry_type(ctx: &Context, element: &e::DocEntryType) -> TableCell {
+    let nodes = element
+        .para
+        .iter()
+        .map(|element| render_doc_para_type(ctx, element))
+        .collect();
+
+    let heading = element.thead == e::DoxBool::Yes;
+
+    TableCell {
+        heading,
+        entry: Node::TableRowEntry { heading, nodes },
     }
 }
 
