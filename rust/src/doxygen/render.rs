@@ -566,7 +566,9 @@ fn render_doc_param_list_type(ctx: &Context, element: &e::DocParamListType) -> V
         let mut inner_description = extract_inner_description(description);
         contents.append(&mut inner_description);
 
-        nodes.push(Node::ListItem(contents))
+        // Paragraph (or some kind of TextElement) node is required to avoid crash in
+        // Sphinx/docutils html rendering (not a bug in their code just an expectation)
+        nodes.push(Node::ListItem(vec![Node::Paragraph(contents)]))
     }
 
     nodes
