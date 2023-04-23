@@ -13,6 +13,11 @@ use crate::doxygen::compound::generated as compound;
 use crate::doxygen::index::generated as index;
 use crate::nodes::Node;
 
+/// Cache class exposed to python with no function methods beyond the
+/// constructor. Used to hold the Arc Mutex for the inner cache so that
+/// we can more easily mutate with actual cache data without worrying
+/// about accessing it through a &mut the whole time as it is easy to
+/// fall foul of the borrow checker with that.
 #[pyclass]
 struct Cache {
     inner: Arc<Mutex<CacheInner>>,
@@ -28,6 +33,9 @@ impl Cache {
     }
 }
 
+/// Inner cache data which is held with an Arc Mutex by the exposed Cache to
+/// make it easier to access and mutate.
+///
 /// Cache for xml files so that we don't have to keep re-reading them
 pub struct CacheInner {
     index_cache: HashMap<PathBuf, Arc<index::DoxygenType>>,
@@ -237,6 +245,8 @@ fn render_member(
     }
 }
 
+/// Abstraction to help with loading xml files from a particular folder and
+/// caching the resulting parsed data in the cache
 pub struct XmlLoader {
     root: PathBuf,
     cache: Arc<Mutex<CacheInner>>,
@@ -266,6 +276,7 @@ fn render_group(
     path: String,
     context: &Context,
     content_only: bool,
+    // TODO: Use 'filter' concept instead of passing this bool around
     inner_groups: bool,
     cache: &Cache,
 ) -> PyResult<Vec<Node>> {
