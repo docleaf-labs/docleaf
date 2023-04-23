@@ -1263,7 +1263,7 @@ impl Builder {
         self
     }
 
-    pub fn generate(self) -> anyhow::Result<()> {
+    pub fn generate(self) -> anyhow::Result<PathBuf> {
         let module = match self.module {
             Some(name) => name,
             None => self
@@ -1292,11 +1292,6 @@ impl Builder {
 
         std::fs::write(&path, code_string)?;
 
-        let output = std::process::Command::new("rustfmt").arg(&path).output()?;
-        if !output.status.success() {
-            anyhow::bail!("Failed to run rustfmt on {}", path.display());
-        }
-
-        Ok(())
+        Ok(path)
     }
 }

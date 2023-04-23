@@ -1,7 +1,7 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, path::Path};
 
 fn main() -> anyhow::Result<()> {
-    xsd_codegen::Builder::new(
+    let compound_path = xsd_codegen::Builder::new(
         std::path::PathBuf::from("xsd/compound.xsd"),
         xsd_codegen::Root {
             tag: "doxygen".to_string(),
@@ -21,7 +21,7 @@ fn main() -> anyhow::Result<()> {
     )])
     .generate()?;
 
-    xsd_codegen::Builder::new(
+    let index_path = xsd_codegen::Builder::new(
         std::path::PathBuf::from("xsd/index.xsd"),
         xsd_codegen::Root {
             tag: "doxygenindex".to_string(),
@@ -30,5 +30,24 @@ fn main() -> anyhow::Result<()> {
     )
     .generate()?;
 
+    format(&compound_path);
+    format(&index_path);
+
     Ok(())
+}
+
+fn format(path: &Path) {
+    // Attempt to run rustfmt on the resulting code but don't worry if it
+    // fails for any reason. The build should still work without it.
+    let output = std::process::Command::new("rustfmt").arg(&path).output();
+    match output {
+        Ok(output) => {
+            if !output.status.success() {
+                eprintln!("Failed to run rustfmt on {}", path.display());
+            }
+        }
+        Err(err) => {
+            eprintln!("Failed to run rustfmt on {}: {err}", path.display());
+        }
+    }
 }
