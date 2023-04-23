@@ -8,9 +8,6 @@ edition = "2021"
 name = "backend"
 crate-type = ["cdylib"]
 
-[package.metadata.maturin]
-name = "breathe_plus.backend"
-
 [dependencies]
 anyhow = "1.0.65"
 env_logger = "0.9.0"

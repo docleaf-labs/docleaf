@@ -21,6 +21,7 @@ build-backend = "maturin"
 
 [tool.maturin]
 bindings = "pyo3"
+module-name = "breathe_plus.backend"
 # "extension-module" tells pyo3 we want to build an extension module (skips linking against libpython.so)
 features = ["pyo3/extension-module"]
 python-source = "src"
