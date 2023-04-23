@@ -18,22 +18,22 @@ pub enum CompoundDefEntry<'a> {
 
 pub fn extract_compounddef_contents(
     compounddef: &generated::CompounddefType,
-    inner_groups: bool,
+    _inner_groups: bool,
 ) -> Vec<CompoundDefEntry> {
     let class_iter = compounddef
         .innerclass
         .iter()
-        .map(|class| CompoundDefEntry::Class(class));
+        .map(CompoundDefEntry::Class);
 
     let group_iter = compounddef
         .innergroup
         .iter()
-        .map(|group| CompoundDefEntry::Group(group));
+        .map(CompoundDefEntry::Group);
 
     let section_def_iter = compounddef
         .sectiondef
         .iter()
-        .map(|sectiondef| CompoundDefEntry::SectionDef(sectiondef));
+        .map(CompoundDefEntry::SectionDef);
 
     class_iter
         .chain(group_iter)

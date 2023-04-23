@@ -59,7 +59,7 @@ impl CacheInner {
         } else {
             let info = doxygen::index::parse_file(&path)?;
             let info = Arc::new(info);
-            self.index_cache.insert(path.clone(), info.clone());
+            self.index_cache.insert(path, info.clone());
             Ok(info)
         }
     }
@@ -71,7 +71,7 @@ impl CacheInner {
         } else {
             let info = doxygen::compound::parse_file(&path)?;
             let info = Arc::new(info);
-            self.compound_cache.insert(path.clone(), info.clone());
+            self.compound_cache.insert(path, info.clone());
             Ok(info)
         }
     }
@@ -311,9 +311,7 @@ fn render_group(
 
             if content_only {
                 let Some(ref compounddef) = root.compounddef else {
-                    return Err(PyValueError::new_err(format!(
-                        "Not compounddef node found in xml file"
-                    )));
+                    return Err(PyValueError::new_err("Not compounddef node found in xml file".to_string()));
                 };
 
                 let contents =

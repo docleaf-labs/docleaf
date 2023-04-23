@@ -140,7 +140,7 @@ pub fn render_member(ctx: &Context, root: &e::DoxygenType, member_ref_id: &str) 
 
     match member_def {
         Some(member_def) => {
-            vec![render_member_def(ctx, &member_def)]
+            vec![render_member_def(ctx, member_def)]
         }
         None => {
             vec![]
@@ -156,7 +156,7 @@ fn render_section_def(ctx: &Context, section_def: &e::SectiondefType) -> Node {
         &mut section_def
             .memberdef
             .iter()
-            .map(|element| render_member_def(ctx, &element))
+            .map(|element| render_member_def(ctx, element))
             .collect(),
     );
 
@@ -233,7 +233,7 @@ pub fn render_member_def(ctx: &Context, member_def: &e::MemberdefType) -> Node {
                 &mut member_def
                     .enumvalue
                     .iter()
-                    .map(|element| render_enum_value(ctx, &element))
+                    .map(|element| render_enum_value(ctx, element))
                     .collect(),
             );
         }
@@ -360,7 +360,7 @@ fn extract_inner_description(nodes: Vec<Node>) -> Vec<Node> {
             Some(Node::Paragraph(_)) => {
                 // Extract and take ownership
                 if let Some(Node::Paragraph(inner)) = nodes.into_iter().next() {
-                    return inner;
+                    inner
                 } else {
                     // Can't happen
                     panic!("Should not occur - condition already checked")
@@ -379,7 +379,7 @@ fn render_doc_para_type(ctx: &Context, element: &e::DocParaType) -> Node {
     for entry in element.content.iter() {
         match entry {
             e::DocParaTypeItem::DocCmdGroup(ref element) => {
-                render_doc_cmd_group(ctx, element).map(|node| nodes.push(node));
+                if let Some(node) = render_doc_cmd_group(ctx, element) { nodes.push(node) }
             }
             e::DocParaTypeItem::Text(text) => nodes.push(Node::Text(text.clone())),
         }
@@ -508,7 +508,7 @@ fn render_verbatim_text(_ctx: &Context, text: &str) -> Node {
         let text = text
             .lines()
             .skip(1) // skip the line with 'embed:rst' on it
-            .map(|line| line.replacen("*", " ", 1))
+            .map(|line| line.replacen('*', " ", 1))
             .collect::<Vec<_>>()
             .join("\n");
         Node::ReStructuredTextBlock(text)
@@ -521,7 +521,7 @@ fn render_verbatim_text(_ctx: &Context, text: &str) -> Node {
             .join("\n");
         Node::ReStructuredTextBlock(text)
     } else if trimmed.starts_with("embed:rst:inline") {
-        let text = text.replacen("embed:rst:inline", "", 1).replace("\n", "");
+        let text = text.replacen("embed:rst:inline", "", 1).replace('\n', "");
         Node::ReStructuredTextInline(text)
     } else {
         // Attempt to split off the first line to remove the 'embed:rst'
@@ -675,7 +675,7 @@ fn render_doc_ref_text_type(ctx: &Context, doc_ref_text_type: &e::DocRefTextType
     for entry in doc_ref_text_type.content.iter() {
         match entry {
             e::DocRefTextTypeItem::DocTitleCmdGroup(ref content) => {
-                render_doc_title_cmd_group(ctx, content).map(|node| nodes.push(node));
+                if let Some(node) = render_doc_title_cmd_group(ctx, content) { nodes.push(node) }
             }
             e::DocRefTextTypeItem::Text(text) => nodes.push(Node::Text(text.clone())),
         }
@@ -753,7 +753,7 @@ fn render_doc_markup_type(ctx: &Context, element: &e::DocMarkupType) -> Vec<Node
     for entry in element.content.iter() {
         match entry {
             e::DocMarkupTypeItem::DocCmdGroup(ref content) => {
-                render_doc_cmd_group(ctx, content).map(|node| nodes.push(node));
+                if let Some(node) = render_doc_cmd_group(ctx, content) { nodes.push(node) }
             }
             e::DocMarkupTypeItem::Text(text) => nodes.push(Node::Text(text.clone())),
         }
@@ -768,7 +768,7 @@ fn render_doc_url_link(ctx: &Context, element: &e::DocUrlLink) -> Node {
     for entry in element.content.iter() {
         match entry {
             e::DocUrlLinkItem::DocTitleCmdGroup(ref content) => {
-                render_doc_title_cmd_group(ctx, content).map(|node| nodes.push(node));
+                if let Some(node) = render_doc_title_cmd_group(ctx, content) { nodes.push(node) }
             }
             e::DocUrlLinkItem::Text(text) => nodes.push(Node::Text(text.clone())),
         }
