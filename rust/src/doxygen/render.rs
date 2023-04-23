@@ -1,6 +1,8 @@
 use crate::nodes::{Node, SignatureType};
+use crate::XmlLoader;
 
 use crate::doxygen::compound::generated as e;
+use crate::doxygen::compound::CompoundDefEntry;
 
 /// Information and options for rendering
 #[derive(Default)]
@@ -9,9 +11,14 @@ pub struct Context {
     pub skip_xml_nodes: Vec<String>,
 }
 
-pub fn render_compound(ctx: &Context, root: &e::DoxygenType) -> Vec<Node> {
+pub fn render_compound(
+    ctx: &Context,
+    root: &e::DoxygenType,
+    inner_groups: bool,
+    xml_loader: &mut XmlLoader,
+) -> anyhow::Result<Vec<Node>> {
     let Some(ref compound_def) = root.compounddef else {
-        return Vec::new();
+        return Ok(Vec::new());
     };
 
     let mut content_nodes = Vec::new();
@@ -22,6 +29,28 @@ pub fn render_compound(ctx: &Context, root: &e::DoxygenType) -> Vec<Node> {
 
     if let Some(ref description) = compound_def.detaileddescription {
         content_nodes.append(&mut render_description(ctx, description));
+    }
+
+    for innerclass in compound_def.innerclass.iter() {
+        let root = xml_loader.load(&innerclass.refid)?;
+        content_nodes.append(&mut render_compound(
+            ctx,
+            root.as_ref(),
+            inner_groups,
+            xml_loader,
+        )?);
+    }
+
+    if inner_groups {
+        for innergroup in compound_def.innergroup.iter() {
+            let root = xml_loader.load(&innergroup.refid)?;
+            content_nodes.append(&mut render_compound(
+                ctx,
+                root.as_ref(),
+                inner_groups,
+                xml_loader,
+            )?);
+        }
     }
 
     content_nodes.append(
@@ -39,7 +68,7 @@ pub fn render_compound(ctx: &Context, root: &e::DoxygenType) -> Vec<Node> {
 
     let kind = render_compound_kind(ctx, &compound_def.kind);
 
-    vec![Node::Desc(
+    Ok(vec![Node::Desc(
         vec![Node::DescSignature(
             SignatureType::MultiLine,
             vec![Node::DescSignatureLine(vec![
@@ -52,7 +81,26 @@ pub fn render_compound(ctx: &Context, root: &e::DoxygenType) -> Vec<Node> {
             ])],
         )],
         Box::new(content),
-    )]
+    )])
+}
+
+pub fn render_compounddef_content(
+    ctx: &Context,
+    entry: CompoundDefEntry,
+    inner_groups: bool,
+    xml_loader: &mut crate::XmlLoader,
+) -> anyhow::Result<Vec<Node>> {
+    match entry {
+        CompoundDefEntry::SectionDef(section_def) => Ok(vec![render_section_def(ctx, section_def)]),
+        CompoundDefEntry::Class(ref_type) => {
+            let root = xml_loader.load(&ref_type.refid)?;
+            render_compound(ctx, root.as_ref(), inner_groups, xml_loader)
+        }
+        CompoundDefEntry::Group(ref_type) => {
+            let root = xml_loader.load(&ref_type.refid)?;
+            render_compound(ctx, root.as_ref(), inner_groups, xml_loader)
+        }
+    }
 }
 
 fn render_compound_kind(_ctx: &Context, kind: &e::DoxCompoundKind) -> &'static str {

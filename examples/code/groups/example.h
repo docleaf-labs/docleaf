@@ -11,6 +11,14 @@
 */
 void example_function(int arg1, bool arg2);
 
+/*! @ingroup group1
+  A class 
+*/
+class ExampleClass {
+  public:
+    ExampleClass();
+};
+
 /*! @ingroup group2
   Another function
 
@@ -34,3 +42,12 @@ void a_third_example_function(int arg1, bool arg2);
   \param arg2 the second arg
 */
 void a_fourth_example_function(int arg1, bool arg2);
+
+/*! @defgroup group4 The Fourth Group
+    @ingroup group3
+    A fifth function
+
+    \param arg1 the first arg
+    \param arg2 the second arg
+*/
+void a_fifth_example_function(int arg1, bool arg2);

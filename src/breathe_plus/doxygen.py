@@ -291,8 +291,10 @@ class GroupDirective(Directive):
         path = self.app.config.breathe_projects[project]
 
         skip_xml_nodes = get_skip_xml_nodes(self.app, self.options)
+        content_only = "content-only" in self.options
+        inner_group = "inner" in self.options
         context = backend.Context(skip_xml_nodes)
-        node_list = backend.render_group(name, path, context, self.cache)
+        node_list = backend.render_group(name, path, context, content_only, inner_group, self.cache)
 
         node_builder = NodeManager(self.state)
         return render_node_list(node_list, node_builder)
