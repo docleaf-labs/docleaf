@@ -20,15 +20,9 @@ pub fn extract_compounddef_contents(
     compounddef: &generated::CompounddefType,
     _inner_groups: bool,
 ) -> Vec<CompoundDefEntry> {
-    let class_iter = compounddef
-        .innerclass
-        .iter()
-        .map(CompoundDefEntry::Class);
+    let class_iter = compounddef.innerclass.iter().map(CompoundDefEntry::Class);
 
-    let group_iter = compounddef
-        .innergroup
-        .iter()
-        .map(CompoundDefEntry::Group);
+    let group_iter = compounddef.innergroup.iter().map(CompoundDefEntry::Group);
 
     let section_def_iter = compounddef
         .sectiondef

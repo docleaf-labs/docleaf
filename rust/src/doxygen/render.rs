@@ -379,7 +379,9 @@ fn render_doc_para_type(ctx: &Context, element: &e::DocParaType) -> Node {
     for entry in element.content.iter() {
         match entry {
             e::DocParaTypeItem::DocCmdGroup(ref element) => {
-                if let Some(node) = render_doc_cmd_group(ctx, element) { nodes.push(node) }
+                if let Some(node) = render_doc_cmd_group(ctx, element) {
+                    nodes.push(node)
+                }
             }
             e::DocParaTypeItem::Text(text) => nodes.push(Node::Text(text.clone())),
         }
@@ -675,7 +677,9 @@ fn render_doc_ref_text_type(ctx: &Context, doc_ref_text_type: &e::DocRefTextType
     for entry in doc_ref_text_type.content.iter() {
         match entry {
             e::DocRefTextTypeItem::DocTitleCmdGroup(ref content) => {
-                if let Some(node) = render_doc_title_cmd_group(ctx, content) { nodes.push(node) }
+                if let Some(node) = render_doc_title_cmd_group(ctx, content) {
+                    nodes.push(node)
+                }
             }
             e::DocRefTextTypeItem::Text(text) => nodes.push(Node::Text(text.clone())),
         }
@@ -753,7 +757,9 @@ fn render_doc_markup_type(ctx: &Context, element: &e::DocMarkupType) -> Vec<Node
     for entry in element.content.iter() {
         match entry {
             e::DocMarkupTypeItem::DocCmdGroup(ref content) => {
-                if let Some(node) = render_doc_cmd_group(ctx, content) { nodes.push(node) }
+                if let Some(node) = render_doc_cmd_group(ctx, content) {
+                    nodes.push(node)
+                }
             }
             e::DocMarkupTypeItem::Text(text) => nodes.push(Node::Text(text.clone())),
         }
@@ -768,7 +774,9 @@ fn render_doc_url_link(ctx: &Context, element: &e::DocUrlLink) -> Node {
     for entry in element.content.iter() {
         match entry {
             e::DocUrlLinkItem::DocTitleCmdGroup(ref content) => {
-                if let Some(node) = render_doc_title_cmd_group(ctx, content) { nodes.push(node) }
+                if let Some(node) = render_doc_title_cmd_group(ctx, content) {
+                    nodes.push(node)
+                }
             }
             e::DocUrlLinkItem::Text(text) => nodes.push(Node::Text(text.clone())),
         }
