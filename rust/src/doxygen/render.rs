@@ -100,12 +100,24 @@ pub fn render_compound(
             .collect(),
     );
 
+    match (ctx.domain.as_ref(), &compound_def.kind) {
+        (Some(domain), e::DoxCompoundKind::Class) => {
+            return Ok(vec![Node::DomainEntry(DomainEntry {
+                domain: domain.clone(),
+                type_: "class".into(),
+                declaration: text::render_compound_def(compound_def),
+                content: content_nodes,
+            })]);
+        }
+        _ => {}
+    }
+
     let content = Node::DescContent(content_nodes);
 
     let ids = compound_def.id.clone();
     let names = compound_def.id.clone();
 
-    let kind = render_compound_kind(&ctx, &compound_def.kind);
+    let kind = text::render_compound_kind(&compound_def.kind);
 
     Ok(vec![Node::Desc(
         vec![Node::DescSignature(
@@ -121,29 +133,6 @@ pub fn render_compound(
         )],
         Box::new(content),
     )])
-}
-
-fn render_compound_kind(_ctx: &Context, kind: &e::DoxCompoundKind) -> &'static str {
-    match kind {
-        e::DoxCompoundKind::Class => "class",
-        e::DoxCompoundKind::Struct => "struct",
-        e::DoxCompoundKind::Union => "union",
-        e::DoxCompoundKind::Interface => "interface",
-        e::DoxCompoundKind::Protocol => "protocol",
-        e::DoxCompoundKind::Category => "category",
-        e::DoxCompoundKind::Exception => "exception",
-        e::DoxCompoundKind::Service => "service",
-        e::DoxCompoundKind::Singleton => "singleton",
-        e::DoxCompoundKind::Module => "module",
-        e::DoxCompoundKind::Type => "type",
-        e::DoxCompoundKind::File => "file",
-        e::DoxCompoundKind::Namespace => "namespace",
-        e::DoxCompoundKind::Group => "group",
-        e::DoxCompoundKind::Page => "page",
-        e::DoxCompoundKind::Example => "example",
-        e::DoxCompoundKind::Dir => "dir",
-        e::DoxCompoundKind::Concept => "concept",
-    }
 }
 
 pub fn render_member(ctx: &Context, root: &e::DoxygenType, member_ref_id: &str) -> Vec<Node> {

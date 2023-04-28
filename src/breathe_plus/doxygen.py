@@ -14,79 +14,9 @@ from sphinx.util.nodes import nested_parse_with_titles
 from sphinx.domains import c
 import sphinx.addnodes
 
-from . import backend, domains
+from . import backend, domains, copied
 
 __version__ = "0.0.0"
-
-
-# Taken from the Breathe code base
-class InlineText(Text):
-    """
-    Add a custom docutils class to allow parsing inline text. This is to be
-    used inside a @verbatim/@endverbatim block but only the first line is
-    consumed and a inline element is generated as the parent, instead of the
-    paragraph used by Text.
-    """
-
-    patterns = {"inlinetext": r""}
-    initial_transitions = [("inlinetext",)]
-
-    def indent(self, match, context, next_state):
-        """
-        Avoid Text's indent from detecting space prefixed text and
-        doing "funny" stuff; always rely on inlinetext for parsing.
-        """
-        return self.inlinetext(match, context, next_state)
-
-    def eof(self, context):
-        """
-        Text.eof() inserts a paragraph, so override it to skip adding elements.
-        """
-        return []
-
-    def inlinetext(self, match, context, next_state):
-        """
-        Called by the StateMachine when an inline element is found (which is
-        any text when this class is added as the single transition.
-        """
-        startline = self.state_machine.abs_line_number() - 1
-        msg = None
-        try:
-            block = self.state_machine.get_text_block()
-        except UnexpectedIndentationError as err:
-            block, src, srcline = err.args
-            msg = self.reporter.error("Unexpected indentation.", source=src, line=srcline)
-        lines = context + list(block)
-        text, _ = self.inline_text(lines[0], startline)
-        self.parent += text
-        self.parent += msg
-        return [], next_state, []
-
-
-# Taken from the Breathe code base
-def nested_inline_parse_with_titles(state, content, node) -> str:
-    """
-    This code is basically a customized nested_parse_with_titles from
-    docutils, using the InlineText class on the statemachine.
-    """
-    surrounding_title_styles = state.memo.title_styles
-    surrounding_section_level = state.memo.section_level
-    state.memo.title_styles = []
-    state.memo.section_level = 0
-    try:
-        return state.nested_parse(
-            content,
-            0,
-            node,
-            match_titles=1,
-            state_machine_kwargs={
-                "state_classes": (InlineText,),
-                "initial_state": "InlineText",
-            },
-        )
-    finally:
-        state.memo.title_styles = surrounding_title_styles
-        state.memo.section_level = surrounding_section_level
 
 
 class NodeManager:
@@ -182,7 +112,7 @@ class NodeManager:
         rst_node = nodes.inline()
         rst_node.document = self.state.document
 
-        nested_inline_parse_with_titles(self.state, rst, rst_node)
+        copied.nested_inline_parse_with_titles(self.state, rst, rst_node)
 
         return [rst_node]
 
