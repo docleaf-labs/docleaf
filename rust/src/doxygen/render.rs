@@ -1,14 +1,32 @@
-use crate::nodes::{DomainEntry, Node, SignatureType};
 use crate::XmlLoader;
 
 use crate::doxygen::compound::generated as e;
 use crate::doxygen::compound::CompoundDefEntry;
+use crate::doxygen::nodes::{Domain, DomainEntry, Node, SignatureType};
+use crate::doxygen::text;
+
+fn language_to_domain(language: &e::DoxLanguage) -> Option<Domain> {
+    match language {
+        e::DoxLanguage::CPlusPlus => Some(Domain::CPlusPlus),
+        _ => None,
+    }
+}
 
 /// Information and options for rendering
 #[derive(Default)]
 pub struct Context {
+    pub domain: Option<Domain>,
     /// A list of Doxygen xml nodes names to ignore when rendering. Limited support.
     pub skip_xml_nodes: Vec<String>,
+}
+
+impl Context {
+    fn with_domain(&self, domain: Option<Domain>) -> Context {
+        Context {
+            domain,
+            skip_xml_nodes: self.skip_xml_nodes.clone(),
+        }
+    }
 }
 
 pub fn render_compounddef_content(
@@ -40,20 +58,22 @@ pub fn render_compound(
         return Ok(Vec::new());
     };
 
+    let ctx = ctx.with_domain(compound_def.language.as_ref().and_then(language_to_domain));
+
     let mut content_nodes = Vec::new();
 
     if let Some(ref description) = compound_def.briefdescription {
-        content_nodes.append(&mut render_description(ctx, description));
+        content_nodes.append(&mut render_description(&ctx, description));
     }
 
     if let Some(ref description) = compound_def.detaileddescription {
-        content_nodes.append(&mut render_description(ctx, description));
+        content_nodes.append(&mut render_description(&ctx, description));
     }
 
     for innerclass in compound_def.innerclass.iter() {
         let root = xml_loader.load(&innerclass.refid)?;
         content_nodes.append(&mut render_compound(
-            ctx,
+            &ctx,
             root.as_ref(),
             inner_groups,
             xml_loader,
@@ -64,7 +84,7 @@ pub fn render_compound(
         for innergroup in compound_def.innergroup.iter() {
             let root = xml_loader.load(&innergroup.refid)?;
             content_nodes.append(&mut render_compound(
-                ctx,
+                &ctx,
                 root.as_ref(),
                 inner_groups,
                 xml_loader,
@@ -76,7 +96,7 @@ pub fn render_compound(
         &mut compound_def
             .sectiondef
             .iter()
-            .map(|section_def| render_section_def(ctx, section_def))
+            .map(|section_def| render_section_def(&ctx, section_def))
             .collect(),
     );
 
@@ -85,7 +105,7 @@ pub fn render_compound(
     let ids = compound_def.id.clone();
     let names = compound_def.id.clone();
 
-    let kind = render_compound_kind(ctx, &compound_def.kind);
+    let kind = render_compound_kind(&ctx, &compound_def.kind);
 
     Ok(vec![Node::Desc(
         vec![Node::DescSignature(
@@ -131,6 +151,8 @@ pub fn render_member(ctx: &Context, root: &e::DoxygenType, member_ref_id: &str) 
         return Vec::new();
     };
 
+    let ctx = ctx.with_domain(compound_def.language.as_ref().and_then(language_to_domain));
+
     let member_def = compound_def.sectiondef.iter().find_map(|section_def| {
         section_def
             .memberdef
@@ -139,7 +161,7 @@ pub fn render_member(ctx: &Context, root: &e::DoxygenType, member_ref_id: &str) 
     });
 
     match member_def {
-        Some(member_def) => render_member_def(ctx, member_def),
+        Some(member_def) => render_member_def(&ctx, member_def),
         None => {
             vec![]
         }
@@ -263,10 +285,10 @@ pub fn render_member_def(ctx: &Context, member_def: &e::MemberdefType) -> Vec<No
                 })
                 .collect();
 
-            domain_entry = Some(DomainEntry {
-                domain: "cpp".into(),
+            domain_entry = ctx.domain.as_ref().map(|domain| DomainEntry {
+                domain: domain.clone(),
                 type_: "function".into(),
-                declaration: "void example_function()".into(),
+                declaration: text::render_member_def(member_def),
             });
 
             match member_def.type_ {

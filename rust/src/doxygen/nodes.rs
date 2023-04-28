@@ -70,8 +70,21 @@ pub enum SignatureType {
 }
 
 #[derive(Debug, Clone)]
+pub enum Domain {
+    CPlusPlus,
+}
+
+impl IntoPy<PyObject> for Domain {
+    fn into_py(self, py: Python<'_>) -> PyObject {
+        match self {
+            Self::CPlusPlus => "cpp".into_py(py),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct DomainEntry {
-    pub domain: String,
+    pub domain: Domain,
     pub type_: String,
     pub declaration: String,
 }
