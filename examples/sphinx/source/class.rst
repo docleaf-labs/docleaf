@@ -15,4 +15,6 @@ Methods
 References
 ~~~~~~~~~~
 
-Sphinx domain link to the :cpp:class:`Example`.
+Sphinx domain link to the class :cpp:class:`Example`.
+
+Sphinx domain link to the method :cpp:func:`Example::method_1`.
