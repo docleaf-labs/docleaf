@@ -1,87 +1,32 @@
-use crate::nodes::{Node, SignatureType};
 use crate::XmlLoader;
 
 use crate::doxygen::compound::generated as e;
 use crate::doxygen::compound::CompoundDefEntry;
+use crate::doxygen::nodes::{Domain, DomainEntry, Node, SignatureType};
+use crate::doxygen::text;
+
+fn language_to_domain(language: &e::DoxLanguage) -> Option<Domain> {
+    match language {
+        e::DoxLanguage::CPlusPlus => Some(Domain::CPlusPlus),
+        _ => None,
+    }
+}
 
 /// Information and options for rendering
 #[derive(Default)]
 pub struct Context {
+    pub domain: Option<Domain>,
     /// A list of Doxygen xml nodes names to ignore when rendering. Limited support.
     pub skip_xml_nodes: Vec<String>,
 }
 
-pub fn render_compound(
-    ctx: &Context,
-    root: &e::DoxygenType,
-    inner_groups: bool,
-    xml_loader: &mut XmlLoader,
-) -> anyhow::Result<Vec<Node>> {
-    let Some(ref compound_def) = root.compounddef else {
-        return Ok(Vec::new());
-    };
-
-    let mut content_nodes = Vec::new();
-
-    if let Some(ref description) = compound_def.briefdescription {
-        content_nodes.append(&mut render_description(ctx, description));
-    }
-
-    if let Some(ref description) = compound_def.detaileddescription {
-        content_nodes.append(&mut render_description(ctx, description));
-    }
-
-    for innerclass in compound_def.innerclass.iter() {
-        let root = xml_loader.load(&innerclass.refid)?;
-        content_nodes.append(&mut render_compound(
-            ctx,
-            root.as_ref(),
-            inner_groups,
-            xml_loader,
-        )?);
-    }
-
-    if inner_groups {
-        for innergroup in compound_def.innergroup.iter() {
-            let root = xml_loader.load(&innergroup.refid)?;
-            content_nodes.append(&mut render_compound(
-                ctx,
-                root.as_ref(),
-                inner_groups,
-                xml_loader,
-            )?);
+impl Context {
+    fn with_domain(&self, domain: Option<Domain>) -> Context {
+        Context {
+            domain,
+            skip_xml_nodes: self.skip_xml_nodes.clone(),
         }
     }
-
-    content_nodes.append(
-        &mut compound_def
-            .sectiondef
-            .iter()
-            .map(|section_def| render_section_def(ctx, section_def))
-            .collect(),
-    );
-
-    let content = Node::DescContent(content_nodes);
-
-    let ids = compound_def.id.clone();
-    let names = compound_def.id.clone();
-
-    let kind = render_compound_kind(ctx, &compound_def.kind);
-
-    Ok(vec![Node::Desc(
-        vec![Node::DescSignature(
-            SignatureType::MultiLine,
-            vec![Node::DescSignatureLine(vec![
-                Node::Target { ids, names },
-                Node::DescSignatureKeyword(vec![Node::Text(kind.to_string())]),
-                Node::DescSignatureSpace,
-                Node::DescName(Box::new(Node::DescSignatureName(
-                    compound_def.compoundname.clone(),
-                ))),
-            ])],
-        )],
-        Box::new(content),
-    )])
 }
 
 pub fn render_compounddef_content(
@@ -103,33 +48,99 @@ pub fn render_compounddef_content(
     }
 }
 
-fn render_compound_kind(_ctx: &Context, kind: &e::DoxCompoundKind) -> &'static str {
-    match kind {
-        e::DoxCompoundKind::Class => "class",
-        e::DoxCompoundKind::Struct => "struct",
-        e::DoxCompoundKind::Union => "union",
-        e::DoxCompoundKind::Interface => "interface",
-        e::DoxCompoundKind::Protocol => "protocol",
-        e::DoxCompoundKind::Category => "category",
-        e::DoxCompoundKind::Exception => "exception",
-        e::DoxCompoundKind::Service => "service",
-        e::DoxCompoundKind::Singleton => "singleton",
-        e::DoxCompoundKind::Module => "module",
-        e::DoxCompoundKind::Type => "type",
-        e::DoxCompoundKind::File => "file",
-        e::DoxCompoundKind::Namespace => "namespace",
-        e::DoxCompoundKind::Group => "group",
-        e::DoxCompoundKind::Page => "page",
-        e::DoxCompoundKind::Example => "example",
-        e::DoxCompoundKind::Dir => "dir",
-        e::DoxCompoundKind::Concept => "concept",
+pub fn render_compound(
+    ctx: &Context,
+    root: &e::DoxygenType,
+    inner_groups: bool,
+    xml_loader: &mut XmlLoader,
+) -> anyhow::Result<Vec<Node>> {
+    let Some(ref compound_def) = root.compounddef else {
+        return Ok(Vec::new());
+    };
+
+    let ctx = ctx.with_domain(compound_def.language.as_ref().and_then(language_to_domain));
+
+    let mut content_nodes = Vec::new();
+
+    if let Some(ref description) = compound_def.briefdescription {
+        content_nodes.append(&mut render_description(&ctx, description));
     }
+
+    if let Some(ref description) = compound_def.detaileddescription {
+        content_nodes.append(&mut render_description(&ctx, description));
+    }
+
+    for innerclass in compound_def.innerclass.iter() {
+        let root = xml_loader.load(&innerclass.refid)?;
+        content_nodes.append(&mut render_compound(
+            &ctx,
+            root.as_ref(),
+            inner_groups,
+            xml_loader,
+        )?);
+    }
+
+    if inner_groups {
+        for innergroup in compound_def.innergroup.iter() {
+            let root = xml_loader.load(&innergroup.refid)?;
+            content_nodes.append(&mut render_compound(
+                &ctx,
+                root.as_ref(),
+                inner_groups,
+                xml_loader,
+            )?);
+        }
+    }
+
+    content_nodes.append(
+        &mut compound_def
+            .sectiondef
+            .iter()
+            .map(|section_def| render_section_def(&ctx, section_def))
+            .collect(),
+    );
+
+    match (ctx.domain.as_ref(), &compound_def.kind) {
+        (Some(domain), e::DoxCompoundKind::Class) => {
+            return Ok(vec![Node::DomainEntry(DomainEntry {
+                domain: domain.clone(),
+                type_: "class".into(),
+                declaration: text::render_compound_def(compound_def),
+                content: content_nodes,
+            })]);
+        }
+        _ => {}
+    }
+
+    let content = Node::DescContent(content_nodes);
+
+    let ids = compound_def.id.clone();
+    let names = compound_def.id.clone();
+
+    let kind = text::render_compound_kind(&compound_def.kind);
+
+    Ok(vec![Node::Desc(
+        vec![Node::DescSignature(
+            SignatureType::MultiLine,
+            vec![Node::DescSignatureLine(vec![
+                Node::Target { ids, names },
+                Node::DescSignatureKeyword(vec![Node::Text(kind.to_string())]),
+                Node::DescSignatureSpace,
+                Node::DescName(Box::new(Node::DescSignatureName(
+                    compound_def.compoundname.clone(),
+                ))),
+            ])],
+        )],
+        Box::new(content),
+    )])
 }
 
 pub fn render_member(ctx: &Context, root: &e::DoxygenType, member_ref_id: &str) -> Vec<Node> {
     let Some(ref compound_def) = root.compounddef else {
         return Vec::new();
     };
+
+    let ctx = ctx.with_domain(compound_def.language.as_ref().and_then(language_to_domain));
 
     let member_def = compound_def.sectiondef.iter().find_map(|section_def| {
         section_def
@@ -139,9 +150,7 @@ pub fn render_member(ctx: &Context, root: &e::DoxygenType, member_ref_id: &str) 
     });
 
     match member_def {
-        Some(member_def) => {
-            vec![render_member_def(ctx, member_def)]
-        }
+        Some(member_def) => render_member_def(&ctx, member_def),
         None => {
             vec![]
         }
@@ -156,7 +165,7 @@ fn render_section_def(ctx: &Context, section_def: &e::SectiondefType) -> Node {
         &mut section_def
             .memberdef
             .iter()
-            .map(|element| render_member_def(ctx, element))
+            .flat_map(|element| render_member_def(ctx, element))
             .collect(),
     );
 
@@ -204,7 +213,7 @@ fn section_title(section_kind: &e::DoxSectionKind) -> String {
     }
 }
 
-pub fn render_member_def(ctx: &Context, member_def: &e::MemberdefType) -> Node {
+pub fn render_member_def(ctx: &Context, member_def: &e::MemberdefType) -> Vec<Node> {
     let name = member_kind_name(&member_def.kind);
     let mut content_nodes = Vec::new();
 
@@ -219,6 +228,8 @@ pub fn render_member_def(ctx: &Context, member_def: &e::MemberdefType) -> Node {
     let names = member_def.id.clone();
 
     let signature_line;
+
+    let mut domain_entry = None;
 
     match member_def.kind {
         e::DoxMemberKind::Enum => {
@@ -263,6 +274,15 @@ pub fn render_member_def(ctx: &Context, member_def: &e::MemberdefType) -> Node {
                 })
                 .collect();
 
+            if let Some(ref domain) = ctx.domain {
+                return vec![Node::DomainEntry(DomainEntry {
+                    domain: domain.clone(),
+                    type_: "function".into(),
+                    declaration: text::render_member_def(member_def),
+                    content: content_nodes,
+                })];
+            }
+
             match member_def.type_ {
                 Some(ref type_) => {
                     signature_line = vec![
@@ -294,13 +314,19 @@ pub fn render_member_def(ctx: &Context, member_def: &e::MemberdefType) -> Node {
 
     let content = Node::DescContent(content_nodes);
 
-    Node::Desc(
+    let mut nodes = vec![Node::Desc(
         vec![Node::DescSignature(
             SignatureType::MultiLine,
             vec![Node::DescSignatureLine(signature_line)],
         )],
         Box::new(content),
-    )
+    )];
+
+    if let Some(domain_entry) = domain_entry {
+        nodes.insert(0, Node::DomainEntry(domain_entry));
+    }
+
+    nodes
 }
 
 fn member_kind_name(member_kind: &e::DoxMemberKind) -> String {

@@ -70,9 +70,33 @@ pub enum SignatureType {
 }
 
 #[derive(Debug, Clone)]
+pub enum Domain {
+    CPlusPlus,
+}
+
+impl IntoPy<PyObject> for Domain {
+    fn into_py(self, py: Python<'_>) -> PyObject {
+        match self {
+            Self::CPlusPlus => "cpp".into_py(py),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct DomainEntry {
+    pub domain: Domain,
+    pub type_: String,
+    pub declaration: String,
+    pub content: Vec<Node>,
+}
+
+#[derive(Debug, Clone)]
 pub enum Node {
     // Plain text
     Text(String),
+
+    // Domains
+    DomainEntry(DomainEntry),
 
     // Nodes
     /// Used in this code base like an html5 div - just a block level wrapper
@@ -89,11 +113,11 @@ pub enum Node {
     // DescSignaturePunctuation(String),
     DescSignatureSpace,
     Emphasis(Vec<Node>),
+    // Index(Vec<IndexEntry>),
     HtmlOnly(Vec<Node>),
     Literal(Vec<Node>),
     LiteralBlock(Vec<Node>),
     LiteralStrong(Vec<Node>),
-    // Index,
     Paragraph(Vec<Node>),
     RawHtml(String),
     Reference {
@@ -146,6 +170,20 @@ impl IntoPy<PyObject> for Node {
             Self::Text(text_) => {
                 text(html_escape::decode_html_entities(&text_).into_owned()).into_py(py)
             }
+
+            // Domains
+            Self::DomainEntry(entry) => node(
+                py,
+                "domain_entry",
+                CallAs::Args,
+                Attributes::from([
+                    ("domain".into(), entry.domain.into_py(py)),
+                    ("type".into(), entry.type_.into_py(py)),
+                    ("declaration".into(), entry.declaration.into_py(py)),
+                ]),
+                entry.content,
+            )
+            .into_py(py),
 
             // Nodes
             Self::Strong(nodes) => {
@@ -241,16 +279,6 @@ impl IntoPy<PyObject> for Node {
                 vec![text(" ".to_string())],
             )
             .into_py(py),
-            /*
-                Self::Index => node(
-                    py,
-                    "index",
-                    CallAs::Source,
-                    Attributes::new(),
-                    Vec::<Node>::new(),
-                )
-                .into_py(py),
-            */
             Self::Emphasis(nodes) => {
                 node(py, "emphasis", CallAs::Source, Attributes::new(), nodes).into_py(py)
             }
@@ -262,6 +290,16 @@ impl IntoPy<PyObject> for Node {
                 nodes,
             )
             .into_py(py),
+            /*
+            Self::Index(entries) => node(
+                py,
+                "index",
+                CallAs::Source,
+                Attributes::from([("entries".into(), entries.into_py(py))]),
+                Vec::<Node>::new(),
+            )
+            .into_py(py),
+            */
             Self::Literal(nodes) => {
                 node(py, "literal", CallAs::Source, Attributes::new(), nodes).into_py(py)
             }

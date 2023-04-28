@@ -1,5 +1,4 @@
 mod doxygen;
-mod nodes;
 mod xml;
 
 use std::collections::HashMap;
@@ -11,7 +10,7 @@ use pyo3::prelude::*;
 
 use crate::doxygen::compound::generated as compound;
 use crate::doxygen::index::generated as index;
-use crate::nodes::Node;
+use crate::doxygen::nodes::Node;
 
 /// Cache class exposed to python with no function methods beyond the
 /// constructor. Used to hold the Arc Mutex for the inner cache so that
@@ -231,8 +230,10 @@ fn render_member(
             };
 
             let context = doxygen::render::Context {
+                domain: None,
                 skip_xml_nodes: context.skip_xml_nodes.clone(),
             };
+
             Ok(doxygen::render::render_member(
                 &context,
                 root.as_ref(),
@@ -306,6 +307,7 @@ fn render_group(
             tracing::debug!("Compound root: {root:?}");
 
             let context = doxygen::render::Context {
+                domain: None,
                 skip_xml_nodes: context.skip_xml_nodes.clone(),
             };
 

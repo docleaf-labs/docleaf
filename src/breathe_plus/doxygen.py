@@ -1,5 +1,6 @@
 from typing import List
 import textwrap
+import itertools
 
 from docutils.nodes import Node
 from docutils.parsers.rst.directives import unchanged_required, unchanged, flag
@@ -10,131 +11,79 @@ from docutils import nodes
 
 from sphinx.application import Sphinx
 from sphinx.util.nodes import nested_parse_with_titles
+from sphinx.domains import c
 import sphinx.addnodes
 
-from . import backend
+from . import backend, domains, copied
 
 __version__ = "0.0.0"
 
 
-# Taken from the Breathe code base
-class InlineText(Text):
-    """
-    Add a custom docutils class to allow parsing inline text. This is to be
-    used inside a @verbatim/@endverbatim block but only the first line is
-    consumed and a inline element is generated as the parent, instead of the
-    paragraph used by Text.
-    """
-
-    patterns = {"inlinetext": r""}
-    initial_transitions = [("inlinetext",)]
-
-    def indent(self, match, context, next_state):
-        """
-        Avoid Text's indent from detecting space prefixed text and
-        doing "funny" stuff; always rely on inlinetext for parsing.
-        """
-        return self.inlinetext(match, context, next_state)
-
-    def eof(self, context):
-        """
-        Text.eof() inserts a paragraph, so override it to skip adding elements.
-        """
-        return []
-
-    def inlinetext(self, match, context, next_state):
-        """
-        Called by the StateMachine when an inline element is found (which is
-        any text when this class is added as the single transition.
-        """
-        startline = self.state_machine.abs_line_number() - 1
-        msg = None
-        try:
-            block = self.state_machine.get_text_block()
-        except UnexpectedIndentationError as err:
-            block, src, srcline = err.args
-            msg = self.reporter.error("Unexpected indentation.", source=src, line=srcline)
-        lines = context + list(block)
-        text, _ = self.inline_text(lines[0], startline)
-        self.parent += text
-        self.parent += msg
-        return [], next_state, []
-
-
-# Taken from the Breathe code base
-def nested_inline_parse_with_titles(state, content, node) -> str:
-    """
-    This code is basically a customized nested_parse_with_titles from
-    docutils, using the InlineText class on the statemachine.
-    """
-    surrounding_title_styles = state.memo.title_styles
-    surrounding_section_level = state.memo.section_level
-    state.memo.title_styles = []
-    state.memo.section_level = 0
-    try:
-        return state.nested_parse(
-            content,
-            0,
-            node,
-            match_titles=1,
-            state_machine_kwargs={
-                "state_classes": (InlineText,),
-                "initial_state": "InlineText",
-            },
-        )
-    finally:
-        state.memo.title_styles = surrounding_title_styles
-        state.memo.section_level = surrounding_section_level
-
-
 class NodeManager:
-    def __init__(self, state):
+    def __init__(self, state, directive_arguments):
         self.state = state
+        self.directive_arguments = directive_arguments
         self.lookup = {
-            "bullet_list": nodes.bullet_list,
-            "container": nodes.container,
-            "colspec": nodes.colspec,
-            "desc": sphinx.addnodes.desc,
-            "desc_content": sphinx.addnodes.desc_content,
-            "desc_name": sphinx.addnodes.desc_name,
-            "desc_parameter": sphinx.addnodes.desc_parameter,
-            "desc_parameterlist": sphinx.addnodes.desc_parameterlist,
-            "desc_sig_keyword": sphinx.addnodes.desc_sig_keyword,
-            "desc_sig_name": sphinx.addnodes.desc_sig_name,
-            "desc_sig_space": sphinx.addnodes.desc_sig_space,
-            "desc_signature": sphinx.addnodes.desc_signature,
-            "desc_signature_line": sphinx.addnodes.desc_signature_line,
-            "emphasis": nodes.emphasis,
-            "entry": nodes.entry,
-            "enumerated_list": nodes.enumerated_list,
-            "index": sphinx.addnodes.index,
-            "inline": nodes.inline,
-            "list_item": nodes.list_item,
-            "literal": nodes.literal,
-            "literal_block": nodes.literal_block,
-            "literal_strong": sphinx.addnodes.literal_strong,
-            "only": sphinx.addnodes.only,
-            "paragraph": nodes.paragraph,
-            "raw": nodes.raw,
-            "reference": nodes.reference,
-            "restructured_text_block": self.build_restructured_text_block,
-            "restructured_text_inline": self.build_restructured_text_inline,
-            "row": nodes.row,
-            "rubric": nodes.rubric,
-            "strong": nodes.strong,
-            "table": nodes.table,
-            "tbody": nodes.tbody,
-            "tgroup": nodes.tgroup,
-            "thead": nodes.thead,
-            "target": self.build_target,
+            "bullet_list": (nodes.bullet_list, True),
+            "container": (nodes.container, True),
+            "colspec": (nodes.colspec, True),
+            "desc": (sphinx.addnodes.desc, True),
+            "desc_content": (sphinx.addnodes.desc_content, True),
+            "desc_name": (sphinx.addnodes.desc_name, True),
+            "desc_parameter": (sphinx.addnodes.desc_parameter, True),
+            "desc_parameterlist": (sphinx.addnodes.desc_parameterlist, True),
+            "desc_sig_keyword": (sphinx.addnodes.desc_sig_keyword, True),
+            "desc_sig_name": (sphinx.addnodes.desc_sig_name, True),
+            "desc_sig_space": (sphinx.addnodes.desc_sig_space, True),
+            "desc_signature": (sphinx.addnodes.desc_signature, True),
+            "desc_signature_line": (sphinx.addnodes.desc_signature_line, True),
+            "emphasis": (nodes.emphasis, True),
+            "entry": (nodes.entry, True),
+            "enumerated_list": (nodes.enumerated_list, True),
+            "index": (sphinx.addnodes.index, True),
+            "inline": (nodes.inline, True),
+            "list_item": (nodes.list_item, True),
+            "literal": (nodes.literal, True),
+            "literal_block": (nodes.literal_block, True),
+            "literal_strong": (sphinx.addnodes.literal_strong, True),
+            "only": (sphinx.addnodes.only, True),
+            "paragraph": (nodes.paragraph, True),
+            "raw": (nodes.raw, True),
+            "reference": (nodes.reference, True),
+            "restructured_text_block": (self.build_restructured_text_block, False),
+            "restructured_text_inline": (self.build_restructured_text_inline, False),
+            "row": (nodes.row, True),
+            "rubric": (nodes.rubric, True),
+            "strong": (nodes.strong, True),
+            "table": (nodes.table, True),
+            "tbody": (nodes.tbody, True),
+            "tgroup": (nodes.tgroup, True),
+            "thead": (nodes.thead, True),
+            "target": (self.build_target, False),
+            # Special
+            "domain_entry": (self.build_domain_entry, False),
         }
 
     def get_builder(self, node_type):
-        return self.lookup[node_type]
+        (builder, as_list) = self.lookup[node_type]
+        if as_list:
+            return lambda *args, **attrs: [builder(*args, **attrs)]
+        else:
+            return builder
 
     def build_target(self, key, *children, **attributes):
-        # self.state.document.note_explicit_target(target)
-        return nodes.target(key, *children, **attributes)
+        target = nodes.target(key, *children, **attributes)
+        self.state.document.note_explicit_target(target)
+        return [target]
+
+    def build_domain_entry(self, *children, **attributes):
+        return domains.render_domain_entry(
+            attributes["domain"],
+            attributes["type"],
+            attributes["declaration"],
+            self.directive_arguments,
+            children,
+        )
 
     def build_restructured_text_block(self, *children, **attributes):
         text = textwrap.dedent(children[0])
@@ -150,7 +99,7 @@ class NodeManager:
 
         nested_parse_with_titles(self.state, rst, rst_node)
 
-        return rst_node
+        return [rst_node]
 
     def build_restructured_text_inline(self, *children, **attributes):
         text = children[0]
@@ -163,18 +112,23 @@ class NodeManager:
         rst_node = nodes.inline()
         rst_node.document = self.state.document
 
-        nested_inline_parse_with_titles(self.state, rst, rst_node)
+        copied.nested_inline_parse_with_titles(self.state, rst, rst_node)
 
-        return rst_node
+        return [rst_node]
 
 
 def render_node_list(node_list, node_manager):
-    return [render_node(node, node_manager) for node in node_list]
+    # Use nested comprehension to flatten nodes lists coming back from render_node
+    return flatten(render_node(node, node_manager) for node in node_list)
+
+
+def flatten(list_of_lists):
+    return list(itertools.chain.from_iterable(list_of_lists))
 
 
 def render_node(node, node_manager):
     if node.type == "text":
-        return nodes.Text(node.text)
+        return [nodes.Text(node.text)]
 
     node_builder = node_manager.get_builder(node.type)
     children = render_node_list(node.children, node_manager)
@@ -189,7 +143,23 @@ def render_node(node, node_manager):
         raise Exception("Call As not implemented: " + node.call_as)
 
 
-class ClassDirective(Directive):
+class BaseDirective(Directive):
+    def get_directive_args(self) -> list:
+        # Must match order in docutils.parsers.rst.Directive.__init__
+        return [
+            self.name,
+            self.arguments,
+            self.options,
+            self.content,
+            self.lineno,
+            self.content_offset,
+            self.block_text,
+            self.state,
+            self.state_machine,
+        ]
+
+
+class ClassDirective(BaseDirective):
     has_content = True
     required_arguments = 1
     optional_arguments = 0
@@ -204,11 +174,11 @@ class ClassDirective(Directive):
         path = self.app.config.breathe_projects[project]
         node_list = backend.render_class(name, path, self.cache)
 
-        node_builder = NodeManager(self.state)
+        node_builder = NodeManager(self.state, self.get_directive_args())
         return render_node_list(node_list, node_builder)
 
 
-class StructDirective(Directive):
+class StructDirective(BaseDirective):
     has_content = True
     required_arguments = 1
     optional_arguments = 0
@@ -223,11 +193,11 @@ class StructDirective(Directive):
         path = self.app.config.breathe_projects[project]
         node_list = backend.render_struct(name, path, self.cache)
 
-        node_builder = NodeManager(self.state)
+        node_builder = NodeManager(self.state, self.get_directive_args())
         return render_node_list(node_list, node_builder)
 
 
-class EnumDirective(Directive):
+class EnumDirective(BaseDirective):
     has_content = True
     required_arguments = 1
     optional_arguments = 0
@@ -246,11 +216,11 @@ class EnumDirective(Directive):
         context = backend.Context(skip_xml_nodes)
         node_list = backend.render_enum(name, path, context, self.cache)
 
-        node_builder = NodeManager(self.state)
+        node_builder = NodeManager(self.state, self.get_directive_args())
         return render_node_list(node_list, node_builder)
 
 
-class FunctionDirective(Directive):
+class FunctionDirective(BaseDirective):
     has_content = True
     required_arguments = 1
     optional_arguments = 0
@@ -269,11 +239,11 @@ class FunctionDirective(Directive):
         context = backend.Context(skip_xml_nodes)
         node_list = backend.render_function(name, path, context, self.cache)
 
-        node_builder = NodeManager(self.state)
+        node_builder = NodeManager(self.state, self.get_directive_args())
         return render_node_list(node_list, node_builder)
 
 
-class GroupDirective(Directive):
+class GroupDirective(BaseDirective):
     has_content = True
     required_arguments = 1
     optional_arguments = 0
@@ -296,7 +266,7 @@ class GroupDirective(Directive):
         context = backend.Context(skip_xml_nodes)
         node_list = backend.render_group(name, path, context, content_only, inner_group, self.cache)
 
-        node_builder = NodeManager(self.state)
+        node_builder = NodeManager(self.state, self.get_directive_args())
         return render_node_list(node_list, node_builder)
 
 
@@ -339,4 +309,4 @@ def setup(app: Sphinx):
     app.add_config_value("breathe_default_project", None, "env")
     app.add_config_value("breathe_skip_doxygen_xml_nodes", [], "env")
 
-    return {"version": __version__}
+    return {"version": __version__, "parallel_read_safe": True, "parallel_write_safe": True}
