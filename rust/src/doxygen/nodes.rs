@@ -87,6 +87,7 @@ pub struct DomainEntry {
     pub domain: Domain,
     pub type_: String,
     pub declaration: String,
+    pub content: Vec<Node>,
 }
 
 #[derive(Debug, Clone)]
@@ -180,7 +181,7 @@ impl IntoPy<PyObject> for Node {
                     ("type".into(), entry.type_.into_py(py)),
                     ("declaration".into(), entry.declaration.into_py(py)),
                 ]),
-                Vec::<Node>::new(),
+                entry.content,
             )
             .into_py(py),
 

@@ -13,3 +13,5 @@ References
 
 Sphinx domain link to the :cpp:func:`example_function`.
 
+Sphinx domain link to the :cpp:func:`example_function_directions`.
+

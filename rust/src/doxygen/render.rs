@@ -285,11 +285,14 @@ pub fn render_member_def(ctx: &Context, member_def: &e::MemberdefType) -> Vec<No
                 })
                 .collect();
 
-            domain_entry = ctx.domain.as_ref().map(|domain| DomainEntry {
-                domain: domain.clone(),
-                type_: "function".into(),
-                declaration: text::render_member_def(member_def),
-            });
+            if let Some(ref domain) = ctx.domain {
+                return vec![Node::DomainEntry(DomainEntry {
+                    domain: domain.clone(),
+                    type_: "function".into(),
+                    declaration: text::render_member_def(member_def),
+                    content: content_nodes,
+                })];
+            }
 
             match member_def.type_ {
                 Some(ref type_) => {

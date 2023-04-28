@@ -152,6 +152,7 @@ class NodeManager:
             attributes["type"],
             attributes["declaration"],
             self.directive_arguments,
+            children,
         )
 
     def build_restructured_text_block(self, *children, **attributes):
