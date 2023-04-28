@@ -1,4 +1,4 @@
-use crate::nodes::{Node, SignatureType};
+use crate::nodes::{DomainEntry, Node, SignatureType};
 use crate::XmlLoader;
 
 use crate::doxygen::compound::generated as e;
@@ -9,6 +9,25 @@ use crate::doxygen::compound::CompoundDefEntry;
 pub struct Context {
     /// A list of Doxygen xml nodes names to ignore when rendering. Limited support.
     pub skip_xml_nodes: Vec<String>,
+}
+
+pub fn render_compounddef_content(
+    ctx: &Context,
+    entry: CompoundDefEntry,
+    inner_groups: bool,
+    xml_loader: &mut crate::XmlLoader,
+) -> anyhow::Result<Vec<Node>> {
+    match entry {
+        CompoundDefEntry::SectionDef(section_def) => Ok(vec![render_section_def(ctx, section_def)]),
+        CompoundDefEntry::Class(ref_type) => {
+            let root = xml_loader.load(&ref_type.refid)?;
+            render_compound(ctx, root.as_ref(), inner_groups, xml_loader)
+        }
+        CompoundDefEntry::Group(ref_type) => {
+            let root = xml_loader.load(&ref_type.refid)?;
+            render_compound(ctx, root.as_ref(), inner_groups, xml_loader)
+        }
+    }
 }
 
 pub fn render_compound(
@@ -84,25 +103,6 @@ pub fn render_compound(
     )])
 }
 
-pub fn render_compounddef_content(
-    ctx: &Context,
-    entry: CompoundDefEntry,
-    inner_groups: bool,
-    xml_loader: &mut crate::XmlLoader,
-) -> anyhow::Result<Vec<Node>> {
-    match entry {
-        CompoundDefEntry::SectionDef(section_def) => Ok(vec![render_section_def(ctx, section_def)]),
-        CompoundDefEntry::Class(ref_type) => {
-            let root = xml_loader.load(&ref_type.refid)?;
-            render_compound(ctx, root.as_ref(), inner_groups, xml_loader)
-        }
-        CompoundDefEntry::Group(ref_type) => {
-            let root = xml_loader.load(&ref_type.refid)?;
-            render_compound(ctx, root.as_ref(), inner_groups, xml_loader)
-        }
-    }
-}
-
 fn render_compound_kind(_ctx: &Context, kind: &e::DoxCompoundKind) -> &'static str {
     match kind {
         e::DoxCompoundKind::Class => "class",
@@ -139,9 +139,7 @@ pub fn render_member(ctx: &Context, root: &e::DoxygenType, member_ref_id: &str) 
     });
 
     match member_def {
-        Some(member_def) => {
-            vec![render_member_def(ctx, member_def)]
-        }
+        Some(member_def) => render_member_def(ctx, member_def),
         None => {
             vec![]
         }
@@ -156,7 +154,7 @@ fn render_section_def(ctx: &Context, section_def: &e::SectiondefType) -> Node {
         &mut section_def
             .memberdef
             .iter()
-            .map(|element| render_member_def(ctx, element))
+            .flat_map(|element| render_member_def(ctx, element))
             .collect(),
     );
 
@@ -204,7 +202,7 @@ fn section_title(section_kind: &e::DoxSectionKind) -> String {
     }
 }
 
-pub fn render_member_def(ctx: &Context, member_def: &e::MemberdefType) -> Node {
+pub fn render_member_def(ctx: &Context, member_def: &e::MemberdefType) -> Vec<Node> {
     let name = member_kind_name(&member_def.kind);
     let mut content_nodes = Vec::new();
 
@@ -219,6 +217,8 @@ pub fn render_member_def(ctx: &Context, member_def: &e::MemberdefType) -> Node {
     let names = member_def.id.clone();
 
     let signature_line;
+
+    let mut domain_entry = None;
 
     match member_def.kind {
         e::DoxMemberKind::Enum => {
@@ -263,6 +263,12 @@ pub fn render_member_def(ctx: &Context, member_def: &e::MemberdefType) -> Node {
                 })
                 .collect();
 
+            domain_entry = Some(DomainEntry {
+                domain: "cpp".into(),
+                type_: "function".into(),
+                declaration: "void example_function()".into(),
+            });
+
             match member_def.type_ {
                 Some(ref type_) => {
                     signature_line = vec![
@@ -294,13 +300,19 @@ pub fn render_member_def(ctx: &Context, member_def: &e::MemberdefType) -> Node {
 
     let content = Node::DescContent(content_nodes);
 
-    Node::Desc(
+    let mut nodes = vec![Node::Desc(
         vec![Node::DescSignature(
             SignatureType::MultiLine,
             vec![Node::DescSignatureLine(signature_line)],
         )],
         Box::new(content),
-    )
+    )];
+
+    if let Some(domain_entry) = domain_entry {
+        nodes.insert(0, Node::DomainEntry(domain_entry));
+    }
+
+    nodes
 }
 
 fn member_kind_name(member_kind: &e::DoxMemberKind) -> String {
