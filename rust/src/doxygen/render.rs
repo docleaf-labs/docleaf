@@ -229,8 +229,6 @@ pub fn render_member_def(ctx: &Context, member_def: &e::MemberdefType) -> Vec<No
 
     let signature_line;
 
-    let mut domain_entry = None;
-
     match member_def.kind {
         e::DoxMemberKind::Enum => {
             signature_line = vec![
@@ -274,6 +272,7 @@ pub fn render_member_def(ctx: &Context, member_def: &e::MemberdefType) -> Vec<No
                 })
                 .collect();
 
+            // Early exit if there is domain information for rendering this entry
             if let Some(ref domain) = ctx.domain {
                 return vec![Node::DomainEntry(DomainEntry {
                     domain: domain.clone(),
@@ -321,10 +320,6 @@ pub fn render_member_def(ctx: &Context, member_def: &e::MemberdefType) -> Vec<No
         )],
         Box::new(content),
     )];
-
-    if let Some(domain_entry) = domain_entry {
-        nodes.insert(0, Node::DomainEntry(domain_entry));
-    }
 
     nodes
 }
