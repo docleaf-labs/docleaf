@@ -19,57 +19,61 @@ from . import backend, domains, copied
 __version__ = "0.0.0"
 
 
+def as_list(node):
+    def wrapper(*children, **attributes):
+        return [node(*children, **attributes)]
+
+    return wrapper
+
+
 class NodeManager:
     def __init__(self, state, directive_arguments):
         self.state = state
         self.directive_arguments = directive_arguments
         self.lookup = {
-            "bullet_list": (nodes.bullet_list, True),
-            "container": (nodes.container, True),
-            "colspec": (nodes.colspec, True),
-            "desc": (sphinx.addnodes.desc, True),
-            "desc_content": (sphinx.addnodes.desc_content, True),
-            "desc_name": (sphinx.addnodes.desc_name, True),
-            "desc_parameter": (sphinx.addnodes.desc_parameter, True),
-            "desc_parameterlist": (sphinx.addnodes.desc_parameterlist, True),
-            "desc_sig_keyword": (sphinx.addnodes.desc_sig_keyword, True),
-            "desc_sig_name": (sphinx.addnodes.desc_sig_name, True),
-            "desc_sig_space": (sphinx.addnodes.desc_sig_space, True),
-            "desc_signature": (sphinx.addnodes.desc_signature, True),
-            "desc_signature_line": (sphinx.addnodes.desc_signature_line, True),
-            "emphasis": (nodes.emphasis, True),
-            "entry": (nodes.entry, True),
-            "enumerated_list": (nodes.enumerated_list, True),
-            "index": (sphinx.addnodes.index, True),
-            "inline": (nodes.inline, True),
-            "list_item": (nodes.list_item, True),
-            "literal": (nodes.literal, True),
-            "literal_block": (nodes.literal_block, True),
-            "literal_strong": (sphinx.addnodes.literal_strong, True),
-            "only": (sphinx.addnodes.only, True),
-            "paragraph": (nodes.paragraph, True),
-            "raw": (nodes.raw, True),
-            "reference": (nodes.reference, True),
-            "restructured_text_block": (self.build_restructured_text_block, False),
-            "restructured_text_inline": (self.build_restructured_text_inline, False),
-            "row": (nodes.row, True),
-            "rubric": (nodes.rubric, True),
-            "strong": (nodes.strong, True),
-            "table": (nodes.table, True),
-            "tbody": (nodes.tbody, True),
-            "tgroup": (nodes.tgroup, True),
-            "thead": (nodes.thead, True),
-            "target": (self.build_target, False),
+            "bullet_list": as_list(nodes.bullet_list),
+            "container": as_list(nodes.container),
+            "colspec": as_list(nodes.colspec),
+            "desc": as_list(sphinx.addnodes.desc),
+            "desc_content": as_list(sphinx.addnodes.desc_content),
+            "desc_name": as_list(sphinx.addnodes.desc_name),
+            "desc_parameter": as_list(sphinx.addnodes.desc_parameter),
+            "desc_parameterlist": as_list(sphinx.addnodes.desc_parameterlist),
+            "desc_sig_keyword": as_list(sphinx.addnodes.desc_sig_keyword),
+            "desc_sig_name": as_list(sphinx.addnodes.desc_sig_name),
+            "desc_sig_space": as_list(sphinx.addnodes.desc_sig_space),
+            "desc_signature": as_list(sphinx.addnodes.desc_signature),
+            "desc_signature_line": as_list(sphinx.addnodes.desc_signature_line),
+            "emphasis": as_list(nodes.emphasis),
+            "entry": as_list(nodes.entry),
+            "enumerated_list": as_list(nodes.enumerated_list),
+            "index": as_list(sphinx.addnodes.index),
+            "inline": as_list(nodes.inline),
+            "list_item": as_list(nodes.list_item),
+            "literal": as_list(nodes.literal),
+            "literal_block": as_list(nodes.literal_block),
+            "literal_strong": as_list(sphinx.addnodes.literal_strong),
+            "only": as_list(sphinx.addnodes.only),
+            "paragraph": as_list(nodes.paragraph),
+            "raw": as_list(nodes.raw),
+            "reference": as_list(nodes.reference),
+            "restructured_text_block": self.build_restructured_text_block,
+            "restructured_text_inline": self.build_restructured_text_inline,
+            "row": as_list(nodes.row),
+            "rubric": as_list(nodes.rubric),
+            "strong": as_list(nodes.strong),
+            "table": as_list(nodes.table),
+            "tbody": as_list(nodes.tbody),
+            "tgroup": as_list(nodes.tgroup),
+            "thead": as_list(nodes.thead),
             # Special
-            "domain_entry": (self.build_domain_entry, False),
+            "target": self.build_target,
+            "domain_entry": self.build_domain_entry,
         }
 
     def get_builder(self, node_type):
-        (builder, as_list) = self.lookup[node_type]
-        if as_list:
-            return lambda *args, **attrs: [builder(*args, **attrs)]
-        else:
-            return builder
+        builder = self.lookup[node_type]
+        return builder
 
     def build_target(self, key, *children, **attributes):
         target = nodes.target(key, *children, **attributes)
