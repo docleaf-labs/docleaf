@@ -99,9 +99,28 @@ impl IntoPy<PyObject> for Target {
 }
 
 #[derive(Debug, Clone)]
+pub enum DomainEntryType {
+    Class,
+    Enum,
+    Enumerator,
+    Function,
+}
+
+impl IntoPy<PyObject> for DomainEntryType {
+    fn into_py(self, py: Python<'_>) -> PyObject {
+        match self {
+            Self::Class => "class".into_py(py),
+            Self::Enum => "enum".into_py(py),
+            Self::Enumerator => "enumerator".into_py(py),
+            Self::Function => "function".into_py(py),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct DomainEntry {
     pub domain: Domain,
-    pub type_: String,
+    pub type_: DomainEntryType,
     pub target: Target,
     pub declaration: String,
     pub content: Vec<Node>,

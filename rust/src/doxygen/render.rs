@@ -2,7 +2,7 @@ use crate::XmlLoader;
 
 use crate::doxygen::compound::generated as e;
 use crate::doxygen::compound::CompoundDefEntry;
-use crate::doxygen::nodes::{Domain, DomainEntry, Node, SignatureType, Target};
+use crate::doxygen::nodes::{Domain, DomainEntry, DomainEntryType, Node, SignatureType, Target};
 use crate::doxygen::text;
 
 fn language_to_domain(language: &e::DoxLanguage) -> Option<Domain> {
@@ -110,7 +110,7 @@ pub fn render_compound(
         (Some(domain), e::DoxCompoundKind::Class) => {
             return Ok(vec![Node::DomainEntry(Box::new(DomainEntry {
                 domain: domain.clone(),
-                type_: "class".into(),
+                type_: DomainEntryType::Class,
                 target,
                 declaration: text::render_compound_def(compound_def),
                 content: content_nodes,
@@ -240,7 +240,7 @@ pub fn render_member_def(ctx: &Context, member_def: &e::MemberdefType) -> Vec<No
                 &mut member_def
                     .enumvalue
                     .iter()
-                    .map(|element| render_enum_value(ctx, element))
+                    .map(|element| render_enum_value(ctx, &member_def.name, element))
                     .collect(),
             );
 
@@ -248,7 +248,7 @@ pub fn render_member_def(ctx: &Context, member_def: &e::MemberdefType) -> Vec<No
             if let Some(ref domain) = ctx.domain {
                 return vec![Node::DomainEntry(Box::new(DomainEntry {
                     domain: domain.clone(),
-                    type_: "enum".into(),
+                    type_: DomainEntryType::Enum,
                     target,
                     declaration: text::render_member_def(member_def),
                     content: content_nodes,
@@ -267,7 +267,7 @@ pub fn render_member_def(ctx: &Context, member_def: &e::MemberdefType) -> Vec<No
             if let Some(ref domain) = ctx.domain {
                 return vec![Node::DomainEntry(Box::new(DomainEntry {
                     domain: domain.clone(),
-                    type_: "function".into(),
+                    type_: DomainEntryType::Function,
                     target,
                     declaration: text::render_member_def(member_def),
                     content: content_nodes,
@@ -358,7 +358,7 @@ fn member_kind_name(member_kind: &e::DoxMemberKind) -> String {
     }
 }
 
-pub fn render_enum_value(ctx: &Context, enum_value: &e::EnumvalueType) -> Node {
+pub fn render_enum_value(ctx: &Context, enum_name: &str, enum_value: &e::EnumvalueType) -> Node {
     let mut content_nodes = Vec::new();
 
     if let Some(ref description) = enum_value.briefdescription {
@@ -368,16 +368,31 @@ pub fn render_enum_value(ctx: &Context, enum_value: &e::EnumvalueType) -> Node {
         content_nodes.append(&mut render_description(ctx, description));
     }
 
-    let content = Node::DescContent(content_nodes);
-    Node::Desc(
-        vec![Node::DescSignature(
-            SignatureType::MultiLine,
-            vec![Node::DescSignatureLine(vec![Node::DescName(Box::new(
-                Node::DescSignatureName(enum_value.name.clone()),
-            ))])],
-        )],
-        Box::new(content),
-    )
+    if let Some(ref domain) = ctx.domain {
+        let ids = enum_value.id.clone();
+        let names = enum_value.id.clone();
+        let target = Target { ids, names };
+
+        Node::DomainEntry(Box::new(DomainEntry {
+            domain: domain.clone(),
+            type_: DomainEntryType::Enumerator,
+            target,
+            declaration: text::render_enum_value(enum_name, enum_value),
+            content: content_nodes,
+        }))
+    } else {
+        let content = Node::DescContent(content_nodes);
+
+        Node::Desc(
+            vec![Node::DescSignature(
+                SignatureType::MultiLine,
+                vec![Node::DescSignatureLine(vec![Node::DescName(Box::new(
+                    Node::DescSignatureName(enum_value.name.clone()),
+                ))])],
+            )],
+            Box::new(content),
+        )
+    }
 }
 
 fn render_description(ctx: &Context, element: &e::DescriptionType) -> Vec<Node> {

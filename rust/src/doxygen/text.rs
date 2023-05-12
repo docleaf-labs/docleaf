@@ -48,3 +48,7 @@ pub fn render_member_def(member_def: &e::MemberdefType) -> String {
         ),
     }
 }
+
+pub fn render_enum_value(enum_name: &str, enum_value: &e::EnumvalueType) -> String {
+    format!("{enum_name}::{}", enum_value.name)
+}
