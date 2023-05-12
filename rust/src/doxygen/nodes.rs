@@ -83,9 +83,26 @@ impl IntoPy<PyObject> for Domain {
 }
 
 #[derive(Debug, Clone)]
+pub struct Target {
+    pub ids: String,
+    pub names: String,
+}
+
+impl IntoPy<PyObject> for Target {
+    fn into_py(self, py: Python<'_>) -> PyObject {
+        HashMap::<String, PyObject>::from([
+            ("ids".into(), vec![self.ids].into_py(py)),
+            ("names".into(), vec![self.names].into_py(py)),
+        ])
+        .into_py(py)
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct DomainEntry {
     pub domain: Domain,
     pub type_: String,
+    pub target: Target,
     pub declaration: String,
     pub content: Vec<Node>,
 }
@@ -96,7 +113,7 @@ pub enum Node {
     Text(String),
 
     // Domains
-    DomainEntry(DomainEntry),
+    DomainEntry(Box<DomainEntry>),
 
     // Nodes
     /// Used in this code base like an html5 div - just a block level wrapper
@@ -128,10 +145,7 @@ pub enum Node {
     },
     Rubric(Vec<Node>),
     Strong(Vec<Node>),
-    Target {
-        ids: String,
-        names: String,
-    },
+    Target(Target),
 
     // Tables
     Table(Vec<Node>),
@@ -180,6 +194,7 @@ impl IntoPy<PyObject> for Node {
                     ("domain".into(), entry.domain.into_py(py)),
                     ("type".into(), entry.type_.into_py(py)),
                     ("declaration".into(), entry.declaration.into_py(py)),
+                    ("target".into(), entry.target.into_py(py)),
                 ]),
                 entry.content,
             )
@@ -354,13 +369,13 @@ impl IntoPy<PyObject> for Node {
             Self::Rubric(nodes) => {
                 node(py, "rubric", CallAs::Source, Attributes::new(), nodes).into_py(py)
             }
-            Self::Target { ids, names } => node(
+            Self::Target(target) => node(
                 py,
                 "target",
                 CallAs::Source,
                 Attributes::from([
-                    ("ids".into(), vec![ids].into_py(py)),
-                    ("names".into(), vec![names].into_py(py)),
+                    ("ids".into(), vec![target.ids].into_py(py)),
+                    ("names".into(), vec![target.names].into_py(py)),
                 ]),
                 Vec::<Node>::new(),
             )

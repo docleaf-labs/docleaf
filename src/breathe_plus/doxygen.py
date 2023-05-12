@@ -67,7 +67,7 @@ class NodeManager:
             "tgroup": as_list(nodes.tgroup),
             "thead": as_list(nodes.thead),
             # Special
-            "target": self.build_target,
+            "target": as_list(self.build_target),
             "domain_entry": self.build_domain_entry,
         }
 
@@ -75,16 +75,17 @@ class NodeManager:
         builder = self.lookup[node_type]
         return builder
 
-    def build_target(self, key, *children, **attributes):
-        target = nodes.target(key, *children, **attributes)
+    def build_target(self, *children, **attributes):
+        target = nodes.target(*children, **attributes)
         self.state.document.note_explicit_target(target)
-        return [target]
+        return target
 
     def build_domain_entry(self, *children, **attributes):
         return domains.render_domain_entry(
             attributes["domain"],
             attributes["type"],
             attributes["declaration"],
+            self.build_target(**attributes["target"]),
             self.directive_arguments,
             children,
         )

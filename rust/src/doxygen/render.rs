@@ -2,7 +2,7 @@ use crate::XmlLoader;
 
 use crate::doxygen::compound::generated as e;
 use crate::doxygen::compound::CompoundDefEntry;
-use crate::doxygen::nodes::{Domain, DomainEntry, Node, SignatureType};
+use crate::doxygen::nodes::{Domain, DomainEntry, Node, SignatureType, Target};
 use crate::doxygen::text;
 
 fn language_to_domain(language: &e::DoxLanguage) -> Option<Domain> {
@@ -100,22 +100,26 @@ pub fn render_compound(
             .collect(),
     );
 
+    let ids = compound_def.id.clone();
+    let names = compound_def.id.clone();
+    let target = Target { ids, names };
+
+    // If we have a valid domain and compound type pairing then we return a request to use a domain entry
+    // instead of attempting to render the compound signature ourselves
     match (ctx.domain.as_ref(), &compound_def.kind) {
         (Some(domain), e::DoxCompoundKind::Class) => {
-            return Ok(vec![Node::DomainEntry(DomainEntry {
+            return Ok(vec![Node::DomainEntry(Box::new(DomainEntry {
                 domain: domain.clone(),
                 type_: "class".into(),
+                target,
                 declaration: text::render_compound_def(compound_def),
                 content: content_nodes,
-            })]);
+            }))]);
         }
         _ => {}
     }
 
     let content = Node::DescContent(content_nodes);
-
-    let ids = compound_def.id.clone();
-    let names = compound_def.id.clone();
 
     let kind = text::render_compound_kind(&compound_def.kind);
 
@@ -123,7 +127,7 @@ pub fn render_compound(
         vec![Node::DescSignature(
             SignatureType::MultiLine,
             vec![Node::DescSignatureLine(vec![
-                Node::Target { ids, names },
+                Node::Target(target),
                 Node::DescSignatureKeyword(vec![Node::Text(kind.to_string())]),
                 Node::DescSignatureSpace,
                 Node::DescName(Box::new(Node::DescSignatureName(
@@ -232,7 +236,7 @@ pub fn render_member_def(ctx: &Context, member_def: &e::MemberdefType) -> Vec<No
     match member_def.kind {
         e::DoxMemberKind::Enum => {
             signature_line = vec![
-                Node::Target { ids, names },
+                Node::Target(Target { ids, names }),
                 Node::DescSignatureKeyword(vec![Node::Text(name)]),
                 Node::DescSignatureSpace,
                 Node::DescName(Box::new(Node::DescSignatureName(member_def.name.clone()))),
@@ -272,20 +276,23 @@ pub fn render_member_def(ctx: &Context, member_def: &e::MemberdefType) -> Vec<No
                 })
                 .collect();
 
+            let target = Target { ids, names };
+
             // Early exit if there is domain information for rendering this entry
             if let Some(ref domain) = ctx.domain {
-                return vec![Node::DomainEntry(DomainEntry {
+                return vec![Node::DomainEntry(Box::new(DomainEntry {
                     domain: domain.clone(),
                     type_: "function".into(),
+                    target,
                     declaration: text::render_member_def(member_def),
                     content: content_nodes,
-                })];
+                }))];
             }
 
             match member_def.type_ {
                 Some(ref type_) => {
                     signature_line = vec![
-                        Node::Target { ids, names },
+                        Node::Target(target),
                         Node::DescSignatureKeyword(render_linked_text_type(ctx, type_)),
                         Node::DescSignatureSpace,
                         Node::DescName(Box::new(Node::DescSignatureName(member_def.name.clone()))),
@@ -294,7 +301,7 @@ pub fn render_member_def(ctx: &Context, member_def: &e::MemberdefType) -> Vec<No
                 }
                 None => {
                     signature_line = vec![
-                        Node::Target { ids, names },
+                        Node::Target(target),
                         Node::DescName(Box::new(Node::DescSignatureName(member_def.name.clone()))),
                         Node::DescParameterList(parameter_list_items),
                     ];
@@ -303,7 +310,7 @@ pub fn render_member_def(ctx: &Context, member_def: &e::MemberdefType) -> Vec<No
         }
         _ => {
             signature_line = vec![
-                Node::Target { ids, names },
+                Node::Target(Target { ids, names }),
                 Node::DescSignatureKeyword(vec![Node::Text(name)]),
                 Node::DescSignatureSpace,
                 Node::DescName(Box::new(Node::DescSignatureName(member_def.name.clone()))),
@@ -313,15 +320,13 @@ pub fn render_member_def(ctx: &Context, member_def: &e::MemberdefType) -> Vec<No
 
     let content = Node::DescContent(content_nodes);
 
-    let mut nodes = vec![Node::Desc(
+    vec![Node::Desc(
         vec![Node::DescSignature(
             SignatureType::MultiLine,
             vec![Node::DescSignatureLine(signature_line)],
         )],
         Box::new(content),
-    )];
-
-    nodes
+    )]
 }
 
 fn member_kind_name(member_kind: &e::DoxMemberKind) -> String {
