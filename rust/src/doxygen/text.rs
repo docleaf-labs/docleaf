@@ -41,6 +41,10 @@ pub fn render_member_def(member_def: &e::MemberdefType) -> String {
                 _ => String::new(),
             }
         }
-        _ => String::new(),
+        e::DoxMemberKind::Enum => member_def.name.clone(),
+        _ => todo!(
+            "render_member_def not implemented for {:?}",
+            member_def.kind
+        ),
     }
 }

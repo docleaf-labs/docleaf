@@ -230,18 +230,12 @@ pub fn render_member_def(ctx: &Context, member_def: &e::MemberdefType) -> Vec<No
 
     let ids = member_def.id.clone();
     let names = member_def.id.clone();
+    let target = Target { ids, names };
 
     let signature_line;
 
     match member_def.kind {
         e::DoxMemberKind::Enum => {
-            signature_line = vec![
-                Node::Target(Target { ids, names }),
-                Node::DescSignatureKeyword(vec![Node::Text(name)]),
-                Node::DescSignatureSpace,
-                Node::DescName(Box::new(Node::DescSignatureName(member_def.name.clone()))),
-            ];
-
             content_nodes.append(
                 &mut member_def
                     .enumvalue
@@ -249,8 +243,37 @@ pub fn render_member_def(ctx: &Context, member_def: &e::MemberdefType) -> Vec<No
                     .map(|element| render_enum_value(ctx, element))
                     .collect(),
             );
+
+            // Early exit if there is domain information for rendering this entry
+            if let Some(ref domain) = ctx.domain {
+                return vec![Node::DomainEntry(Box::new(DomainEntry {
+                    domain: domain.clone(),
+                    type_: "enum".into(),
+                    target,
+                    declaration: text::render_member_def(member_def),
+                    content: content_nodes,
+                }))];
+            }
+
+            signature_line = vec![
+                Node::Target(target),
+                Node::DescSignatureKeyword(vec![Node::Text(name)]),
+                Node::DescSignatureSpace,
+                Node::DescName(Box::new(Node::DescSignatureName(member_def.name.clone()))),
+            ];
         }
         e::DoxMemberKind::Function => {
+            // Early exit if there is domain information for rendering this entry
+            if let Some(ref domain) = ctx.domain {
+                return vec![Node::DomainEntry(Box::new(DomainEntry {
+                    domain: domain.clone(),
+                    type_: "function".into(),
+                    target,
+                    declaration: text::render_member_def(member_def),
+                    content: content_nodes,
+                }))];
+            }
+
             let parameter_list_items = member_def
                 .param
                 .iter()
@@ -276,19 +299,6 @@ pub fn render_member_def(ctx: &Context, member_def: &e::MemberdefType) -> Vec<No
                 })
                 .collect();
 
-            let target = Target { ids, names };
-
-            // Early exit if there is domain information for rendering this entry
-            if let Some(ref domain) = ctx.domain {
-                return vec![Node::DomainEntry(Box::new(DomainEntry {
-                    domain: domain.clone(),
-                    type_: "function".into(),
-                    target,
-                    declaration: text::render_member_def(member_def),
-                    content: content_nodes,
-                }))];
-            }
-
             match member_def.type_ {
                 Some(ref type_) => {
                     signature_line = vec![
@@ -310,7 +320,7 @@ pub fn render_member_def(ctx: &Context, member_def: &e::MemberdefType) -> Vec<No
         }
         _ => {
             signature_line = vec![
-                Node::Target(Target { ids, names }),
+                Node::Target(target),
                 Node::DescSignatureKeyword(vec![Node::Text(name)]),
                 Node::DescSignatureSpace,
                 Node::DescName(Box::new(Node::DescSignatureName(member_def.name.clone()))),
