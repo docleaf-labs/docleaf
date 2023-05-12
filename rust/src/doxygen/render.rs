@@ -395,12 +395,61 @@ pub fn render_enum_value(ctx: &Context, enum_name: &str, enum_value: &e::Enumval
     }
 }
 
+/// We treat certain nodes as special, like the parameter lists.
 fn render_description(ctx: &Context, element: &e::DescriptionType) -> Vec<Node> {
-    element
+    let cat_nodes: Vec<_> = element
         .para
         .iter()
-        .map(|element| render_doc_para_type(ctx, element))
-        .collect()
+        // Render the para node contents and then lift all the special nodes (list paramater lists) out of the para
+        // output and group the rest under Paragraph nodes. This allows us to manage the special nodes whilst still
+        // having the original content arranged in Paragraph nodes as you'd expect from rendering a 'para'
+        .flat_map(|element| {
+            let inner_cat_nodes = render_doc_para_type(ctx, element);
+
+            let (special, other): (Vec<_>, Vec<_>) = inner_cat_nodes
+                .into_iter()
+                .partition(|cat| cat.is_special());
+
+            let mut result = Vec::new();
+
+            for entry in special {
+                result.push(entry)
+            }
+
+            // There might not be any other nodes so we double check before making an empty Paragraph node
+            // TODO: Check for white-space text nodes as we can probably ignore them
+            if !other.is_empty() {
+                result.push(CategorizedNode::Node(Node::Paragraph(other.into_nodes())))
+            }
+
+            result
+        })
+        .collect();
+
+    // Having separate the special nodes from the paragraphs for each 'para' node, we then separate all the special
+    // nodes from all the paragraph nodes and render the special nodes separately
+    let (special, paragraphs): (Vec<_>, Vec<_>) =
+        cat_nodes.into_iter().partition(|cat| cat.is_special());
+
+    let mut nodes = paragraphs.into_nodes();
+
+    if !special.is_empty() {
+        let fields = special
+            .into_iter()
+            .flat_map(|cat_node| match cat_node {
+                CategorizedNode::ParameterList(node) => Some(Node::Field(
+                    Box::new(Node::FieldName(vec![Node::Text("Parameters".to_string())])),
+                    Box::new(Node::FieldBody(vec![node])),
+                )),
+                // These entries have already been filtered out so we don't worry about them
+                CategorizedNode::Node(_) => None,
+            })
+            .collect();
+
+        nodes.push(Node::FieldList(fields))
+    }
+
+    nodes
 }
 
 fn extract_inner_description(nodes: Vec<Node>) -> Vec<Node> {
@@ -424,7 +473,9 @@ fn extract_inner_description(nodes: Vec<Node>) -> Vec<Node> {
     }
 }
 
-fn render_doc_para_type(ctx: &Context, element: &e::DocParaType) -> Node {
+/// Renders the contents of the doc para type but attempts to separate special values like parameters lists from the
+/// regular paragraphs as we want to identify and display those in a special manner
+fn render_doc_para_type(ctx: &Context, element: &e::DocParaType) -> Vec<CategorizedNode> {
     let mut nodes = Vec::new();
 
     for entry in element.content.iter() {
@@ -434,31 +485,83 @@ fn render_doc_para_type(ctx: &Context, element: &e::DocParaType) -> Node {
                     nodes.push(node)
                 }
             }
-            e::DocParaTypeItem::Text(text) => nodes.push(Node::Text(text.clone())),
+            e::DocParaTypeItem::Text(text) => {
+                nodes.push(CategorizedNode::Node(Node::Text(text.clone())))
+            }
         }
     }
 
-    Node::Paragraph(nodes)
+    nodes
 }
 
-fn render_doc_cmd_group(ctx: &Context, element: &e::DocCmdGroup) -> Option<Node> {
+enum CategorizedNode {
+    ParameterList(Node),
+    Node(Node),
+}
+
+impl CategorizedNode {
+    pub fn to_node(self) -> Node {
+        match self {
+            Self::ParameterList(node) => node,
+            Self::Node(node) => node,
+        }
+    }
+
+    pub fn is_special(&self) -> bool {
+        match self {
+            Self::ParameterList(_) => true,
+            Self::Node(_) => false,
+        }
+    }
+}
+
+// Trait to allow us to add 'to_nodes' to a Vec<CategorizedNode> for ergonomics
+trait ToNodes {
+    fn into_nodes(self) -> Vec<Node>;
+}
+
+// Provides an easy way to get from Vec<CategorizedNode> to Vec<Node> for situations where the categorization isn't
+// important
+impl ToNodes for Vec<CategorizedNode> {
+    fn into_nodes(self) -> Vec<Node> {
+        self.into_iter().map(|cn| cn.to_node()).collect()
+    }
+}
+
+// As we need to treat the ParameterList (and maybe some other nodes) as a special case we render into the
+// CategorizedNode type so that we can separate the parameter lists, etc, further up in the stack if needed
+fn render_doc_cmd_group(ctx: &Context, element: &e::DocCmdGroup) -> Option<CategorizedNode> {
     match element {
-        e::DocCmdGroup::DocTitleCmdGroup(element) => render_doc_title_cmd_group(ctx, element),
-        e::DocCmdGroup::Parameterlist(element) => {
-            Some(Node::BulletList(render_doc_param_list_type(ctx, element)))
+        e::DocCmdGroup::DocTitleCmdGroup(element) => {
+            render_doc_title_cmd_group(ctx, element).map(CategorizedNode::Node)
         }
-        e::DocCmdGroup::Simplesect(element) => {
-            Some(Node::Container(render_doc_simple_sect_type(ctx, element)))
+        e::DocCmdGroup::Parameterlist(element) => Some(CategorizedNode::ParameterList(
+            Node::BulletList(render_doc_param_list_type(ctx, element)),
+        )),
+        e::DocCmdGroup::Simplesect(element) => Some(CategorizedNode::Node(Node::Container(
+            render_doc_simple_sect_type(ctx, element),
+        ))),
+        e::DocCmdGroup::Itemizedlist(element) => {
+            Some(CategorizedNode::Node(render_doc_list_type(ctx, element)))
         }
-        e::DocCmdGroup::Itemizedlist(element) => Some(render_doc_list_type(ctx, element)),
-        e::DocCmdGroup::Orderedlist(element) => Some(render_doc_list_type(ctx, element)),
-        e::DocCmdGroup::Programlisting(element) => Some(render_listing_type(ctx, element)),
-        e::DocCmdGroup::Verbatim(text) => Some(render_verbatim_text(ctx, text)),
-        e::DocCmdGroup::Xrefsect(element) => Some(render_doc_xref_sect_type(ctx, element)),
-        e::DocCmdGroup::Preformatted(element) => {
-            Some(Node::LiteralBlock(render_doc_markup_type(ctx, element)))
+        e::DocCmdGroup::Orderedlist(element) => {
+            Some(CategorizedNode::Node(render_doc_list_type(ctx, element)))
         }
-        e::DocCmdGroup::Table(element) => Some(render_doc_table_type(ctx, element)),
+        e::DocCmdGroup::Programlisting(element) => {
+            Some(CategorizedNode::Node(render_listing_type(ctx, element)))
+        }
+        e::DocCmdGroup::Verbatim(text) => {
+            Some(CategorizedNode::Node(render_verbatim_text(ctx, text)))
+        }
+        e::DocCmdGroup::Xrefsect(element) => Some(CategorizedNode::Node(
+            render_doc_xref_sect_type(ctx, element),
+        )),
+        e::DocCmdGroup::Preformatted(element) => Some(CategorizedNode::Node(Node::LiteralBlock(
+            render_doc_markup_type(ctx, element).into_nodes(),
+        ))),
+        e::DocCmdGroup::Table(element) => {
+            Some(CategorizedNode::Node(render_doc_table_type(ctx, element)))
+        }
         // TODO: Change to panic
         _ => {
             tracing::error!("Unhandled DocCmdGroup node: {element:?} in render_doc_cmd_group");
@@ -524,7 +627,7 @@ fn render_doc_entry_type(ctx: &Context, element: &e::DocEntryType) -> TableCell 
     let nodes = element
         .para
         .iter()
-        .map(|element| render_doc_para_type(ctx, element))
+        .map(|element| Node::Paragraph(render_doc_para_type(ctx, element).into_nodes()))
         .collect();
 
     let heading = element.thead == e::DoxBool::Yes;
@@ -642,17 +745,17 @@ fn render_doc_list_item_type(ctx: &Context, element: &e::DocListItemType) -> Nod
     let contents = element
         .para
         .iter()
-        .map(|element| render_doc_para_type(ctx, element))
+        .map(|element| Node::Paragraph(render_doc_para_type(ctx, element).into_nodes()))
         .collect();
     Node::ListItem(contents)
 }
 
-/// Incomplete - just renders the para blocks at the moment
+/// TODO: Incomplete - just renders the para blocks at the moment
 fn render_doc_simple_sect_type(ctx: &Context, element: &e::DocSimpleSectType) -> Vec<Node> {
     element
         .para
         .iter()
-        .map(|element| render_doc_para_type(ctx, element))
+        .map(|element| Node::Paragraph(render_doc_para_type(ctx, element).into_nodes()))
         .collect()
 }
 
@@ -660,7 +763,11 @@ fn render_doc_param_list_type(ctx: &Context, element: &e::DocParamListType) -> V
     let mut nodes = Vec::new();
 
     for item in element.parameteritem.iter() {
-        let mut contents = render_doc_param_name_list(ctx, &item.parameternamelist);
+        let mut contents = vec![Node::LiteralStrong(render_doc_param_name_list(
+            ctx,
+            &item.parameternamelist,
+        ))];
+
         contents.push(Node::Text(" - ".to_string()));
 
         let description = render_description(ctx, &item.parameterdescription);
@@ -751,15 +858,15 @@ fn render_doc_title_cmd_group(
     tracing::debug!("render_doc_title_cmd_group {doc_title_cmd_group:?}");
     match doc_title_cmd_group {
         e::DocTitleCmdGroup::Ref(element) => Some(render_doc_ref_text_type(ctx, element)),
-        e::DocTitleCmdGroup::Bold(element) => {
-            Some(Node::Strong(render_doc_markup_type(ctx, element)))
-        }
-        e::DocTitleCmdGroup::Emphasis(element) => {
-            Some(Node::Emphasis(render_doc_markup_type(ctx, element)))
-        }
-        e::DocTitleCmdGroup::Computeroutput(element) => {
-            Some(Node::Literal(render_doc_markup_type(ctx, element)))
-        }
+        e::DocTitleCmdGroup::Bold(element) => Some(Node::Strong(
+            render_doc_markup_type(ctx, element).into_nodes(),
+        )),
+        e::DocTitleCmdGroup::Emphasis(element) => Some(Node::Emphasis(
+            render_doc_markup_type(ctx, element).into_nodes(),
+        )),
+        e::DocTitleCmdGroup::Computeroutput(element) => Some(Node::Literal(
+            render_doc_markup_type(ctx, element).into_nodes(),
+        )),
         // This might not be the correct way to handle it but there isn't a reStructuredText line break node
         e::DocTitleCmdGroup::Linebreak => Some(Node::Text("\n".to_string())),
         e::DocTitleCmdGroup::Htmlonly(element) => {
@@ -793,7 +900,9 @@ fn render_doc_title_cmd_group(
             tracing::error!(
                 "Unhandled inline doc_markup node: {element:?} in render_doc_title_cmd_group"
             );
-            Some(Node::UnknownInline(render_doc_markup_type(ctx, element)))
+            Some(Node::UnknownInline(
+                render_doc_markup_type(ctx, element).into_nodes(),
+            ))
         }
         element => {
             tracing::error!("No render handled for {element:?} in render_doc_title_cmd_group");
@@ -802,7 +911,7 @@ fn render_doc_title_cmd_group(
     }
 }
 
-fn render_doc_markup_type(ctx: &Context, element: &e::DocMarkupType) -> Vec<Node> {
+fn render_doc_markup_type(ctx: &Context, element: &e::DocMarkupType) -> Vec<CategorizedNode> {
     let mut nodes = Vec::new();
 
     for entry in element.content.iter() {
@@ -812,7 +921,9 @@ fn render_doc_markup_type(ctx: &Context, element: &e::DocMarkupType) -> Vec<Node
                     nodes.push(node)
                 }
             }
-            e::DocMarkupTypeItem::Text(text) => nodes.push(Node::Text(text.clone())),
+            e::DocMarkupTypeItem::Text(text) => {
+                nodes.push(CategorizedNode::Node(Node::Text(text.clone())))
+            }
         }
     }
 

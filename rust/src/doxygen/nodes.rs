@@ -183,6 +183,12 @@ pub enum Node {
         nodes: Vec<Node>,
     },
 
+    // Field lists
+    FieldList(Vec<Node>),
+    Field(Box<Node>, Box<Node>),
+    FieldName(Vec<Node>),
+    FieldBody(Vec<Node>),
+
     // Lists
     BulletList(Vec<Node>),
     EnumeratedList(Vec<Node>),
@@ -441,6 +447,30 @@ impl IntoPy<PyObject> for Node {
                 nodes,
             )
             .into_py(py),
+
+            // Field lists
+            Self::FieldList(nodes) => {
+                node(py, "field_list", CallAs::Source, Attributes::new(), nodes).into_py(py)
+            }
+            Self::Field(name, body) => node(
+                py,
+                "field",
+                CallAs::Source,
+                Attributes::new(),
+                vec![*name, *body],
+            )
+            .into_py(py),
+            Self::FieldName(nodes) => node(
+                py,
+                "field_name",
+                CallAs::SourceText,
+                Attributes::new(),
+                nodes,
+            )
+            .into_py(py),
+            Self::FieldBody(nodes) => {
+                node(py, "field_body", CallAs::Source, Attributes::new(), nodes).into_py(py)
+            }
 
             // Lists
             Self::BulletList(nodes) => {
