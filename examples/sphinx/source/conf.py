@@ -10,15 +10,15 @@ import os
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = "Breathe Plus"
-copyright = "2023, Breathe Team"
-author = "Breathe Team"
+project = "Docleaf"
+copyright = "2023, Docleaf Team"
+author = "Docleaf Team"
 release = "0.0.0"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = ["breathe_plus.doxygen"]
+extensions = ["docleaf.doxygen"]
 
 templates_path = ["_templates"]
 exclude_patterns = []
@@ -29,8 +29,8 @@ exclude_patterns = []
 html_theme = "alabaster"
 html_static_path = ["_static"]
 
-# -- Options for Breathe
-breathe_projects = {
+# -- Options for docleaf
+docleaf_projects = {
     "class_methods": "../../code/class_methods/xml/",
     "enums": "../../code/enums/xml/",
     "functions": "../../code/functions/xml/",
@@ -50,6 +50,6 @@ breathe_projects = {
     "xrefsect": "../../code/xrefsect/xml/",
 }
 
-breathe_default_project = "nutshell"
+docleaf_default_project = "nutshell"
 
-breathe_skip_doxygen_xml_nodes = []
+docleaf_skip_doxygen_xml_nodes = []

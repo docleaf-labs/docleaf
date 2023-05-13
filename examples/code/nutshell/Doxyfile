@@ -1,4 +1,4 @@
-PROJECT_NAME     = "Breathe in a nutshell example"
+PROJECT_NAME     = "Docleaf in a nutshell example"
 OUTPUT_DIRECTORY = .
 GENERATE_LATEX   = NO
 GENERATE_MAN     = NO

@@ -1,6 +1,6 @@
 /**
     \file nutshell.h
-    An overly extended example of how to use breathe
+    An overly extended example of how to use docleaf
 */
 
 /*!

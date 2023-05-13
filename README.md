@@ -1,5 +1,5 @@
 
-# Breathe Plus
+# Docleaf
 
 This is an exploratory project for what a new version of Breathe might look like if it is primarily written in Rust.
 This is to improve performance and reduce the memory usage.

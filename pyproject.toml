@@ -1,5 +1,5 @@
 [project]
-name = "breathe_plus"
+name = "docleaf"
 version = "0.1.0a2"
 description = "Integrate your doxygen-generated technical documentation into Sphinx"
 license = { file = "LICENSE.md" }
@@ -13,7 +13,7 @@ dependencies = [
 ]
 
 [project.urls]
-repository = "https://github.com/breathe-doc/breathe-plus"
+repository = "https://github.com/docleaf-labs/docleaf"
 
 [build-system]
 requires = ["maturin>=0.14,<0.15"]
@@ -21,7 +21,7 @@ build-backend = "maturin"
 
 [tool.maturin]
 bindings = "pyo3"
-module-name = "breathe_plus.backend"
+module-name = "docleaf.backend"
 # "extension-module" tells pyo3 we want to build an extension module (skips linking against libpython.so)
 features = ["pyo3/extension-module"]
 python-source = "src"
@@ -30,13 +30,13 @@ manifest-path = "rust/Cargo.toml"
 [tool.black]
 line-length = 100
 extend-exclude = '''
-^/breathe/parser/.*
+^/docleaf/parser/.*
 '''
 
 # Poetry - used for dev and must be kept in sync with the top sections until we abandon it or they update to 
 # support the use of the main [project] and dependencies information
 [tool.poetry]
-name = "breathe_plus"
+name = "docleaf"
 version = "0.1.0a2"
 description = "Integrate your doxygen-generated technical documentation into Sphinx"
 license = "Parity-7.0.0"

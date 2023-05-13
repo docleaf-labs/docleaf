@@ -1,7 +1,7 @@
 /*! The first function with an URL in the doc
 
-  Breathe's homepage: https://breathe-doc.org
-  Breathe's GitHub repo: https://github.com/breathe-doc/breathe-plus
+  Docleaf's homepage: https://docleaf.io
+  Docleaf's GitHub repo: https://github.com/docleaf-labs/docleaf
 
   \param arg1 the first arg
   \param arg2 the second arg

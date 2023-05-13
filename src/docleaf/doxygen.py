@@ -100,7 +100,7 @@ class NodeManager:
         # Inspired by autodoc.py in Sphinx
         rst = StringList()
         for line in text.split("\n"):
-            rst.append(line, "<breathe>")
+            rst.append(line, "<docleaf>")
 
         # Parent node for the generated node subtree
         rst_node = nodes.paragraph()
@@ -116,7 +116,7 @@ class NodeManager:
         # Inspired by autodoc.py in Sphinx
         rst = StringList()
         for line in text.split("\n"):
-            rst.append(line, "<breathe>")
+            rst.append(line, "<docleaf>")
 
         rst_node = nodes.inline()
         rst_node.document = self.state.document
@@ -179,8 +179,8 @@ class ClassDirective(BaseDirective):
 
     def run(self) -> List[Node]:
         name = self.arguments[0]
-        project = self.options["project"] or self.app.config.breathe_default_project
-        path = self.app.config.breathe_projects[project]
+        project = self.options["project"] or self.app.config.docleaf_default_project
+        path = self.app.config.docleaf_projects[project]
         node_list = backend.render_class(name, path, self.cache)
 
         node_builder = NodeManager(self.state, self.get_directive_args())
@@ -198,8 +198,8 @@ class StructDirective(BaseDirective):
 
     def run(self) -> List[Node]:
         name = self.arguments[0]
-        project = self.options["project"] or self.app.config.breathe_default_project
-        path = self.app.config.breathe_projects[project]
+        project = self.options["project"] or self.app.config.docleaf_default_project
+        path = self.app.config.docleaf_projects[project]
         node_list = backend.render_struct(name, path, self.cache)
 
         node_builder = NodeManager(self.state, self.get_directive_args())
@@ -218,8 +218,8 @@ class EnumDirective(BaseDirective):
 
     def run(self) -> List[Node]:
         name = self.arguments[0]
-        project = self.options["project"] or self.app.config.breathe_default_project
-        path = self.app.config.breathe_projects[project]
+        project = self.options["project"] or self.app.config.docleaf_default_project
+        path = self.app.config.docleaf_projects[project]
         skip_xml_nodes = get_skip_xml_nodes(self.app, self.options)
 
         context = backend.Context(skip_xml_nodes)
@@ -241,8 +241,8 @@ class FunctionDirective(BaseDirective):
 
     def run(self) -> List[Node]:
         name = self.arguments[0]
-        project = self.options["project"] or self.app.config.breathe_default_project
-        path = self.app.config.breathe_projects[project]
+        project = self.options["project"] or self.app.config.docleaf_default_project
+        path = self.app.config.docleaf_projects[project]
         skip_xml_nodes = get_skip_xml_nodes(self.app, self.options)
 
         context = backend.Context(skip_xml_nodes)
@@ -266,8 +266,8 @@ class GroupDirective(BaseDirective):
 
     def run(self) -> List[Node]:
         name = self.arguments[0]
-        project = self.options.get("project", self.app.config.breathe_default_project)
-        path = self.app.config.breathe_projects[project]
+        project = self.options.get("project", self.app.config.docleaf_default_project)
+        path = self.app.config.docleaf_projects[project]
 
         skip_xml_nodes = get_skip_xml_nodes(self.app, self.options)
         content_only = "content-only" in self.options
@@ -285,7 +285,7 @@ def get_skip_xml_nodes(app, options):
     """
     skip_xml_nodes = options.get("skip-xml-nodes", None)
     if skip_xml_nodes is None:
-        skip_xml_nodes = app.config.breathe_skip_doxygen_xml_nodes
+        skip_xml_nodes = app.config.docleaf_skip_doxygen_xml_nodes
     else:
         skip_xml_nodes = skip_xml_nodes.split(",")
     return skip_xml_nodes
@@ -314,8 +314,8 @@ def setup(app: Sphinx):
     add_directive(context, "doxygenenum", EnumDirective)
     add_directive(context, "doxygengroup", GroupDirective)
 
-    app.add_config_value("breathe_projects", {}, "env")
-    app.add_config_value("breathe_default_project", None, "env")
-    app.add_config_value("breathe_skip_doxygen_xml_nodes", [], "env")
+    app.add_config_value("docleaf_projects", {}, "env")
+    app.add_config_value("docleaf_default_project", None, "env")
+    app.add_config_value("docleaf_skip_doxygen_xml_nodes", [], "env")
 
     return {"version": __version__, "parallel_read_safe": True, "parallel_write_safe": True}
