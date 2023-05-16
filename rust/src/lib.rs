@@ -360,7 +360,7 @@ fn backend(_py: Python, module: &PyModule) -> PyResult<()> {
             .with(
                 EnvFilter::builder()
                     .with_default_directive(LevelFilter::WARN.into())
-                    .with_env_var("BREATHE_LOG")
+                    .with_env_var("DOCLEAF_LOG")
                     .from_env_lossy(),
             )
             .init();

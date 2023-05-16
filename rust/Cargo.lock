@@ -41,27 +41,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bef38d45163c2f1dde094a7dfd33ccf595c92905c8f8f4fdc18d06fb1037718a"
 
 [[package]]
-name = "docleaf"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "env_logger",
- "html-escape",
- "insta",
- "itertools",
- "pretty_assertions",
- "pyo3",
- "quick-xml",
- "roxmltree",
- "serde",
- "strum",
- "tracing",
- "tracing-subscriber",
- "vec1",
- "xsd-codegen",
-]
-
-[[package]]
 name = "cfg-if"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -94,6 +73,27 @@ name = "diff"
 version = "0.1.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "56254986775e3233ffa9c4d7d3faaf6d36a2c09d30b20687e9f88bc8bafc16c8"
+
+[[package]]
+name = "docleaf"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "env_logger",
+ "html-escape",
+ "insta",
+ "itertools",
+ "pretty_assertions",
+ "pyo3",
+ "quick-xml",
+ "roxmltree",
+ "serde",
+ "strum",
+ "tracing",
+ "tracing-subscriber",
+ "vec1",
+ "xsd-codegen",
+]
 
 [[package]]
 name = "either"

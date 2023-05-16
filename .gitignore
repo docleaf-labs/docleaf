@@ -1,5 +1,5 @@
 # Python related
-/src/breathe_plus/*.so
+/src/docleaf/*.so
 __pycache__
 
 # Rust related
