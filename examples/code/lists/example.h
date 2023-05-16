@@ -12,4 +12,4 @@
  *
  *  More text here.
  */
-void example_function(int arg1, bool arg2);
+void example_function_with_lists(int arg1, bool arg2);

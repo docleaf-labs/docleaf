@@ -541,12 +541,16 @@ fn render_doc_cmd_group(ctx: &Context, element: &e::DocCmdGroup) -> Option<Categ
         e::DocCmdGroup::Simplesect(element) => Some(CategorizedNode::Node(Node::Container(
             render_doc_simple_sect_type(ctx, element),
         ))),
-        e::DocCmdGroup::Itemizedlist(element) => {
-            Some(CategorizedNode::Node(render_doc_list_type(ctx, element)))
-        }
-        e::DocCmdGroup::Orderedlist(element) => {
-            Some(CategorizedNode::Node(render_doc_list_type(ctx, element)))
-        }
+        e::DocCmdGroup::Itemizedlist(element) => Some(CategorizedNode::Node(render_doc_list_type(
+            ctx,
+            element,
+            ListType::Itemized,
+        ))),
+        e::DocCmdGroup::Orderedlist(element) => Some(CategorizedNode::Node(render_doc_list_type(
+            ctx,
+            element,
+            ListType::Ordered,
+        ))),
         e::DocCmdGroup::Programlisting(element) => {
             Some(CategorizedNode::Node(render_listing_type(ctx, element)))
         }
@@ -732,13 +736,22 @@ fn render_sp_type(_ctx: &Context, _elementt: &e::SpType) -> Node {
     Node::Text(" ".to_string())
 }
 
-fn render_doc_list_type(ctx: &Context, element: &e::DocListType) -> Node {
+enum ListType {
+    Itemized,
+    Ordered,
+}
+
+fn render_doc_list_type(ctx: &Context, element: &e::DocListType, type_: ListType) -> Node {
     let items = element
         .listitem
         .iter()
         .map(|element| render_doc_list_item_type(ctx, element))
         .collect();
-    Node::EnumeratedList(items)
+
+    match type_ {
+        ListType::Itemized => Node::BulletList(items),
+        ListType::Ordered => Node::EnumeratedList(items),
+    }
 }
 
 fn render_doc_list_item_type(ctx: &Context, element: &e::DocListItemType) -> Node {
