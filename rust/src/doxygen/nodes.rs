@@ -191,7 +191,10 @@ pub enum Node {
 
     // Lists
     BulletList(Vec<Node>),
-    EnumeratedList(Vec<Node>),
+    EnumeratedList {
+        type_: Option<ListEnumType>,
+        items: Vec<Node>,
+    },
     ListItem(Vec<Node>),
 
     // Embedded ReStructuredText
@@ -200,6 +203,28 @@ pub enum Node {
 
     // Placeholder node for when we haven't handled the case
     UnknownInline(Vec<Node>),
+}
+
+// Docutils enum types for lists
+#[derive(Debug, Clone, Copy)]
+pub enum ListEnumType {
+    Arabic,
+    LowerAlpha,
+    UpperAlpha,
+    LowerRoman,
+    UpperRoman,
+}
+
+impl IntoPy<PyObject> for ListEnumType {
+    fn into_py(self, py: Python<'_>) -> PyObject {
+        match self {
+            Self::Arabic => "arabic".into_py(py),
+            Self::LowerAlpha => "loweralpha".into_py(py),
+            Self::UpperAlpha => "upperalpha".into_py(py),
+            Self::LowerRoman => "lowerroman".into_py(py),
+            Self::UpperRoman => "upperroman".into_py(py),
+        }
+    }
 }
 
 impl IntoPy<PyObject> for Node {
@@ -389,6 +414,7 @@ impl IntoPy<PyObject> for Node {
                 .into_iter()
                 .flatten()
                 .collect::<HashMap<_, _>>();
+
                 node(py, "reference", CallAs::SourceText, attributes, children).into_py(py)
             }
             Self::Rubric(nodes) => {
@@ -476,14 +502,14 @@ impl IntoPy<PyObject> for Node {
             Self::BulletList(nodes) => {
                 node(py, "bullet_list", CallAs::Source, Attributes::new(), nodes).into_py(py)
             }
-            Self::EnumeratedList(nodes) => node(
-                py,
-                "enumerated_list",
-                CallAs::Source,
-                Attributes::new(),
-                nodes,
-            )
-            .into_py(py),
+            Self::EnumeratedList { type_, items } => {
+                let attributes = [type_.map(|value| ("enumtype".to_string(), value.into_py(py)))]
+                    .into_iter()
+                    .flatten()
+                    .collect::<HashMap<_, _>>();
+
+                node(py, "enumerated_list", CallAs::Source, attributes, items).into_py(py)
+            }
             Self::ListItem(nodes) => {
                 node(py, "list_item", CallAs::Source, Attributes::new(), nodes).into_py(py)
             }

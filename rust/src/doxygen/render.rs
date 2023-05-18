@@ -2,7 +2,9 @@ use crate::XmlLoader;
 
 use crate::doxygen::compound::generated as e;
 use crate::doxygen::compound::CompoundDefEntry;
-use crate::doxygen::nodes::{Domain, DomainEntry, DomainEntryType, Node, SignatureType, Target};
+use crate::doxygen::nodes::{
+    Domain, DomainEntry, DomainEntryType, ListEnumType, Node, SignatureType, Target,
+};
 use crate::doxygen::text;
 
 fn language_to_domain(language: &e::DoxLanguage) -> Option<Domain> {
@@ -18,6 +20,7 @@ pub struct Context {
     pub domain: Option<Domain>,
     /// A list of Doxygen xml nodes names to ignore when rendering. Limited support.
     pub skip_xml_nodes: Vec<String>,
+    pub enumerated_list_depth: usize,
 }
 
 impl Context {
@@ -25,7 +28,28 @@ impl Context {
         Context {
             domain,
             skip_xml_nodes: self.skip_xml_nodes.clone(),
+            enumerated_list_depth: self.enumerated_list_depth,
         }
+    }
+
+    fn with_next_enumerated_list_level(&self) -> Context {
+        Context {
+            domain: self.domain.clone(),
+            skip_xml_nodes: self.skip_xml_nodes.clone(),
+            enumerated_list_depth: self.enumerated_list_depth + 1,
+        }
+    }
+
+    fn enumerated_list_type(&self) -> ListEnumType {
+        const TYPES: &[ListEnumType] = &[
+            ListEnumType::Arabic,
+            ListEnumType::LowerAlpha,
+            ListEnumType::LowerRoman,
+            ListEnumType::UpperAlpha,
+            ListEnumType::UpperRoman,
+        ];
+
+        TYPES[self.enumerated_list_depth % TYPES.len()]
     }
 }
 
@@ -742,15 +766,45 @@ enum ListType {
 }
 
 fn render_doc_list_type(ctx: &Context, element: &e::DocListType, type_: ListType) -> Node {
-    let items = element
-        .listitem
-        .iter()
-        .map(|element| render_doc_list_item_type(ctx, element))
-        .collect();
-
     match type_ {
-        ListType::Itemized => Node::BulletList(items),
-        ListType::Ordered => Node::EnumeratedList(items),
+        ListType::Itemized => {
+            let items = element
+                .listitem
+                .iter()
+                .map(|element| render_doc_list_item_type(&ctx, element))
+                .collect();
+            Node::BulletList(items)
+        }
+        ListType::Ordered => {
+            let enum_type = element
+                .type_
+                .as_ref()
+                .and_then(enum_type_from_ol_type)
+                .unwrap_or_else(|| ctx.enumerated_list_type());
+
+            let item_context = ctx.with_next_enumerated_list_level();
+
+            let items = element
+                .listitem
+                .iter()
+                .map(|element| render_doc_list_item_type(&item_context, element))
+                .collect();
+
+            Node::EnumeratedList {
+                type_: Some(enum_type),
+                items,
+            }
+        }
+    }
+}
+
+fn enum_type_from_ol_type(type_: &e::DoxOlType) -> Option<ListEnumType> {
+    match type_ {
+        e::DoxOlType::Numeric => None,
+        e::DoxOlType::LowerA => None,
+        e::DoxOlType::UpperA => None,
+        e::DoxOlType::LowerI => None,
+        e::DoxOlType::UpperI => None,
     }
 }
 

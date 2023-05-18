@@ -232,6 +232,7 @@ fn render_member(
             let context = doxygen::render::Context {
                 domain: None,
                 skip_xml_nodes: context.skip_xml_nodes.clone(),
+                enumerated_list_depth: 0,
             };
 
             Ok(doxygen::render::render_member(
@@ -309,6 +310,7 @@ fn render_group(
             let context = doxygen::render::Context {
                 domain: None,
                 skip_xml_nodes: context.skip_xml_nodes.clone(),
+                enumerated_list_depth: 0,
             };
 
             if content_only {

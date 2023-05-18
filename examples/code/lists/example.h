@@ -6,6 +6,10 @@
  *         -# mouse click event\n
  *            More info about the click event.
  *         -# mouse double click event
+ *            -# Further detail
+ *               -# Further detail
+ *                  -# Further detail
+ *                     -# Further detail
  *    - keyboard events
  *         1. key down event
  *         2. key up event
