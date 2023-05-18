@@ -505,13 +505,13 @@ fn render_description(ctx: &Context, element: &e::DescriptionType) -> Vec<Node> 
 
 /// Returns true if all the nodes are Text nodes with only white space contents
 fn all_white_space(nodes: &[Node]) -> bool {
-    nodes.iter().any(not_white_space_text)
+    nodes.iter().all(only_white_space_text)
 }
 
-fn not_white_space_text(node: &Node) -> bool {
+fn only_white_space_text(node: &Node) -> bool {
     match node {
         Node::Text(text) => text.chars().all(|char| char == ' ' || char == '\n'),
-        _ => true,
+        _ => false,
     }
 }
 

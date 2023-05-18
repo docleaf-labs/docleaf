@@ -6,5 +6,5 @@
     Third Cell    | Fourth Cell
 
 */
-void example_function(int arg1, bool arg2);
+void example_function_with_table(int arg1, bool arg2);
 
