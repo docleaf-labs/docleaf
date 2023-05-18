@@ -430,20 +430,45 @@ fn render_description(ctx: &Context, element: &e::DescriptionType) -> Vec<Node> 
         .flat_map(|element| {
             let inner_cat_nodes = render_doc_para_type(ctx, element);
 
-            let (special, other): (Vec<_>, Vec<_>) = inner_cat_nodes
+            let (field_list_candidates, other): (Vec<_>, Vec<_>) = inner_cat_nodes
                 .into_iter()
-                .partition(|cat| cat.is_special());
+                .partition(|cat| cat.requires_field_list_entry());
 
             let mut result = Vec::new();
 
-            for entry in special {
+            for entry in field_list_candidates {
                 result.push(entry)
             }
 
-            // There might not be any other nodes so we double check before making an empty Paragraph node
-            // TODO: Check for white-space text nodes as we can probably ignore them
-            if !other.is_empty() {
-                result.push(CategorizedNode::Node(Node::Paragraph(other.into_nodes())))
+            // Nodes which should be a standalone block (and not inside a paragraph) like literal_blocks are presented
+            // in the xml as nested inside para tags so we chose to lift them out here. We do this by adding all the
+            // nodes to a paragraphs except the ones we care about (eg. ProgramListing)
+            //
+            // TODO: Consider filtering out paragraphs that just have whitespace
+            let mut paragraph_nodes = Vec::new();
+            for entry in other {
+                match entry {
+                    CategorizedNode::Node(node) => paragraph_nodes.push(node),
+                    CategorizedNode::ProgramListing(node) => {
+                        if !paragraph_nodes.is_empty() {
+                            if all_white_space(&paragraph_nodes) {
+                                paragraph_nodes = Vec::new();
+                            } else {
+                                result
+                                    .push(CategorizedNode::Node(Node::Paragraph(paragraph_nodes)));
+                                paragraph_nodes = Vec::new();
+                            }
+                        }
+                        result.push(CategorizedNode::Node(node))
+                    }
+                    CategorizedNode::ParameterList(_) => {
+                        // Shouldn't happen due to filtering above
+                    }
+                }
+            }
+
+            if !paragraph_nodes.is_empty() && !all_white_space(&paragraph_nodes) {
+                result.push(CategorizedNode::Node(Node::Paragraph(paragraph_nodes)));
             }
 
             result
@@ -452,8 +477,9 @@ fn render_description(ctx: &Context, element: &e::DescriptionType) -> Vec<Node> 
 
     // Having separate the special nodes from the paragraphs for each 'para' node, we then separate all the special
     // nodes from all the paragraph nodes and render the special nodes separately
-    let (special, paragraphs): (Vec<_>, Vec<_>) =
-        cat_nodes.into_iter().partition(|cat| cat.is_special());
+    let (special, paragraphs): (Vec<_>, Vec<_>) = cat_nodes
+        .into_iter()
+        .partition(|cat| cat.requires_field_list_entry());
 
     let mut nodes = paragraphs.into_nodes();
 
@@ -466,6 +492,7 @@ fn render_description(ctx: &Context, element: &e::DescriptionType) -> Vec<Node> 
                     Box::new(Node::FieldBody(vec![node])),
                 )),
                 // These entries have already been filtered out so we don't worry about them
+                CategorizedNode::ProgramListing(_) => None,
                 CategorizedNode::Node(_) => None,
             })
             .collect();
@@ -474,6 +501,18 @@ fn render_description(ctx: &Context, element: &e::DescriptionType) -> Vec<Node> 
     }
 
     nodes
+}
+
+/// Returns true if all the nodes are Text nodes with only white space contents
+fn all_white_space(nodes: &[Node]) -> bool {
+    nodes.iter().any(not_white_space_text)
+}
+
+fn not_white_space_text(node: &Node) -> bool {
+    match node {
+        Node::Text(text) => text.chars().all(|char| char == ' ' || char == '\n'),
+        _ => true,
+    }
 }
 
 fn extract_inner_description(nodes: Vec<Node>) -> Vec<Node> {
@@ -518,8 +557,10 @@ fn render_doc_para_type(ctx: &Context, element: &e::DocParaType) -> Vec<Categori
     nodes
 }
 
+#[derive(Debug)]
 enum CategorizedNode {
     ParameterList(Node),
+    ProgramListing(Node),
     Node(Node),
 }
 
@@ -527,13 +568,15 @@ impl CategorizedNode {
     pub fn to_node(self) -> Node {
         match self {
             Self::ParameterList(node) => node,
+            Self::ProgramListing(node) => node,
             Self::Node(node) => node,
         }
     }
 
-    pub fn is_special(&self) -> bool {
+    pub fn requires_field_list_entry(&self) -> bool {
         match self {
             Self::ParameterList(_) => true,
+            Self::ProgramListing(_) => false,
             Self::Node(_) => false,
         }
     }
@@ -575,9 +618,9 @@ fn render_doc_cmd_group(ctx: &Context, element: &e::DocCmdGroup) -> Option<Categ
             element,
             ListType::Ordered,
         ))),
-        e::DocCmdGroup::Programlisting(element) => {
-            Some(CategorizedNode::Node(render_listing_type(ctx, element)))
-        }
+        e::DocCmdGroup::Programlisting(element) => Some(CategorizedNode::ProgramListing(
+            render_listing_type(ctx, element),
+        )),
         e::DocCmdGroup::Verbatim(text) => {
             Some(CategorizedNode::Node(render_verbatim_text(ctx, text)))
         }
@@ -599,6 +642,7 @@ fn render_doc_cmd_group(ctx: &Context, element: &e::DocCmdGroup) -> Option<Categ
 }
 
 fn render_doc_table_type(ctx: &Context, element: &e::DocTableType) -> Node {
+    tracing::debug!("render_doc_table_type");
     let rows: Vec<_> = element
         .row
         .iter()
