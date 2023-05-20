@@ -433,9 +433,14 @@ impl IntoPy<PyObject> for Node {
             .into_py(py),
 
             // Tables
-            Self::Table(nodes) => {
-                node(py, "table", CallAs::Source, Attributes::new(), nodes).into_py(py)
-            }
+            Self::Table(nodes) => node(
+                py,
+                "table",
+                CallAs::Source,
+                Attributes::from([("classes".into(), vec!["colwidths-auto"].into_py(py))]),
+                nodes,
+            )
+            .into_py(py),
             Self::TableGroup { cols, nodes } => node(
                 py,
                 "tgroup",
