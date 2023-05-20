@@ -18,6 +18,7 @@ quick-xml = { version = "0.27.1", features = ["serde", "serialize"] }
 roxmltree = "0.18.0"
 serde = { version = "1.0.144", features = ["derive"] }
 strum = { version = "0.24.1", features = ["derive"] }
+thiserror = "1.0.40"
 tracing = "0.1.37"
 tracing-subscriber = { version = "0.3.16", features = ["env-filter"] }
 vec1 = "1.10.1"

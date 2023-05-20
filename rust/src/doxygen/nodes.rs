@@ -72,12 +72,40 @@ pub enum SignatureType {
 #[derive(Debug, Clone)]
 pub enum Domain {
     CPlusPlus,
+    C,
+}
+
+#[derive(Debug, Clone, thiserror::Error)]
+pub enum DomainError {
+    #[error("Unrecognised domain name: {0}")]
+    Unrecognised(String),
+}
+
+impl Domain {
+    pub fn create_lookup(
+        lookup: HashMap<String, String>,
+    ) -> Result<HashMap<String, Domain>, DomainError> {
+        lookup
+            .into_iter()
+            .map(|(key, value)| Domain::from(value).map(|domain| (key, domain)))
+            .collect::<Result<HashMap<_, _>, _>>()
+    }
+
+    // Change to proper trait
+    pub fn from(str: String) -> Result<Self, DomainError> {
+        match str.as_str() {
+            "cpp" => Ok(Domain::CPlusPlus),
+            "c" => Ok(Domain::C),
+            _ => Err(DomainError::Unrecognised(str)),
+        }
+    }
 }
 
 impl IntoPy<PyObject> for Domain {
     fn into_py(self, py: Python<'_>) -> PyObject {
         match self {
             Self::CPlusPlus => "cpp".into_py(py),
+            Self::C => "c".into_py(py),
         }
     }
 }

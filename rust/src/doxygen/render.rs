@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::XmlLoader;
 
 use crate::doxygen::compound::generated as e;
@@ -7,19 +9,29 @@ use crate::doxygen::nodes::{
 };
 use crate::doxygen::text;
 
-fn language_to_domain(language: &e::DoxLanguage) -> Option<Domain> {
+fn domain_from_language(language: &e::DoxLanguage) -> Option<Domain> {
     match language {
         e::DoxLanguage::CPlusPlus => Some(Domain::CPlusPlus),
         _ => None,
     }
 }
 
+fn domain_from_location(ctx: &Context, location: &e::LocationType) -> Option<Domain> {
+    let extension = std::path::Path::new(&location.file).extension();
+    if let Some(extension) = extension.and_then(|str| str.to_str()) {
+        ctx.extension_domain_lookup.get(extension).cloned()
+    } else {
+        None
+    }
+}
+
 /// Information and options for rendering
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct Context {
     pub domain: Option<Domain>,
     /// A list of Doxygen xml nodes names to ignore when rendering. Limited support.
     pub skip_xml_nodes: Vec<String>,
+    pub extension_domain_lookup: HashMap<String, Domain>,
     pub enumerated_list_depth: usize,
 }
 
@@ -28,6 +40,7 @@ impl Context {
         Context {
             domain,
             skip_xml_nodes: self.skip_xml_nodes.clone(),
+            extension_domain_lookup: self.extension_domain_lookup.clone(),
             enumerated_list_depth: self.enumerated_list_depth,
         }
     }
@@ -36,6 +49,7 @@ impl Context {
         Context {
             domain: self.domain.clone(),
             skip_xml_nodes: self.skip_xml_nodes.clone(),
+            extension_domain_lookup: self.extension_domain_lookup.clone(),
             enumerated_list_depth: self.enumerated_list_depth + 1,
         }
     }
@@ -53,6 +67,7 @@ impl Context {
     }
 }
 
+/// Entry point
 pub fn render_compounddef_content(
     ctx: &Context,
     entry: CompoundDefEntry,
@@ -82,7 +97,12 @@ pub fn render_compound(
         return Ok(Vec::new());
     };
 
-    let ctx = ctx.with_domain(compound_def.language.as_ref().and_then(language_to_domain));
+    let ctx = ctx.with_domain(
+        compound_def
+            .language
+            .as_ref()
+            .and_then(domain_from_language),
+    );
 
     let mut content_nodes = Vec::new();
 
@@ -172,12 +192,18 @@ pub fn render_compound(
     )])
 }
 
+/// Entry point
 pub fn render_member(ctx: &Context, root: &e::DoxygenType, member_ref_id: &str) -> Vec<Node> {
     let Some(ref compound_def) = root.compounddef else {
         return Vec::new();
     };
 
-    let ctx = ctx.with_domain(compound_def.language.as_ref().and_then(language_to_domain));
+    let ctx = ctx.with_domain(
+        compound_def
+            .language
+            .as_ref()
+            .and_then(domain_from_language),
+    );
 
     let member_def = compound_def.sectiondef.iter().find_map(|section_def| {
         section_def
@@ -254,9 +280,19 @@ pub fn render_member_def(ctx: &Context, member_def: &e::MemberdefType) -> Vec<No
     let name = member_kind_name(&member_def.kind);
     let mut content_nodes = Vec::new();
 
+    // Create a new context with the location information if it is there
+    let ctx_holder;
+    let ctx = if let Some(ref location) = member_def.location {
+        ctx_holder = Box::new(ctx.with_domain(domain_from_location(ctx, location)));
+        &*ctx_holder
+    } else {
+        ctx
+    };
+
     if let Some(ref description) = member_def.briefdescription {
         content_nodes.append(&mut render_description(ctx, description));
     }
+
     if let Some(ref description) = member_def.detaileddescription {
         content_nodes.append(&mut render_description(ctx, description));
     }

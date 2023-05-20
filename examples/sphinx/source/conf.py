@@ -51,5 +51,6 @@ docleaf_projects = {
 }
 
 docleaf_default_project = "nutshell"
+docleaf_domain_by_extension = { "hpp": "cpp", "h": "c" }
 
 docleaf_skip_doxygen_xml_nodes = []

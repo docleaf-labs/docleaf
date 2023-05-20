@@ -278,7 +278,7 @@ class GroupDirective(BaseDirective):
         content_only = "content-only" in self.options
         inner_group = "inner" in self.options
         context = backend.Context(skip_xml_nodes)
-        node_list = backend.render_group(name, path, context, content_only, inner_group, self.cache)
+        node_list = backend.render_group(name, path, context, content_only, inner_group, self.app.config.docleaf_domain_by_extension, self.cache)
 
         node_builder = NodeManager(self.state, self.get_directive_args())
         return render_node_list(node_list, node_builder)
@@ -322,5 +322,6 @@ def setup(app: Sphinx):
     app.add_config_value("docleaf_projects", {}, "env")
     app.add_config_value("docleaf_default_project", None, "env")
     app.add_config_value("docleaf_skip_doxygen_xml_nodes", [], "env")
+    app.add_config_value("docleaf_domain_by_extension", {}, True) 
 
     return {"version": __version__, "parallel_read_safe": True, "parallel_write_safe": True}

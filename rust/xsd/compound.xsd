@@ -324,15 +324,15 @@
   </xsd:complexType>
 
   <xsd:complexType name="locationType">
-    <xsd:attribute name="file" type="xsd:string" />
-    <xsd:attribute name="line" type="xsd:integer" />
+    <xsd:attribute name="file" type="xsd:string"/>
+    <xsd:attribute name="line" type="xsd:integer" use="optional"/>
     <xsd:attribute name="column" type="xsd:integer" use="optional"/>
     <xsd:attribute name="declfile" type="xsd:string" use="optional"/>
     <xsd:attribute name="declline" type="xsd:integer" use="optional"/>
     <xsd:attribute name="declcolumn" type="xsd:integer" use="optional"/>
-    <xsd:attribute name="bodyfile" type="xsd:string" />
-    <xsd:attribute name="bodystart" type="xsd:integer" />
-    <xsd:attribute name="bodyend" type="xsd:integer" />
+    <xsd:attribute name="bodyfile" type="xsd:string" use="optional"/>
+    <xsd:attribute name="bodystart" type="xsd:integer" use="optional"/>
+    <xsd:attribute name="bodyend" type="xsd:integer" use="optional"/>
   </xsd:complexType>
 
   <xsd:complexType name="docSect1Type" mixed="true">

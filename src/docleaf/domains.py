@@ -1,6 +1,6 @@
 import logging
 
-from sphinx.domains import cpp
+from sphinx.domains import cpp, c
 from docutils import nodes
 
 from . import copied
@@ -25,7 +25,17 @@ cpp_domain = {
     "struct": (cpp.CPPClassObject, null_handler),
 }
 
-domains = {"cpp": cpp_domain}
+c_domain = {
+    "enum": (c.CEnumObject, null_handler),
+    "enumerator": (c.CEnumeratorObject, enumerator_handler),
+    "function": (c.CFunctionObject, null_handler),
+    "struct": (c.CStructObject, null_handler),
+}
+
+domains = {
+    "cpp": cpp_domain,
+    "c": c_domain
+}
 
 
 def render_domain_entry(

@@ -236,6 +236,36 @@ impl Element {
             },
         }
     }
+
+    fn to_empty_match(&self) -> TokenStream {
+        let name_string = proc_macro2::Literal::byte_string(self.name.as_bytes());
+        let name_var = id(&self.safe_name);
+
+        let parse_call = self.type_.to_parse_empty_call();
+
+        match self.wrapper {
+            Some(Wrapper::Vec) => quote! {
+                #name_string => {
+                    #name_var.push(#parse_call);
+                }
+            },
+            Some(Wrapper::Vec1) => quote! {
+                #name_string => {
+                    #name_var.push(#parse_call);
+                }
+            },
+            Some(Wrapper::Option) => quote! {
+                #name_string => {
+                    #name_var = Some(#parse_call);
+                }
+            },
+            None => quote! {
+                #name_string => {
+                    #name_var = Some(#parse_call);
+                }
+            },
+        }
+    }
 }
 
 trait ElementTokenStream {
@@ -245,6 +275,7 @@ trait ElementTokenStream {
     fn to_init_stream(&self) -> TokenStream;
     fn to_unpack_stream(&self) -> TokenStream;
     fn to_matches_stream(&self) -> TokenStream;
+    fn to_empty_matches_stream(&self) -> TokenStream;
 }
 
 impl ElementTokenStream for Vec<Element> {
@@ -303,6 +334,16 @@ impl ElementTokenStream for Vec<Element> {
             TokenStream::new()
         } else {
             let entries = self.iter().flat_map(Element::to_match);
+            // Include trailing semi-colon here as we know we have fields
+            quote! { #(#entries)* }
+        }
+    }
+
+    fn to_empty_matches_stream(&self) -> TokenStream {
+        if self.is_empty() {
+            TokenStream::new()
+        } else {
+            let entries = self.iter().flat_map(Element::to_empty_match);
             // Include trailing semi-colon here as we know we have fields
             quote! { #(#entries)* }
         }
@@ -508,6 +549,7 @@ fn create_struct(node: rx::Node, context: &Context) -> anyhow::Result<TokenStrea
     let element_inits = elements.to_init_stream();
     let element_unpacks = elements.to_unpack_stream();
     let element_matches = elements.to_matches_stream();
+    let empty_element_matches = elements.to_empty_matches_stream();
 
     Ok(quote! {
         #[derive(Debug)]
@@ -529,6 +571,10 @@ fn create_struct(node: rx::Node, context: &Context) -> anyhow::Result<TokenStrea
                     match reader.read_event() {
                         Ok(Event::Start(tag)) => match tag.name().as_ref() {
                             #element_matches
+                            _ => {}
+                        },
+                        Ok(Event::Empty(tag)) => match tag.name().as_ref() {
+                            #empty_element_matches
                             _ => {}
                         },
                         Ok(Event::End(tag)) => {

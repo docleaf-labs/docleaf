@@ -10,7 +10,7 @@ use pyo3::prelude::*;
 
 use crate::doxygen::compound::generated as compound;
 use crate::doxygen::index::generated as index;
-use crate::doxygen::nodes::Node;
+use crate::doxygen::nodes::{Domain, Node};
 
 /// Cache class exposed to python with no function methods beyond the
 /// constructor. Used to hold the Arc Mutex for the inner cache so that
@@ -232,6 +232,7 @@ fn render_member(
             let context = doxygen::render::Context {
                 domain: None,
                 skip_xml_nodes: context.skip_xml_nodes.clone(),
+                extension_domain_lookup: HashMap::new(),
                 enumerated_list_depth: 0,
             };
 
@@ -280,6 +281,7 @@ fn render_group(
     content_only: bool,
     // TODO: Use 'filter' concept instead of passing this bool around
     inner_groups: bool,
+    extension_domain_lookup: HashMap<String, String>,
     cache: &Cache,
 ) -> PyResult<Vec<Node>> {
     tracing::info!("render_group {} {}", name, path);
@@ -287,6 +289,9 @@ fn render_group(
 
     let cwd = std::env::current_dir()?;
     let source_directory = cwd.join("source");
+
+    let extension_domain_lookup = Domain::create_lookup(extension_domain_lookup)
+        .map_err(|err| PyValueError::new_err(format!("{}", err)))?;
 
     let xml_path = source_directory.join(xml_directory);
 
@@ -310,6 +315,7 @@ fn render_group(
             let context = doxygen::render::Context {
                 domain: None,
                 skip_xml_nodes: context.skip_xml_nodes.clone(),
+                extension_domain_lookup,
                 enumerated_list_depth: 0,
             };
 
