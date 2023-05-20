@@ -109,7 +109,7 @@ class NodeManager:
         nested_parse_with_titles(self.state, rst, rst_node)
 
         # We render the block into a paragraph node but the rendred block will contain
-        # its own paragraph nodes at the top level so we don't need to return our 
+        # its own paragraph nodes at the top level so we don't need to return our
         # paragraph node so we return its children (the top layer of rendered nodes) as
         # the output
         return rst_node.children
