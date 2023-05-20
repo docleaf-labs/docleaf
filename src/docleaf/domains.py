@@ -39,6 +39,21 @@ def render_domain_entry(name: str, type: str, declaration: str, target, directiv
 
         return nodes
 
+    elif name == "cpp" and type == "struct":
+        args = [directive_name, [declaration]] + directive_args[2:]
+        directive = cpp.CPPClassObject(*args)
+
+        nodes = directive.run()
+
+        rst_node = nodes[1]
+        finder = copied.NodeFinder(rst_node.document)
+        rst_node.walk(finder)
+
+        set_children(finder.content, content)
+        finder.declarator.children.insert(0, target)
+
+        return nodes
+
     elif name == "cpp" and type == "enum":
         args = [directive_name, [declaration]] + directive_args[2:]
         directive = cpp.CPPEnumObject(*args)

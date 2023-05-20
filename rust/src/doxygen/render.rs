@@ -140,6 +140,15 @@ pub fn render_compound(
                 content: content_nodes,
             }))]);
         }
+        (Some(domain), e::DoxCompoundKind::Struct) => {
+            return Ok(vec![Node::DomainEntry(Box::new(DomainEntry {
+                domain: domain.clone(),
+                type_: DomainEntryType::Struct,
+                target,
+                declaration: text::render_compound_def(compound_def),
+                content: content_nodes,
+            }))]);
+        }
         _ => {}
     }
 
