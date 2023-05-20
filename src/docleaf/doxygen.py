@@ -15,6 +15,7 @@ from sphinx.domains import c
 import sphinx.addnodes
 
 from . import backend, domains, copied
+from .errors import DocleafError
 
 __version__ = "0.0.0"
 
@@ -153,7 +154,7 @@ def render_node(node, node_manager):
     elif node.call_as == "args":
         return node_builder(*children, **node.attributes)
     else:
-        raise Exception("Call As not implemented: " + node.call_as)
+        raise DocleafError("Call As not implemented: " + node.call_as)
 
 
 class BaseDirective(Directive):
