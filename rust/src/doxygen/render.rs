@@ -443,13 +443,11 @@ fn render_description(ctx: &Context, element: &e::DescriptionType) -> Vec<Node> 
             // Nodes which should be a standalone block (and not inside a paragraph) like literal_blocks are presented
             // in the xml as nested inside para tags so we chose to lift them out here. We do this by adding all the
             // nodes to a paragraphs except the ones we care about (eg. ProgramListing)
-            //
-            // TODO: Consider filtering out paragraphs that just have whitespace
             let mut paragraph_nodes = Vec::new();
             for entry in other {
                 match entry {
                     CategorizedNode::Node(node) => paragraph_nodes.push(node),
-                    CategorizedNode::ProgramListing(node) => {
+                    CategorizedNode::Block(node) => {
                         if !paragraph_nodes.is_empty() {
                             if all_white_space(&paragraph_nodes) {
                                 paragraph_nodes = Vec::new();
@@ -492,7 +490,7 @@ fn render_description(ctx: &Context, element: &e::DescriptionType) -> Vec<Node> 
                     Box::new(Node::FieldBody(vec![node])),
                 )),
                 // These entries have already been filtered out so we don't worry about them
-                CategorizedNode::ProgramListing(_) => None,
+                CategorizedNode::Block(_) => None,
                 CategorizedNode::Node(_) => None,
             })
             .collect();
@@ -557,10 +555,15 @@ fn render_doc_para_type(ctx: &Context, element: &e::DocParaType) -> Vec<Categori
     nodes
 }
 
+/// Enum for categorizing nodes based on how we want them to be treated within a description block
 #[derive(Debug)]
 enum CategorizedNode {
+    /// Parameter lists are lifted out and rendered in a separate field list
     ParameterList(Node),
-    ProgramListing(Node),
+    /// Anything we wrap in a 'Block' should be lifted up to place as siblings to the paragraph elements
+    /// that we're generating for description contents
+    Block(Node),
+    /// All other nodes can be treated normally
     Node(Node),
 }
 
@@ -568,7 +571,7 @@ impl CategorizedNode {
     pub fn to_node(self) -> Node {
         match self {
             Self::ParameterList(node) => node,
-            Self::ProgramListing(node) => node,
+            Self::Block(node) => node,
             Self::Node(node) => node,
         }
     }
@@ -576,7 +579,7 @@ impl CategorizedNode {
     pub fn requires_field_list_entry(&self) -> bool {
         match self {
             Self::ParameterList(_) => true,
-            Self::ProgramListing(_) => false,
+            Self::Block(_) => false,
             Self::Node(_) => false,
         }
     }
@@ -618,12 +621,10 @@ fn render_doc_cmd_group(ctx: &Context, element: &e::DocCmdGroup) -> Option<Categ
             element,
             ListType::Ordered,
         ))),
-        e::DocCmdGroup::Programlisting(element) => Some(CategorizedNode::ProgramListing(
-            render_listing_type(ctx, element),
-        )),
-        e::DocCmdGroup::Verbatim(text) => {
-            Some(CategorizedNode::Node(render_verbatim_text(ctx, text)))
+        e::DocCmdGroup::Programlisting(element) => {
+            Some(CategorizedNode::Block(render_listing_type(ctx, element)))
         }
+        e::DocCmdGroup::Verbatim(text) => Some(render_verbatim_text(ctx, text)),
         e::DocCmdGroup::Xrefsect(element) => Some(CategorizedNode::Node(
             render_doc_xref_sect_type(ctx, element),
         )),
@@ -726,10 +727,10 @@ fn render_doc_xref_sect_type(ctx: &Context, element: &e::DocXRefSectType) -> Nod
     )
 }
 
-fn render_verbatim_text(_ctx: &Context, text: &str) -> Node {
+fn render_verbatim_text(_ctx: &Context, text: &str) -> CategorizedNode {
     let trimmed = text.trim_start();
     if !trimmed.starts_with("embed:rst") {
-        return Node::LiteralBlock(vec![Node::Text(text.to_string())]);
+        return CategorizedNode::Block(Node::LiteralBlock(vec![Node::Text(text.to_string())]));
     }
 
     if trimmed.starts_with("embed:rst:leading-asterisk") {
@@ -739,7 +740,7 @@ fn render_verbatim_text(_ctx: &Context, text: &str) -> Node {
             .map(|line| line.replacen('*', " ", 1))
             .collect::<Vec<_>>()
             .join("\n");
-        Node::ReStructuredTextBlock(text)
+        CategorizedNode::Block(Node::ReStructuredTextBlock(text))
     } else if trimmed.starts_with("embed:rst:leading-slashes") {
         let text = text
             .lines()
@@ -747,17 +748,23 @@ fn render_verbatim_text(_ctx: &Context, text: &str) -> Node {
             .map(|line| line.replacen("///", " ", 1))
             .collect::<Vec<_>>()
             .join("\n");
-        Node::ReStructuredTextBlock(text)
+        CategorizedNode::Block(Node::ReStructuredTextBlock(text))
     } else if trimmed.starts_with("embed:rst:inline") {
         let text = text.replacen("embed:rst:inline", "", 1).replace('\n', "");
-        Node::ReStructuredTextInline(text)
+        CategorizedNode::Node(Node::ReStructuredTextInline(text))
     } else {
         // Attempt to split off the first line to remove the 'embed:rst'
         match text.split_once('\n') {
             // If we find a \n then use the rest
-            Some((_first_line, rest)) => Node::ReStructuredTextBlock(rest.to_string()),
+            Some((_first_line, rest)) => {
+                CategorizedNode::Block(Node::ReStructuredTextBlock(rest.to_string()))
+            }
             // If we don't find one, then remove the embed:rst and use the text
-            None => Node::ReStructuredTextBlock(text.replacen("embed:rst", "", 1)),
+            None => CategorizedNode::Block(Node::ReStructuredTextBlock(text.replacen(
+                "embed:rst",
+                "",
+                1,
+            ))),
         }
     }
 }
