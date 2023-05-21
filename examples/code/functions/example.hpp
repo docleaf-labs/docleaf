@@ -15,3 +15,28 @@ void example_function(int arg1, bool arg2);
  *  \param[in, out] c input and output
  */
 void example_function_directions(int* a, int* b, int* c);
+
+/*! Function with return type
+ *  \param a input
+ *  \retval 0 if successful
+ */
+int example_function_with_retval(int a);
+
+/*! Function with two retvals
+ *  \param a input
+ *  \retval 0 if successful
+ *  \retval 1 if error
+ */
+int example_function_with_retvals(int a);
+
+/*! Function with return
+ *  \param a input
+ *  \return the number the user wants
+ */
+int example_function_with_return(int a);
+
+/*! Function with return type
+ *  \param a input
+ *  \returns the number that the user wants
+ */
+int example_function_with_returns(int a);

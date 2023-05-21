@@ -596,7 +596,7 @@ fn render_description(ctx: &Context, element: &e::DescriptionType) -> Vec<Node> 
                         }
                         result.push(CategorizedNode::Node(node))
                     }
-                    CategorizedNode::ParameterList(_) => {
+                    CategorizedNode::FieldListEntry(_, _) => {
                         // Shouldn't happen due to filtering above
                     }
                 }
@@ -622,8 +622,8 @@ fn render_description(ctx: &Context, element: &e::DescriptionType) -> Vec<Node> 
         let fields = special
             .into_iter()
             .flat_map(|cat_node| match cat_node {
-                CategorizedNode::ParameterList(node) => Some(Node::Field(
-                    Box::new(Node::FieldName(vec![Node::Text("Parameters".to_string())])),
+                CategorizedNode::FieldListEntry(name, node) => Some(Node::Field(
+                    Box::new(Node::FieldName(vec![Node::Text(name)])),
                     Box::new(Node::FieldBody(vec![node])),
                 )),
                 // These entries have already been filtered out so we don't worry about them
@@ -696,7 +696,7 @@ fn render_doc_para_type(ctx: &Context, element: &e::DocParaType) -> Vec<Categori
 #[derive(Debug)]
 enum CategorizedNode {
     /// Parameter lists are lifted out and rendered in a separate field list
-    ParameterList(Node),
+    FieldListEntry(String, Node),
     /// Anything we wrap in a 'Block' should be lifted up to place as siblings to the paragraph elements
     /// that we're generating for description contents
     Block(Node),
@@ -707,7 +707,7 @@ enum CategorizedNode {
 impl CategorizedNode {
     pub fn to_node(self) -> Node {
         match self {
-            Self::ParameterList(node) => node,
+            Self::FieldListEntry(_, node) => node,
             Self::Block(node) => node,
             Self::Node(node) => node,
         }
@@ -715,7 +715,7 @@ impl CategorizedNode {
 
     pub fn requires_field_list_entry(&self) -> bool {
         match self {
-            Self::ParameterList(_) => true,
+            Self::FieldListEntry(_, _) => true,
             Self::Block(_) => false,
             Self::Node(_) => false,
         }
@@ -742,12 +742,8 @@ fn render_doc_cmd_group(ctx: &Context, element: &e::DocCmdGroup) -> Option<Categ
         e::DocCmdGroup::DocTitleCmdGroup(element) => {
             render_doc_title_cmd_group(ctx, element).map(CategorizedNode::Node)
         }
-        e::DocCmdGroup::Parameterlist(element) => Some(CategorizedNode::ParameterList(
-            Node::BulletList(render_doc_param_list_type(ctx, element)),
-        )),
-        e::DocCmdGroup::Simplesect(element) => Some(CategorizedNode::Node(Node::Container(
-            render_doc_simple_sect_type(ctx, element),
-        ))),
+        e::DocCmdGroup::Parameterlist(element) => Some(render_doc_param_list_type(ctx, element)),
+        e::DocCmdGroup::Simplesect(element) => Some(render_doc_simple_sect_type(ctx, element)),
         e::DocCmdGroup::Itemizedlist(element) => Some(CategorizedNode::Node(render_doc_list_type(
             ctx,
             element,
@@ -1006,15 +1002,37 @@ fn render_doc_list_item_type(ctx: &Context, element: &e::DocListItemType) -> Nod
 }
 
 /// TODO: Incomplete - just renders the para blocks at the moment
-fn render_doc_simple_sect_type(ctx: &Context, element: &e::DocSimpleSectType) -> Vec<Node> {
-    element
+fn render_doc_simple_sect_type(ctx: &Context, element: &e::DocSimpleSectType) -> CategorizedNode {
+    let nodes = element
         .para
         .iter()
         .map(|element| Node::Paragraph(render_doc_para_type(ctx, element).into_nodes()))
-        .collect()
+        .collect();
+
+    match element.kind {
+        e::DoxSimpleSectKind::Return => {
+            CategorizedNode::FieldListEntry("Returns".into(), Node::Container(nodes))
+        }
+        e::DoxSimpleSectKind::See
+        | e::DoxSimpleSectKind::Author
+        | e::DoxSimpleSectKind::Authors
+        | e::DoxSimpleSectKind::Version
+        | e::DoxSimpleSectKind::Since
+        | e::DoxSimpleSectKind::Date
+        | e::DoxSimpleSectKind::Note
+        | e::DoxSimpleSectKind::Warning
+        | e::DoxSimpleSectKind::Pre
+        | e::DoxSimpleSectKind::Post
+        | e::DoxSimpleSectKind::Copyright
+        | e::DoxSimpleSectKind::Invariant
+        | e::DoxSimpleSectKind::Remark
+        | e::DoxSimpleSectKind::Attention
+        | e::DoxSimpleSectKind::Par
+        | e::DoxSimpleSectKind::Rcs => CategorizedNode::Node(Node::Container(nodes)),
+    }
 }
 
-fn render_doc_param_list_type(ctx: &Context, element: &e::DocParamListType) -> Vec<Node> {
+fn render_doc_param_list_type(ctx: &Context, element: &e::DocParamListType) -> CategorizedNode {
     let mut nodes = Vec::new();
 
     for item in element.parameteritem.iter() {
@@ -1034,7 +1052,14 @@ fn render_doc_param_list_type(ctx: &Context, element: &e::DocParamListType) -> V
         nodes.push(Node::ListItem(vec![Node::Paragraph(contents)]))
     }
 
-    nodes
+    let name = match element.kind {
+        e::DoxParamListKind::Param => String::from("Parameters"),
+        e::DoxParamListKind::Retval => String::from("Returns"),
+        e::DoxParamListKind::Exception => String::from("Exceptions"),
+        e::DoxParamListKind::Templateparam => String::from("Template Parameters"),
+    };
+
+    CategorizedNode::FieldListEntry(name, Node::BulletList(nodes))
 }
 
 fn render_doc_param_name_list(ctx: &Context, element: &e::DocParamNameList) -> Vec<Node> {
