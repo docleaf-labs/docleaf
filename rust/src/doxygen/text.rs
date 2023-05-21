@@ -42,7 +42,19 @@ pub fn render_member_def(member_def: &e::MemberdefType) -> String {
             }
         }
         e::DoxMemberKind::Enum => member_def.name.clone(),
-        e::DoxMemberKind::Define => member_def.name.clone(),
+        e::DoxMemberKind::Define => {
+            if member_def.param.is_empty() {
+                member_def.name.clone()
+            } else {
+                let params: Vec<String> = member_def
+                    .param
+                    .iter()
+                    .flat_map(|param| param.defname.clone())
+                    .collect();
+                let params = params.join(", ");
+                format!("{}({})", member_def.name, params)
+            }
+        }
         _ => todo!(
             "text::render_member_def not implemented for {:?}",
             member_def.kind
