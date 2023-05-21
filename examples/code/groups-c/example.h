@@ -16,6 +16,17 @@ void example_function_for_c_groups(int arg1, bool arg2);
 */
 struct CGroupExampleStruct {};
 
+/*! @ingroup group1
+  A define macro for group 1
+*/
+#define GROUP_C_NAME "group-c";
+
+/*! @ingroup group1
+  A define macro with args for group 1
+*/
+#define GROUP_C_HAS_STATUS(item_id, status) \
+	has_status(item_id, status)
+
 /*! @ingroup group2
   Another function
 

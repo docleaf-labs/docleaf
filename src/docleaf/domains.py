@@ -18,38 +18,39 @@ def enumerator_handler(finder):
 
 
 cpp_domain = {
-    "class": (cpp.CPPClassObject, null_handler),
-    "enum": (cpp.CPPEnumObject, null_handler),
-    "enumerator": (cpp.CPPEnumeratorObject, enumerator_handler),
-    "function": (cpp.CPPFunctionObject, null_handler),
-    "struct": (cpp.CPPClassObject, null_handler),
+    "class": (cpp.CPPClassObject, "class", null_handler),
+    "enum": (cpp.CPPEnumObject, "enum", null_handler),
+    "enumerator": (cpp.CPPEnumeratorObject, "enumerator", enumerator_handler),
+    "function": (cpp.CPPFunctionObject, "function", null_handler),
+    "struct": (cpp.CPPClassObject, "struct", null_handler),
 }
 
 c_domain = {
-    "enum": (c.CEnumObject, null_handler),
-    "enumerator": (c.CEnumeratorObject, enumerator_handler),
-    "function": (c.CFunctionObject, null_handler),
-    "struct": (c.CStructObject, null_handler),
+    "define": (c.CMacroObject, "macro", null_handler),
+    "enum": (c.CEnumObject, "enum", null_handler),
+    "enumerator": (c.CEnumeratorObject, "enumerator", enumerator_handler),
+    "function": (c.CFunctionObject, "function", null_handler),
+    "struct": (c.CStructObject, "struct", null_handler),
 }
 
 domains = {"cpp": cpp_domain, "c": c_domain}
 
 
 def render_domain_entry(
-    name: str, type: str, declaration: str, target, directive_args: list, content: list
+    domain_name: str, type: str, declaration: str, target, directive_args: list, content: list
 ):
-    # print("render_domain_entry", name, type, declaration)
+    # print("render_domain_entry", domain_name, type, declaration)
     try:
-        domain = domains[name]
+        domain = domains[domain_name]
     except KeyError:
-        raise DocleafError(f"Unsupported domain: {name}")
+        raise DocleafError(f"Unsupported domain: {domain_name}")
 
     try:
-        (Directive, handler) = domain[type]
+        (Directive, domain_specific_type, handler) = domain[type]
     except KeyError:
-        raise DocleafError(f'Unsupported type "{type}" on domain "{name}"')
+        raise DocleafError(f'Unsupported type "{type}" on domain "{domain_name}"')
 
-    directive_name = f"{name}:{type}"
+    directive_name = f"{domain_name}:{domain_specific_type}"
 
     args = [directive_name, [declaration]] + directive_args[2:]
     directive = Directive(*args)

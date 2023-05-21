@@ -46,3 +46,5 @@ References
 C-domain reference to :c:struct:`CGroupExampleStruct`.
 
 C-domain reference to :c:func:`example_function_for_c_groups`.
+
+C-domain reference to :c:macro:`GROUP_C_NAME`.

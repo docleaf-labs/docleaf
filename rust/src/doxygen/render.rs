@@ -388,6 +388,25 @@ pub fn render_member_def(ctx: &Context, member_def: &e::MemberdefType) -> Vec<No
                 }
             }
         }
+        e::DoxMemberKind::Define => {
+            // Early exit if there is domain information for rendering this entry
+            if let Some(ref domain) = ctx.domain {
+                return vec![Node::DomainEntry(Box::new(DomainEntry {
+                    domain: domain.clone(),
+                    type_: DomainEntryType::Define,
+                    target,
+                    declaration: text::render_member_def(member_def),
+                    content: content_nodes,
+                }))];
+            }
+
+            signature_line = vec![
+                Node::Target(target),
+                Node::DescSignatureKeyword(vec![Node::Text(name)]),
+                Node::DescSignatureSpace,
+                Node::DescName(Box::new(Node::DescSignatureName(member_def.name.clone()))),
+            ];
+        }
         _ => {
             signature_line = vec![
                 Node::Target(target),

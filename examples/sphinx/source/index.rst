@@ -11,6 +11,7 @@ Welcome to Docleaf's documentation!
    :caption: Contents:
 
    class
+   defines
    enum
    functions
    groups
