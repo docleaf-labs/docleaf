@@ -1,5 +1,5 @@
 /**
-    \file nutshell.h
+    \file nutshell.hpp
     An overly extended example of how to use docleaf
 */
 
