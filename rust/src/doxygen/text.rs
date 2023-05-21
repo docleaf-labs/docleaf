@@ -1,4 +1,5 @@
 use crate::doxygen::compound::generated as e;
+use crate::Domain;
 
 pub fn render_compound_def(compound_def: &e::CompounddefType) -> String {
     // format!("{} {}", render_compound_kind(&compound_def.kind), compound_def.compoundname)
@@ -62,6 +63,15 @@ pub fn render_member_def(member_def: &e::MemberdefType) -> String {
     }
 }
 
-pub fn render_enum_value(enum_name: &str, enum_value: &e::EnumvalueType) -> String {
-    format!("{enum_name}::{}", enum_value.name)
+pub fn render_enum_value(
+    domain: &Domain,
+    enum_name: &str,
+    enum_value: &e::EnumvalueType,
+) -> String {
+    match domain {
+        // Use the enum name as a qualifier if we're in the C++ domain
+        Domain::CPlusPlus => format!("{enum_name}::{}", enum_value.name),
+        // Otherwise all we want is the enumerator name
+        Domain::C => enum_value.name.to_string(),
+    }
 }

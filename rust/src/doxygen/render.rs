@@ -46,7 +46,10 @@ impl Context {
         // to be able to determine it
         let domain = location
             .and_then(|loc| domain_from_location(self, loc))
-            .or_else(|| language.and_then(domain_from_language));
+            .or_else(|| language.and_then(domain_from_language))
+            // Fallback to current domain if we don't find one so that we don't
+            // lose domain information
+            .or(self.domain.clone());
 
         Context {
             domain,
@@ -466,7 +469,7 @@ pub fn render_enum_value(ctx: &Context, enum_name: &str, enum_value: &e::Enumval
             domain: domain.clone(),
             type_: DomainEntryType::Enumerator,
             target,
-            declaration: text::render_enum_value(enum_name, enum_value),
+            declaration: text::render_enum_value(domain, enum_name, enum_value),
             content: content_nodes,
         }))
     } else {

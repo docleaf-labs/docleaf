@@ -33,6 +33,7 @@ html_static_path = ["_static"]
 docleaf_projects = {
     "class_methods": "../../code/class_methods/xml/",
     "enums": "../../code/enums/xml/",
+    "enums-c": "../../code/enums-c/xml/",
     "functions": "../../code/functions/xml/",
     "groups": "../../code/groups/xml/",
     "groups-c": "../../code/groups-c/xml/",
