@@ -36,7 +36,18 @@ pub struct Context {
 }
 
 impl Context {
-    fn with_domain(&self, domain: Option<Domain>) -> Context {
+    fn with_domain(
+        &self,
+        location: Option<&e::LocationType>,
+        language: Option<&e::DoxLanguage>,
+    ) -> Context {
+        // Prefer calculating the domain from the location as there are time when the doxygen
+        // xml seems keen to classify something as C++ even if it could be C and we need users
+        // to be able to determine it
+        let domain = location
+            .and_then(|loc| domain_from_location(self, loc))
+            .or_else(|| language.and_then(domain_from_language));
+
         Context {
             domain,
             skip_xml_nodes: self.skip_xml_nodes.clone(),
@@ -98,10 +109,8 @@ pub fn render_compound(
     };
 
     let ctx = ctx.with_domain(
-        compound_def
-            .language
-            .as_ref()
-            .and_then(domain_from_language),
+        compound_def.location.as_ref(),
+        compound_def.language.as_ref(),
     );
 
     let mut content_nodes = Vec::new();
@@ -199,10 +208,8 @@ pub fn render_member(ctx: &Context, root: &e::DoxygenType, member_ref_id: &str) 
     };
 
     let ctx = ctx.with_domain(
-        compound_def
-            .language
-            .as_ref()
-            .and_then(domain_from_language),
+        compound_def.location.as_ref(),
+        compound_def.language.as_ref(),
     );
 
     let member_def = compound_def.sectiondef.iter().find_map(|section_def| {
@@ -281,13 +288,7 @@ pub fn render_member_def(ctx: &Context, member_def: &e::MemberdefType) -> Vec<No
     let mut content_nodes = Vec::new();
 
     // Create a new context with the location information if it is there
-    let ctx_holder;
-    let ctx = if let Some(ref location) = member_def.location {
-        ctx_holder = Box::new(ctx.with_domain(domain_from_location(ctx, location)));
-        &*ctx_holder
-    } else {
-        ctx
-    };
+    let ctx = &ctx.with_domain(member_def.location.as_ref(), None);
 
     if let Some(ref description) = member_def.briefdescription {
         content_nodes.append(&mut render_description(ctx, description));

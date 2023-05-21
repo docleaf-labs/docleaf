@@ -35,6 +35,7 @@ docleaf_projects = {
     "enums": "../../code/enums/xml/",
     "functions": "../../code/functions/xml/",
     "groups": "../../code/groups/xml/",
+    "groups-c": "../../code/groups-c/xml/",
     "html-only": "../../code/html-only/xml/",
     "lists": "../../code/lists/xml/",
     "nutshell": "../../code/nutshell/xml/",
@@ -51,6 +52,6 @@ docleaf_projects = {
 }
 
 docleaf_default_project = "nutshell"
-docleaf_domain_by_extension = { "hpp": "cpp", "h": "c" }
+docleaf_domain_by_extension = {"hpp": "cpp", "h": "c"}
 
 docleaf_skip_doxygen_xml_nodes = []

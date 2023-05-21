@@ -32,10 +32,7 @@ c_domain = {
     "struct": (c.CStructObject, null_handler),
 }
 
-domains = {
-    "cpp": cpp_domain,
-    "c": c_domain
-}
+domains = {"cpp": cpp_domain, "c": c_domain}
 
 
 def render_domain_entry(

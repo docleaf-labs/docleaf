@@ -34,3 +34,15 @@ Group 1 with content-only
    :project: groups
    :content-only:
 
+Group 1 in C Domain
+-------------------
+
+.. doxygengroup:: group1
+   :project: groups-c
+
+References
+~~~~~~~~~~
+
+C-domain reference to :c:struct:`CGroupExampleStruct`.
+
+C-domain reference to :c:func:`example_function_for_c_groups`.
