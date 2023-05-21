@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::collections::HashMap;
 
 use crate::XmlLoader;
@@ -126,6 +127,26 @@ pub fn render_compound(
         content_nodes.append(&mut render_description(&ctx, description));
     }
 
+    let mut tagged_sections: Vec<_> = compound_def
+        .sectiondef
+        .iter()
+        .map(|section_def| {
+            (
+                section_def.kind.clone(),
+                render_section_def(&ctx, section_def),
+            )
+        })
+        .collect();
+
+    tagged_sections.sort_by(|a, b| cmp_section_kind(&a.0, &b.0));
+
+    content_nodes.append(
+        &mut tagged_sections
+            .into_iter()
+            .map(|(_, nodes)| nodes)
+            .collect(),
+    );
+
     for innerclass in compound_def.innerclass.iter() {
         let root = xml_loader.load(&innerclass.refid)?;
         content_nodes.append(&mut render_compound(
@@ -135,6 +156,8 @@ pub fn render_compound(
             xml_loader,
         )?);
     }
+
+    // TODO: Add innernamepace rendering here
 
     if inner_groups {
         for innergroup in compound_def.innergroup.iter() {
@@ -147,14 +170,6 @@ pub fn render_compound(
             )?);
         }
     }
-
-    content_nodes.append(
-        &mut compound_def
-            .sectiondef
-            .iter()
-            .map(|section_def| render_section_def(&ctx, section_def))
-            .collect(),
-    );
 
     let ids = compound_def.id.clone();
     let names = compound_def.id.clone();
@@ -234,6 +249,7 @@ fn render_section_def(ctx: &Context, section_def: &e::SectiondefType) -> Node {
     let mut content_nodes = vec![Node::Rubric(vec![Node::Text(section_title(
         &section_def.kind,
     ))])];
+
     content_nodes.append(
         &mut section_def
             .memberdef
@@ -243,6 +259,59 @@ fn render_section_def(ctx: &Context, section_def: &e::SectiondefType) -> Node {
     );
 
     Node::Container(content_nodes)
+}
+
+const SECTION_ORDER: &[e::DoxSectionKind] = &[
+    e::DoxSectionKind::UserDefined,
+    e::DoxSectionKind::PublicType,
+    e::DoxSectionKind::PublicFunc,
+    e::DoxSectionKind::PublicAttrib,
+    e::DoxSectionKind::PublicSlot,
+    e::DoxSectionKind::Signal,
+    e::DoxSectionKind::DcopFunc,
+    e::DoxSectionKind::Property,
+    e::DoxSectionKind::Event,
+    e::DoxSectionKind::PublicStaticFunc,
+    e::DoxSectionKind::PublicStaticAttrib,
+    e::DoxSectionKind::ProtectedType,
+    e::DoxSectionKind::ProtectedFunc,
+    e::DoxSectionKind::ProtectedAttrib,
+    e::DoxSectionKind::ProtectedSlot,
+    e::DoxSectionKind::ProtectedStaticFunc,
+    e::DoxSectionKind::ProtectedStaticAttrib,
+    e::DoxSectionKind::PackageType,
+    e::DoxSectionKind::PackageFunc,
+    e::DoxSectionKind::PackageAttrib,
+    e::DoxSectionKind::PackageStaticFunc,
+    e::DoxSectionKind::PackageStaticAttrib,
+    e::DoxSectionKind::PrivateType,
+    e::DoxSectionKind::PrivateFunc,
+    e::DoxSectionKind::PrivateAttrib,
+    e::DoxSectionKind::PrivateSlot,
+    e::DoxSectionKind::PrivateStaticFunc,
+    e::DoxSectionKind::PrivateStaticAttrib,
+    e::DoxSectionKind::Friend,
+    e::DoxSectionKind::Related,
+    e::DoxSectionKind::Define,
+    e::DoxSectionKind::Prototype,
+    e::DoxSectionKind::Typedef,
+    e::DoxSectionKind::Enum,
+    e::DoxSectionKind::Func,
+    e::DoxSectionKind::Var,
+];
+
+fn cmp_section_kind(a: &e::DoxSectionKind, b: &e::DoxSectionKind) -> Ordering {
+    let a_index = SECTION_ORDER
+        .iter()
+        .position(|entry| a == entry)
+        .unwrap_or(0);
+
+    let b_index = SECTION_ORDER
+        .iter()
+        .position(|entry| b == entry)
+        .unwrap_or(0);
+
+    a_index.cmp(&b_index)
 }
 
 fn section_title(section_kind: &e::DoxSectionKind) -> String {
