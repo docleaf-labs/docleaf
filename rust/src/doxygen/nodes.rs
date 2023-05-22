@@ -133,6 +133,7 @@ pub enum DomainEntryType {
     Enum,
     Enumerator,
     Function,
+    Member,
     Struct,
 }
 
@@ -144,6 +145,7 @@ impl IntoPy<PyObject> for DomainEntryType {
             Self::Enum => "enum".into_py(py),
             Self::Enumerator => "enumerator".into_py(py),
             Self::Function => "function".into_py(py),
+            Self::Member => "member".into_py(py),
             Self::Struct => "struct".into_py(py),
         }
     }

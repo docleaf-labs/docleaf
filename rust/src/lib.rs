@@ -79,13 +79,23 @@ impl CacheInner {
 #[pyclass]
 struct Context {
     pub skip_xml_nodes: Vec<String>,
+    pub domain_by_extension: HashMap<String, Domain>,
 }
 
 #[pymethods]
 impl Context {
     #[new]
-    fn new(skip_xml_nodes: Vec<String>) -> Self {
-        Self { skip_xml_nodes }
+    fn new(
+        skip_xml_nodes: Vec<String>,
+        domain_by_extension: HashMap<String, String>,
+    ) -> PyResult<Self> {
+        let domain_by_extension = Domain::create_lookup(domain_by_extension)
+            .map_err(|err| PyValueError::new_err(format!("{}", err)))?;
+
+        Ok(Self {
+            skip_xml_nodes,
+            domain_by_extension,
+        })
     }
 }
 
@@ -133,7 +143,12 @@ fn render_class(name: String, path: String, cache: &Cache) -> PyResult<Vec<Node>
 }
 
 #[pyfunction]
-fn render_struct(name: String, path: String, cache: &Cache) -> PyResult<Vec<Node>> {
+fn render_struct(
+    name: String,
+    path: String,
+    context: &Context,
+    cache: &Cache,
+) -> PyResult<Vec<Node>> {
     tracing::info!("render_struct {} {}", name, path);
     let xml_directory = PathBuf::from(path);
 
@@ -161,7 +176,13 @@ fn render_struct(name: String, path: String, cache: &Cache) -> PyResult<Vec<Node
                 cache.parse_compound(compound_xml_path)?
             };
 
-            let context = doxygen::render::Context::default();
+            let context = doxygen::render::Context {
+                domain: None,
+                skip_xml_nodes: context.skip_xml_nodes.clone(),
+                extension_domain_lookup: context.domain_by_extension.clone(),
+                enumerated_list_depth: 0,
+            };
+
             let inner_groups = false;
             doxygen::render::render_compound(&context, root.as_ref(), inner_groups, &mut xml_loader)
                 .map_err(|err| PyValueError::new_err(format!("{}", err)))
@@ -232,7 +253,7 @@ fn render_member(
             let context = doxygen::render::Context {
                 domain: None,
                 skip_xml_nodes: context.skip_xml_nodes.clone(),
-                extension_domain_lookup: HashMap::new(),
+                extension_domain_lookup: context.domain_by_extension.clone(),
                 enumerated_list_depth: 0,
             };
 
@@ -281,7 +302,6 @@ fn render_group(
     content_only: bool,
     // TODO: Use 'filter' concept instead of passing this bool around
     inner_groups: bool,
-    extension_domain_lookup: HashMap<String, String>,
     cache: &Cache,
 ) -> PyResult<Vec<Node>> {
     tracing::info!("render_group {} {}", name, path);
@@ -289,9 +309,6 @@ fn render_group(
 
     let cwd = std::env::current_dir()?;
     let source_directory = cwd.join("source");
-
-    let extension_domain_lookup = Domain::create_lookup(extension_domain_lookup)
-        .map_err(|err| PyValueError::new_err(format!("{}", err)))?;
 
     let xml_path = source_directory.join(xml_directory);
 
@@ -315,7 +332,7 @@ fn render_group(
             let context = doxygen::render::Context {
                 domain: None,
                 skip_xml_nodes: context.skip_xml_nodes.clone(),
-                extension_domain_lookup,
+                extension_domain_lookup: context.domain_by_extension.clone(),
                 enumerated_list_depth: 0,
             };
 

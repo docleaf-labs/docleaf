@@ -22,6 +22,7 @@ cpp_domain = {
     "enum": (cpp.CPPEnumObject, "enum", null_handler),
     "enumerator": (cpp.CPPEnumeratorObject, "enumerator", enumerator_handler),
     "function": (cpp.CPPFunctionObject, "function", null_handler),
+    "member": (cpp.CPPMemberObject, "member", null_handler),
     "struct": (cpp.CPPClassObject, "struct", null_handler),
 }
 
@@ -30,6 +31,7 @@ c_domain = {
     "enum": (c.CEnumObject, "enum", null_handler),
     "enumerator": (c.CEnumeratorObject, "enumerator", enumerator_handler),
     "function": (c.CFunctionObject, "function", null_handler),
+    "member": (c.CMemberObject, "member", null_handler),
     "struct": (c.CStructObject, "struct", null_handler),
 }
 

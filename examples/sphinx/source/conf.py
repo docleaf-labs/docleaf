@@ -45,6 +45,7 @@ docleaf_projects = {
     "program-listings": "../../code/program-listings/xml/",
     "references": "../../code/references/xml/",
     "structs": "../../code/structs/xml/",
+    "structs-c": "../../code/structs-c/xml/",
     "tables": "../../code/tables/xml/",
     "text-formatting": "../../code/text-formatting/xml/",
     "urls": "../../code/urls/xml/",

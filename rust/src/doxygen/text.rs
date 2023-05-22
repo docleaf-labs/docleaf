@@ -29,7 +29,7 @@ pub fn render_compound_kind(kind: &e::DoxCompoundKind) -> &'static str {
     }
 }
 
-pub fn render_member_def(member_def: &e::MemberdefType) -> String {
+pub fn render_member_def(domain: &Domain, member_def: &e::MemberdefType) -> String {
     match member_def.kind {
         e::DoxMemberKind::Function => {
             match (
@@ -42,7 +42,6 @@ pub fn render_member_def(member_def: &e::MemberdefType) -> String {
                 _ => String::new(),
             }
         }
-        e::DoxMemberKind::Enum => member_def.name.clone(),
         e::DoxMemberKind::Define => {
             if member_def.param.is_empty() {
                 member_def.name.clone()
@@ -54,6 +53,22 @@ pub fn render_member_def(member_def: &e::MemberdefType) -> String {
                     .collect();
                 let params = params.join(", ");
                 format!("{}({})", member_def.name, params)
+            }
+        }
+        e::DoxMemberKind::Enum => member_def.name.clone(),
+        e::DoxMemberKind::Variable => {
+            let name = member_def
+                .qualifiedname
+                .as_ref()
+                .map(|name| match domain {
+                    Domain::CPlusPlus => name.clone(),
+                    Domain::C => name.replace("::", "."),
+                })
+                .unwrap_or_else(|| member_def.name.clone());
+
+            match member_def.type_ {
+                Some(ref type_) => format!("{} {}", render_linked_text_type(type_), name),
+                None => name,
             }
         }
         _ => todo!(
@@ -74,4 +89,21 @@ pub fn render_enum_value(
         // Otherwise all we want is the enumerator name
         Domain::C => enum_value.name.to_string(),
     }
+}
+
+fn render_linked_text_type(linked_text_type: &e::LinkedTextType) -> String {
+    let mut nodes = Vec::new();
+
+    for entry in linked_text_type.content.iter() {
+        match entry {
+            e::LinkedTextTypeItem::Ref(ref content) => nodes.push(render_ref_text_type(content)),
+            e::LinkedTextTypeItem::Text(text) => nodes.push(text.clone()),
+        }
+    }
+
+    nodes.join(" ")
+}
+
+fn render_ref_text_type(ref_text_type: &e::RefTextType) -> String {
+    ref_text_type.content.clone()
 }
