@@ -17,12 +17,21 @@ def enumerator_handler(finder):
     ]
 
 
+def member_handler(finder):
+    # We pass Struct::member to the CPPEnumeratorObject directive and Struct.member to the CStructObject
+    # directive but we don't want to have the "Struct::" part in either case in the output so we find
+    # the 'desc_addname' that Sphinx uses for it and remove it
+    finder.declarator.children = [
+        node for node in finder.declarator.children if node.tagname != "desc_addname"
+    ]
+
+
 cpp_domain = {
     "class": (cpp.CPPClassObject, "class", null_handler),
     "enum": (cpp.CPPEnumObject, "enum", null_handler),
     "enumerator": (cpp.CPPEnumeratorObject, "enumerator", enumerator_handler),
     "function": (cpp.CPPFunctionObject, "function", null_handler),
-    "member": (cpp.CPPMemberObject, "member", null_handler),
+    "member": (cpp.CPPMemberObject, "member", member_handler),
     "struct": (cpp.CPPClassObject, "struct", null_handler),
 }
 
@@ -31,7 +40,7 @@ c_domain = {
     "enum": (c.CEnumObject, "enum", null_handler),
     "enumerator": (c.CEnumeratorObject, "enumerator", enumerator_handler),
     "function": (c.CFunctionObject, "function", null_handler),
-    "member": (c.CMemberObject, "member", null_handler),
+    "member": (c.CMemberObject, "member", member_handler),
     "struct": (c.CStructObject, "struct", null_handler),
 }
 
