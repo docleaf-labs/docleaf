@@ -61,7 +61,9 @@ pub fn render_member_def(domain: &Domain, member_def: &e::MemberdefType) -> Stri
                 .qualifiedname
                 .as_ref()
                 .map(|name| match domain {
+                    // Sphinx expects C++ entries to be 'type Struct::member'
                     Domain::CPlusPlus => name.clone(),
+                    // Sphinx expects C entries to be 'type Struct.member'
                     Domain::C => name.replace("::", "."),
                 })
                 .unwrap_or_else(|| member_def.name.clone());
