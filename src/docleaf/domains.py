@@ -42,6 +42,7 @@ c_domain = {
     "function": (c.CFunctionObject, "function", null_handler),
     "member": (c.CMemberObject, "member", member_handler),
     "struct": (c.CStructObject, "struct", null_handler),
+    "typedef": (c.CTypeObject, "type", null_handler),
 }
 
 domains = {"cpp": cpp_domain, "c": c_domain}

@@ -1,3 +1,7 @@
+//! Helper functions designed for rendering doxygen elements to text specifically with an eye to
+//! the inputs required for Sphinx domain directives. If we need other text based targets then we might
+//! want to introduce changes to how the rendering is done in places
+
 use crate::doxygen::compound::generated as e;
 use crate::Domain;
 
@@ -56,6 +60,19 @@ pub fn render_member_def(domain: &Domain, member_def: &e::MemberdefType) -> Stri
             }
         }
         e::DoxMemberKind::Enum => member_def.name.clone(),
+        e::DoxMemberKind::Typedef => member_def
+            .definition
+            .as_ref()
+            .map(|definition| {
+                definition
+                    // Remove the 'typedef ' prefix as the Sphinx C-Domain doesn't expect to see it
+                    .strip_prefix("typedef ")
+                    .unwrap_or(definition)
+                    .to_string()
+            })
+            // Note: This could be improved but we expect there to always be a definition
+            // in this case
+            .unwrap_or_else(|| member_def.name.clone()),
         e::DoxMemberKind::Variable => {
             let name = member_def
                 .qualifiedname

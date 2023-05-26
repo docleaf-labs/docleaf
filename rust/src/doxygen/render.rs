@@ -484,7 +484,22 @@ pub fn render_member_def(ctx: &Context, member_def: &e::MemberdefType) -> Vec<No
                 return vec![Node::DomainEntry(Box::new(DomainEntry {
                     domain: domain.clone(),
                     // All variables in the memberdef context are just members of the compound
+                    // TODO: This might not be the case for variables in 'file' compounds
                     type_: DomainEntryType::Member,
+                    target,
+                    declaration: text::render_member_def(domain, member_def),
+                    content: content_nodes,
+                }))];
+            }
+
+            signature_line = basic_signature_line(target);
+        }
+        e::DoxMemberKind::Typedef => {
+            // Early exit if there is domain information for rendering this entry
+            if let Some(ref domain) = ctx.domain {
+                return vec![Node::DomainEntry(Box::new(DomainEntry {
+                    domain: domain.clone(),
+                    type_: DomainEntryType::Typedef,
                     target,
                     declaration: text::render_member_def(domain, member_def),
                     content: content_nodes,

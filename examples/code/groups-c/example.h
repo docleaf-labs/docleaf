@@ -27,6 +27,16 @@ struct CGroupExampleStruct {};
 #define GROUP_C_HAS_STATUS(item_id, status) \
 	has_status(item_id, status)
 
+/*! @ingroup group1
+  A simple typedef
+*/
+typedef uint32_t my_type_def;
+
+/*! @ingroup group1
+  A less simple typedef
+*/
+typedef void (*func_ptr)(struct mytype *value, int err, uint8_t id);
+
 /*! @ingroup group2
   Another function
 

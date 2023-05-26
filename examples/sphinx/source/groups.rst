@@ -50,3 +50,7 @@ C-domain reference to :c:func:`example_function_for_c_groups`.
 C-domain reference to :c:macro:`GROUP_C_NAME`.
 
 C-domain reference to :c:macro:`GROUP_C_HAS_STATUS`.
+
+C-domain reference to :c:type:`my_type_def`.
+
+C-domain reference to :c:type:`func_ptr`.
