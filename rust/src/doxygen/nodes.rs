@@ -136,6 +136,7 @@ pub enum DomainEntryType {
     Member,
     Struct,
     Typedef,
+    Union,
 }
 
 impl IntoPy<PyObject> for DomainEntryType {
@@ -149,6 +150,7 @@ impl IntoPy<PyObject> for DomainEntryType {
             Self::Member => "member".into_py(py),
             Self::Struct => "struct".into_py(py),
             Self::Typedef => "typedef".into_py(py),
+            Self::Union => "union".into_py(py),
         }
     }
 }

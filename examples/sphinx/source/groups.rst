@@ -56,3 +56,7 @@ C-domain reference to :c:type:`my_type_def`.
 C-domain reference to :c:type:`func_ptr`.
 
 C-domain reference to :c:member:`CGroupExampleStruct.state_changed`.
+
+C-domain reference to :c:union:`NamedUnion`.
+
+C-domain reference to :c:member:`NamedUnion.b_id`.

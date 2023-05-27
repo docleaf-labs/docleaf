@@ -33,19 +33,42 @@ pub fn render_compound_kind(kind: &e::DoxCompoundKind) -> &'static str {
     }
 }
 
+fn with_trailing_space(mut string: String) -> String {
+    string.push(' ');
+    string
+}
+
+fn if_yes(dox_bool: &e::DoxBool, str: &str) -> Option<String> {
+    if dox_bool == &e::DoxBool::Yes {
+        Some(str.to_string())
+    } else {
+        None
+    }
+}
+
 pub fn render_member_def(domain: &Domain, member_def: &e::MemberdefType) -> String {
     match member_def.kind {
-        e::DoxMemberKind::Function => {
-            match (
-                member_def.definition.as_ref(),
-                member_def.argsstring.as_ref(),
-            ) {
-                (Some(definition), Some(args)) => {
-                    format!("{}{}", definition, args)
-                }
-                _ => String::new(),
-            }
-        }
+        e::DoxMemberKind::Function => [
+            if_yes(&member_def.static_, "static "),
+            if_yes(
+                &member_def.inline.as_ref().unwrap_or(&e::DoxBool::No),
+                "inline ",
+            ),
+            if_yes(
+                &member_def.const_.as_ref().unwrap_or(&e::DoxBool::No),
+                "const ",
+            ),
+            member_def
+                .type_
+                .as_ref()
+                .map(render_linked_text_type)
+                .map(with_trailing_space),
+            Some(member_def.name.clone()),
+            member_def.argsstring.clone(),
+        ]
+        .into_iter()
+        .flatten()
+        .collect(),
         e::DoxMemberKind::Define => {
             if member_def.param.is_empty() {
                 member_def.name.clone()
@@ -85,7 +108,7 @@ pub fn render_member_def(domain: &Domain, member_def: &e::MemberdefType) -> Stri
                 })
                 .unwrap_or_else(|| member_def.name.clone());
 
-            vec![
+            [
                 member_def.type_.as_ref().map(render_linked_text_type),
                 Some(name),
                 member_def.argsstring.clone(),

@@ -50,6 +50,32 @@ typedef uint32_t my_type_def;
 */
 typedef void (*func_ptr)(struct mytype *value, int err, uint8_t id);
 
+/*! @ingroup group1
+  A static inline function
+*/
+static inline uint32_t get_end(uint32_t index)
+{
+  return 0;
+}
+
+/*! @ingroup group1
+  An anonymous union
+*/
+union {
+  uint32_t a_id  : 3;
+  uint32_t b_id  : 8;
+};
+
+/*! @ingroup group1
+  A named union
+*/
+union NamedUnion {
+  //! a_id entry
+  uint32_t a_id  : 3;
+  //! b_id entry
+  uint32_t b_id  : 8;
+};
+
 /*! @ingroup group2
   Another function
 
