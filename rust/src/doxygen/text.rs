@@ -85,10 +85,15 @@ pub fn render_member_def(domain: &Domain, member_def: &e::MemberdefType) -> Stri
                 })
                 .unwrap_or_else(|| member_def.name.clone());
 
-            match member_def.type_ {
-                Some(ref type_) => format!("{} {}", render_linked_text_type(type_), name),
-                None => name,
-            }
+            vec![
+                member_def.type_.as_ref().map(render_linked_text_type),
+                Some(name),
+                member_def.argsstring.clone(),
+            ]
+            .into_iter()
+            .flatten()
+            .collect::<Vec<_>>()
+            .join(" ")
         }
         _ => todo!(
             "text::render_member_def not implemented for {:?}",

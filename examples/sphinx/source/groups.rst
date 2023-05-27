@@ -54,3 +54,5 @@ C-domain reference to :c:macro:`GROUP_C_HAS_STATUS`.
 C-domain reference to :c:type:`my_type_def`.
 
 C-domain reference to :c:type:`func_ptr`.
+
+C-domain reference to :c:member:`CGroupExampleStruct.state_changed`.

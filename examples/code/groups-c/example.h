@@ -14,7 +14,21 @@ void example_function_for_c_groups(int arg1, bool arg2);
 /*! @ingroup group1
   A struct
 */
-struct CGroupExampleStruct {};
+struct CGroupExampleStruct {
+
+  //! Function pointer struct member
+  void (*fnc_ptr)(struct CGroupOtherStruct *sync, int *info);
+
+  //! Another func pointer
+  void (*state_changed)(struct bt_le_per_adv_sync *sync,
+                              const struct bt_le_per_adv_sync_state_info *info);
+};
+
+/*! @ingroup group1
+  Another struct
+*/
+struct CGroupOtherStruct {
+}
 
 /*! @ingroup group1
   A define macro for group 1
