@@ -27,13 +27,12 @@ struct CGroupExampleStruct {
 /*! @ingroup group1
   Another struct
 */
-struct CGroupOtherStruct {
-}
+struct CGroupOtherStruct {};
 
 /*! @ingroup group1
   A define macro for group 1
 */
-#define GROUP_C_NAME "group-c";
+#define GROUP_C_NAME "group-c"
 
 /*! @ingroup group1
   A define macro with args for group 1
