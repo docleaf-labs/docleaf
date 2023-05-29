@@ -1045,14 +1045,14 @@ fn render_doc_simple_sect_type(ctx: &Context, element: &e::DocSimpleSectType) ->
         e::DoxSimpleSectKind::Return => {
             CategorizedNode::FieldListEntry("Returns".into(), Node::Container(nodes))
         }
-        e::DoxSimpleSectKind::See
-        | e::DoxSimpleSectKind::Author
+        e::DoxSimpleSectKind::Note => CategorizedNode::Node(Node::Note(nodes)),
+        e::DoxSimpleSectKind::See => CategorizedNode::Node(Node::SeeAlso(nodes)),
+        e::DoxSimpleSectKind::Warning => CategorizedNode::Node(Node::Warning(nodes)),
+        e::DoxSimpleSectKind::Author
         | e::DoxSimpleSectKind::Authors
         | e::DoxSimpleSectKind::Version
         | e::DoxSimpleSectKind::Since
         | e::DoxSimpleSectKind::Date
-        | e::DoxSimpleSectKind::Note
-        | e::DoxSimpleSectKind::Warning
         | e::DoxSimpleSectKind::Pre
         | e::DoxSimpleSectKind::Post
         | e::DoxSimpleSectKind::Copyright

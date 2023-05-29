@@ -20,6 +20,7 @@ Welcome to Docleaf's documentation!
    preformatted
    program-listings
    lists
+   notes
    references
    struct
    tables

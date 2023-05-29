@@ -235,6 +235,11 @@ pub enum Node {
     },
     ListItem(Vec<Node>),
 
+    // Notes
+    Note(Vec<Node>),
+    SeeAlso(Vec<Node>),
+    Warning(Vec<Node>),
+
     // Embedded ReStructuredText
     ReStructuredTextBlock(String),
     ReStructuredTextInline(String),
@@ -555,6 +560,17 @@ impl IntoPy<PyObject> for Node {
             }
             Self::ListItem(nodes) => {
                 node(py, "list_item", CallAs::Source, Attributes::new(), nodes).into_py(py)
+            }
+
+            // Notes
+            Self::Note(nodes) => {
+                node(py, "note", CallAs::Source, Attributes::new(), nodes).into_py(py)
+            }
+            Self::SeeAlso(nodes) => {
+                node(py, "see_also", CallAs::Source, Attributes::new(), nodes).into_py(py)
+            }
+            Self::Warning(nodes) => {
+                node(py, "warning", CallAs::Source, Attributes::new(), nodes).into_py(py)
             }
 
             // Embedded ReStructuredText

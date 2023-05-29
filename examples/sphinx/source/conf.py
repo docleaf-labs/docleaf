@@ -39,6 +39,7 @@ docleaf_projects = {
     "groups-c": "../../code/groups-c/xml/",
     "html-only": "../../code/html-only/xml/",
     "lists": "../../code/lists/xml/",
+    "notes": "../../code/notes/xml/",
     "nutshell": "../../code/nutshell/xml/",
     "paragraphs": "../../code/paragraphs/xml/",
     "preformatted": "../../code/preformatted/xml/",
