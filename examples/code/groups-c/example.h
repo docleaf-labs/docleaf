@@ -28,6 +28,9 @@ struct CGroupExampleStruct {
   Another struct
 */
 struct CGroupOtherStruct {
+  //! First field
+  uint32_t first_field;
+
   /*! An anonymous union */
   union {
     //! Union entry 1
@@ -35,6 +38,22 @@ struct CGroupOtherStruct {
     //! Union entry 2
     int32_t b_id : 3;
   };
+
+  //! Middle field
+  uint32_t middle_field;
+
+  /*! Another anonymous union */
+  union {
+    //! Union entry 1
+    uint32_t c_id : 3;
+    //! Union entry 2
+    int32_t d_id : 3;
+    //! Union entry 3
+    int32_t e_id : 3;
+  };
+
+  //! Last field
+  uint32_t last_field;
 };
 
 /*! @ingroup group1
