@@ -276,23 +276,37 @@ fn render_section_def(ctx: &Context, section_def: &e::SectiondefType) -> Node {
     Node::Container(content_nodes)
 }
 
+/// Designed to allow us to distinguish anonymous union member defs and their referenced members from other standard
+/// member defs so that we can render the unions in a different manner
 enum CategorizedMemberDef<'m> {
     AnonymousUnion(usize, &'m e::MemberdefType, Vec<&'m e::MemberdefType>),
     Standard(&'m e::MemberdefType),
 }
 
+/// Analyzes an array of member defs and returns a vec of them where the anonymous unions and their members have be
+/// tagged separately to to the rest so we can render them differently
+///
+/// This is required as the xml doesn't have a great representation of anonymous unions and their members. Instead of
+/// a hierarchical structure the union and its members appear in the member defs and the unions has @0, @1, etc within
+/// string parts of its definition which seem to indicate the other member defs which are infact inside the union
+/// itself. So we examine all the entries and try to pull out the hierarchy.
+///
+/// Note: This doesn't work for unions inside unions but I think those should be rare and possibly conceptually
+/// redundant so I hope we don't encounter them.
 fn categorize_member_defs<'m>(
     member_defs: &'m [e::MemberdefType],
 ) -> Vec<CategorizedMemberDef<'m>> {
     let indexed_members: HashMap<usize, &e::MemberdefType> =
         member_defs.iter().enumerate().collect();
 
+    // Find all the anonymous unions
     let indexed_anon_unions: Vec<_> = member_defs
         .iter()
         .enumerate()
         .filter(|(_index, member)| is_anonymous_union(member))
         .collect();
 
+    // Early exit if there are no anonymous unions as we can render all the members normally
     if indexed_anon_unions.is_empty() {
         return member_defs
             .into_iter()
@@ -300,6 +314,9 @@ fn categorize_member_defs<'m>(
             .collect();
     }
 
+    // Create a map from the indexes of the anonymous unions in the list to the indices of their members in the list
+    // of member defs by parsing the anonymous union 'definition' entry which includes @0, @1, etc, to refer to other
+    // members
     let union_member_lookup: HashMap<_, _> = indexed_anon_unions
         .iter()
         .map(|(union_index, union)| {
@@ -331,8 +348,11 @@ fn categorize_member_defs<'m>(
         })
         .collect();
 
+    // Create a set of all the member indices for easy identification
     let union_member_indexes: HashSet<_> = union_member_lookup.values().flatten().collect();
 
+    // Iterate over the members in their original order and discard any union members and create special entries for
+    // the unions such that they have their members with them
     member_defs
         .iter()
         .enumerate()
@@ -630,6 +650,9 @@ pub fn render_member_def(ctx: &Context, member_def: &e::MemberdefType) -> Vec<No
     )]
 }
 
+/// Anonymous unions are rendered with a separate approach as Doxygen represents them as member def which reference
+/// other member defs at the same level so we have separate code to find and extract those separate member defs and
+/// provide them as the `sub_member_defs` here.
 pub fn render_anonymous_union_member_def(
     ctx: &Context,
     index: usize,
