@@ -60,3 +60,5 @@ C-domain reference to :c:member:`CGroupExampleStruct.state_changed`.
 C-domain reference to :c:union:`NamedUnion`.
 
 C-domain reference to :c:member:`NamedUnion.b_id`.
+
+C-domain reference to :c:var:`CGroupOtherStruct.a_id`.

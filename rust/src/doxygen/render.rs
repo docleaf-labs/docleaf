@@ -265,8 +265,8 @@ fn render_section_def(ctx: &Context, section_def: &e::SectiondefType) -> Node {
         &mut member_defs
             .iter()
             .flat_map(|cat_member_def| match cat_member_def {
-                CategorizedMemberDef::AnonymousUnion(element, subelements) => {
-                    render_anonymous_union_member_def(ctx, element, subelements)
+                CategorizedMemberDef::AnonymousUnion(index, element, subelements) => {
+                    render_anonymous_union_member_def(ctx, *index, element, subelements)
                 }
                 CategorizedMemberDef::Standard(element) => render_member_def(ctx, element),
             })
@@ -277,7 +277,7 @@ fn render_section_def(ctx: &Context, section_def: &e::SectiondefType) -> Node {
 }
 
 enum CategorizedMemberDef<'m> {
-    AnonymousUnion(&'m e::MemberdefType, Vec<&'m e::MemberdefType>),
+    AnonymousUnion(usize, &'m e::MemberdefType, Vec<&'m e::MemberdefType>),
     Standard(&'m e::MemberdefType),
 }
 
@@ -347,6 +347,7 @@ fn categorize_member_defs<'m>(
                             .flat_map(|index| indexed_members.get(&index).map(|member| *member))
                             .collect();
                         Some(CategorizedMemberDef::AnonymousUnion(
+                            index,
                             member_def,
                             union_members,
                         ))
@@ -631,6 +632,7 @@ pub fn render_member_def(ctx: &Context, member_def: &e::MemberdefType) -> Vec<No
 
 pub fn render_anonymous_union_member_def(
     ctx: &Context,
+    index: usize,
     member_def: &e::MemberdefType,
     sub_member_defs: &[&e::MemberdefType],
 ) -> Vec<Node> {
@@ -648,6 +650,14 @@ pub fn render_anonymous_union_member_def(
         content_nodes.append(&mut render_description(ctx, description));
     }
 
+    // Render the indexed members of the union as sub-members
+    content_nodes.append(
+        &mut sub_member_defs
+            .iter()
+            .flat_map(|element| render_member_def(ctx, element))
+            .collect(),
+    );
+
     let ids = member_def.id.clone();
     let names = member_def.id.clone();
     let target = Target { ids, names };
@@ -664,122 +674,17 @@ pub fn render_anonymous_union_member_def(
     };
 
     match member_def.kind {
-        e::DoxMemberKind::Enum => {
-            content_nodes.append(
-                &mut member_def
-                    .enumvalue
-                    .iter()
-                    .map(|element| render_enum_value(ctx, &member_def.name, element))
-                    .collect(),
-            );
-
-            // Early exit if there is domain information for rendering this entry
-            if let Some(ref domain) = ctx.domain {
-                return vec![Node::DomainEntry(Box::new(DomainEntry {
-                    domain: domain.clone(),
-                    type_: DomainEntryType::Enum,
-                    target,
-                    declaration: text::render_member_def(domain, member_def),
-                    content: content_nodes,
-                }))];
-            }
-
-            signature_line = basic_signature_line(target);
-        }
-        e::DoxMemberKind::Function => {
-            // Early exit if there is domain information for rendering this entry
-            if let Some(ref domain) = ctx.domain {
-                return vec![Node::DomainEntry(Box::new(DomainEntry {
-                    domain: domain.clone(),
-                    type_: DomainEntryType::Function,
-                    target,
-                    declaration: text::render_member_def(domain, member_def),
-                    content: content_nodes,
-                }))];
-            }
-
-            let parameter_list_items = member_def
-                .param
-                .iter()
-                .map(|param| {
-                    let mut param_contents = Vec::new();
-
-                    match (&param.type_, &param.declname) {
-                        (Some(ref type_), Some(ref declname)) => {
-                            param_contents.append(&mut render_linked_text_type(ctx, type_));
-                            param_contents.push(Node::DescSignatureSpace);
-                            param_contents.push(Node::DescSignatureName(declname.clone()));
-                        }
-                        (Some(ref type_), None) => {
-                            param_contents.append(&mut render_linked_text_type(ctx, type_));
-                        }
-                        (None, Some(ref declname)) => {
-                            param_contents.push(Node::DescSignatureName(declname.clone()));
-                        }
-                        (None, None) => {}
-                    };
-
-                    Node::DescParameter(param_contents)
-                })
-                .collect();
-
-            match member_def.type_ {
-                Some(ref type_) => {
-                    signature_line = vec![
-                        Node::Target(target),
-                        Node::DescSignatureKeyword(render_linked_text_type(ctx, type_)),
-                        Node::DescSignatureSpace,
-                        Node::DescName(Box::new(Node::DescSignatureName(member_def.name.clone()))),
-                        Node::DescParameterList(parameter_list_items),
-                    ];
-                }
-                None => {
-                    signature_line = vec![
-                        Node::Target(target),
-                        Node::DescName(Box::new(Node::DescSignatureName(member_def.name.clone()))),
-                        Node::DescParameterList(parameter_list_items),
-                    ];
-                }
-            }
-        }
-        e::DoxMemberKind::Define => {
-            // Early exit if there is domain information for rendering this entry
-            if let Some(ref domain) = ctx.domain {
-                return vec![Node::DomainEntry(Box::new(DomainEntry {
-                    domain: domain.clone(),
-                    type_: DomainEntryType::Define,
-                    target,
-                    declaration: text::render_member_def(domain, member_def),
-                    content: content_nodes,
-                }))];
-            }
-
-            signature_line = basic_signature_line(target);
-        }
+        // Anonymous unions come in as Variable MemberDefs
         e::DoxMemberKind::Variable => {
             // Early exit if there is domain information for rendering this entry
             if let Some(ref domain) = ctx.domain {
                 return vec![Node::DomainEntry(Box::new(DomainEntry {
                     domain: domain.clone(),
-                    // All variables in the memberdef context are just members of the compound
-                    // TODO: This might not be the case for variables in 'file' compounds
-                    type_: DomainEntryType::Member,
+                    type_: DomainEntryType::Union,
                     target,
-                    declaration: text::render_member_def(domain, member_def),
-                    content: content_nodes,
-                }))];
-            }
-
-            signature_line = basic_signature_line(target);
-        }
-        e::DoxMemberKind::Typedef => {
-            // Early exit if there is domain information for rendering this entry
-            if let Some(ref domain) = ctx.domain {
-                return vec![Node::DomainEntry(Box::new(DomainEntry {
-                    domain: domain.clone(),
-                    type_: DomainEntryType::Typedef,
-                    target,
-                    declaration: text::render_member_def(domain, member_def),
+                    // Sphinx support for anonymous unions requires the name start with '@':
+                    // https://www.sphinx-doc.org/en/master/usage/restructuredtext/domains.html#anonymous-entities
+                    declaration: format!("@{index}"),
                     content: content_nodes,
                 }))];
             }
@@ -787,6 +692,10 @@ pub fn render_anonymous_union_member_def(
             signature_line = basic_signature_line(target);
         }
         _ => {
+            tracing::error!(
+                "Unexpected member def kind '{:?}' in render_anonymous_union_member_def. Rendering basic signature.",
+                member_def.kind
+            );
             signature_line = basic_signature_line(target);
         }
     };
