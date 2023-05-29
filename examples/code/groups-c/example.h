@@ -27,7 +27,15 @@ struct CGroupExampleStruct {
 /*! @ingroup group1
   Another struct
 */
-struct CGroupOtherStruct {};
+struct CGroupOtherStruct {
+  /*! An anonymous union */
+  union {
+    //! Union entry 1
+    uint32_t a_id : 3;
+    //! Union entry 2
+    int32_t b_id : 3;
+  };
+};
 
 /*! @ingroup group1
   A define macro for group 1
@@ -57,14 +65,6 @@ static inline uint32_t get_end(uint32_t index)
 {
   return 0;
 }
-
-/*! @ingroup group1
-  An anonymous union
-*/
-union {
-  uint32_t a_id  : 3;
-  uint32_t b_id  : 8;
-};
 
 /*! @ingroup group1
   A named union

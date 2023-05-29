@@ -1,7 +1,6 @@
 use std::cmp::Ordering;
 use std::collections::HashMap;
-
-use crate::XmlLoader;
+use std::collections::HashSet;
 
 use crate::doxygen::compound::generated as e;
 use crate::doxygen::compound::CompoundDefEntry;
@@ -9,6 +8,7 @@ use crate::doxygen::nodes::{
     Domain, DomainEntry, DomainEntryType, ListEnumType, Node, SignatureType, Target,
 };
 use crate::doxygen::text;
+use crate::XmlLoader;
 
 fn domain_from_language(language: &e::DoxLanguage) -> Option<Domain> {
     match language {
@@ -255,19 +255,115 @@ pub fn render_member(ctx: &Context, root: &e::DoxygenType, member_ref_id: &str) 
 }
 
 fn render_section_def(ctx: &Context, section_def: &e::SectiondefType) -> Node {
+    let member_defs = categorize_member_defs(section_def.memberdef.as_slice());
+
     let mut content_nodes = vec![Node::Rubric(vec![Node::Text(section_title(
         &section_def.kind,
     ))])];
 
     content_nodes.append(
-        &mut section_def
-            .memberdef
+        &mut member_defs
             .iter()
-            .flat_map(|element| render_member_def(ctx, element))
+            .flat_map(|cat_member_def| match cat_member_def {
+                CategorizedMemberDef::AnonymousUnion(element, subelements) => {
+                    render_anonymous_union_member_def(ctx, element, subelements)
+                }
+                CategorizedMemberDef::Standard(element) => render_member_def(ctx, element),
+            })
             .collect(),
     );
 
     Node::Container(content_nodes)
+}
+
+enum CategorizedMemberDef<'m> {
+    AnonymousUnion(&'m e::MemberdefType, Vec<&'m e::MemberdefType>),
+    Standard(&'m e::MemberdefType),
+}
+
+fn categorize_member_defs<'m>(
+    member_defs: &'m [e::MemberdefType],
+) -> Vec<CategorizedMemberDef<'m>> {
+    let indexed_members: HashMap<usize, &e::MemberdefType> =
+        member_defs.iter().enumerate().collect();
+
+    let indexed_anon_unions: Vec<_> = member_defs
+        .iter()
+        .enumerate()
+        .filter(|(_index, member)| is_anonymous_union(member))
+        .collect();
+
+    if indexed_anon_unions.is_empty() {
+        return member_defs
+            .into_iter()
+            .map(CategorizedMemberDef::Standard)
+            .collect();
+    }
+
+    let union_member_lookup: HashMap<_, _> = indexed_anon_unions
+        .iter()
+        .map(|(union_index, union)| {
+            (
+                union_index,
+                union
+                    // Looks like Option of "union CGroupOtherStruct::@0 CGroupOtherStruct::@1"
+                    .definition
+                    .as_ref()
+                    // Remove the 'union '
+                    .and_then(|definition| definition.strip_prefix("union "))
+                    // Split on ' ' and then on '::@'
+                    .map(|definition| {
+                        // Split on ' ' to get entries
+                        definition
+                            .split(' ')
+                            .flat_map(|entry| {
+                                entry
+                                    // Split on '::@' to get numbers
+                                    .split("::@")
+                                    .last()
+                                    // Parse indicies
+                                    .and_then(|str| str.parse::<usize>().ok())
+                            })
+                            .collect()
+                    })
+                    .unwrap_or_else(Vec::new),
+            )
+        })
+        .collect();
+
+    let union_member_indexes: HashSet<_> = union_member_lookup.values().flatten().collect();
+
+    member_defs
+        .iter()
+        .enumerate()
+        .flat_map(|(index, member_def)| {
+            if union_member_indexes.contains(&index) {
+                None
+            } else {
+                match union_member_lookup.get(&index) {
+                    Some(specific_union_member_indexes) => {
+                        let union_members = specific_union_member_indexes
+                            .iter()
+                            .flat_map(|index| indexed_members.get(&index).map(|member| *member))
+                            .collect();
+                        Some(CategorizedMemberDef::AnonymousUnion(
+                            member_def,
+                            union_members,
+                        ))
+                    }
+                    None => Some(CategorizedMemberDef::Standard(member_def)),
+                }
+            }
+        })
+        .collect()
+}
+
+fn is_anonymous_union(member_def: &&e::MemberdefType) -> bool {
+    if let Some(ref definition) = member_def.definition {
+        definition.starts_with("union ")
+    } else {
+        false
+    }
 }
 
 const SECTION_ORDER: &[e::DoxSectionKind] = &[
@@ -365,6 +461,179 @@ fn section_title(section_kind: &e::DoxSectionKind) -> String {
 }
 
 pub fn render_member_def(ctx: &Context, member_def: &e::MemberdefType) -> Vec<Node> {
+    let name = member_kind_name(&member_def.kind);
+    let mut content_nodes = Vec::new();
+
+    // Create a new context with the location information if it is there
+    let ctx = &ctx.with_domain(member_def.location.as_ref(), None);
+
+    if let Some(ref description) = member_def.briefdescription {
+        content_nodes.append(&mut render_description(ctx, description));
+    }
+
+    if let Some(ref description) = member_def.detaileddescription {
+        content_nodes.append(&mut render_description(ctx, description));
+    }
+
+    let ids = member_def.id.clone();
+    let names = member_def.id.clone();
+    let target = Target { ids, names };
+
+    let signature_line;
+
+    let basic_signature_line = |target| {
+        vec![
+            Node::Target(target),
+            Node::DescSignatureKeyword(vec![Node::Text(name)]),
+            Node::DescSignatureSpace,
+            Node::DescName(Box::new(Node::DescSignatureName(member_def.name.clone()))),
+        ]
+    };
+
+    match member_def.kind {
+        e::DoxMemberKind::Enum => {
+            content_nodes.append(
+                &mut member_def
+                    .enumvalue
+                    .iter()
+                    .map(|element| render_enum_value(ctx, &member_def.name, element))
+                    .collect(),
+            );
+
+            // Early exit if there is domain information for rendering this entry
+            if let Some(ref domain) = ctx.domain {
+                return vec![Node::DomainEntry(Box::new(DomainEntry {
+                    domain: domain.clone(),
+                    type_: DomainEntryType::Enum,
+                    target,
+                    declaration: text::render_member_def(domain, member_def),
+                    content: content_nodes,
+                }))];
+            }
+
+            signature_line = basic_signature_line(target);
+        }
+        e::DoxMemberKind::Function => {
+            // Early exit if there is domain information for rendering this entry
+            if let Some(ref domain) = ctx.domain {
+                return vec![Node::DomainEntry(Box::new(DomainEntry {
+                    domain: domain.clone(),
+                    type_: DomainEntryType::Function,
+                    target,
+                    declaration: text::render_member_def(domain, member_def),
+                    content: content_nodes,
+                }))];
+            }
+
+            let parameter_list_items = member_def
+                .param
+                .iter()
+                .map(|param| {
+                    let mut param_contents = Vec::new();
+
+                    match (&param.type_, &param.declname) {
+                        (Some(ref type_), Some(ref declname)) => {
+                            param_contents.append(&mut render_linked_text_type(ctx, type_));
+                            param_contents.push(Node::DescSignatureSpace);
+                            param_contents.push(Node::DescSignatureName(declname.clone()));
+                        }
+                        (Some(ref type_), None) => {
+                            param_contents.append(&mut render_linked_text_type(ctx, type_));
+                        }
+                        (None, Some(ref declname)) => {
+                            param_contents.push(Node::DescSignatureName(declname.clone()));
+                        }
+                        (None, None) => {}
+                    };
+
+                    Node::DescParameter(param_contents)
+                })
+                .collect();
+
+            match member_def.type_ {
+                Some(ref type_) => {
+                    signature_line = vec![
+                        Node::Target(target),
+                        Node::DescSignatureKeyword(render_linked_text_type(ctx, type_)),
+                        Node::DescSignatureSpace,
+                        Node::DescName(Box::new(Node::DescSignatureName(member_def.name.clone()))),
+                        Node::DescParameterList(parameter_list_items),
+                    ];
+                }
+                None => {
+                    signature_line = vec![
+                        Node::Target(target),
+                        Node::DescName(Box::new(Node::DescSignatureName(member_def.name.clone()))),
+                        Node::DescParameterList(parameter_list_items),
+                    ];
+                }
+            }
+        }
+        e::DoxMemberKind::Define => {
+            // Early exit if there is domain information for rendering this entry
+            if let Some(ref domain) = ctx.domain {
+                return vec![Node::DomainEntry(Box::new(DomainEntry {
+                    domain: domain.clone(),
+                    type_: DomainEntryType::Define,
+                    target,
+                    declaration: text::render_member_def(domain, member_def),
+                    content: content_nodes,
+                }))];
+            }
+
+            signature_line = basic_signature_line(target);
+        }
+        e::DoxMemberKind::Variable => {
+            // Early exit if there is domain information for rendering this entry
+            if let Some(ref domain) = ctx.domain {
+                return vec![Node::DomainEntry(Box::new(DomainEntry {
+                    domain: domain.clone(),
+                    // All variables in the memberdef context are just members of the compound
+                    // TODO: This might not be the case for variables in 'file' compounds
+                    type_: DomainEntryType::Member,
+                    target,
+                    declaration: text::render_member_def(domain, member_def),
+                    content: content_nodes,
+                }))];
+            }
+
+            signature_line = basic_signature_line(target);
+        }
+        e::DoxMemberKind::Typedef => {
+            // Early exit if there is domain information for rendering this entry
+            if let Some(ref domain) = ctx.domain {
+                return vec![Node::DomainEntry(Box::new(DomainEntry {
+                    domain: domain.clone(),
+                    type_: DomainEntryType::Typedef,
+                    target,
+                    declaration: text::render_member_def(domain, member_def),
+                    content: content_nodes,
+                }))];
+            }
+
+            signature_line = basic_signature_line(target);
+        }
+        _ => {
+            signature_line = basic_signature_line(target);
+        }
+    };
+
+    let content = Node::DescContent(content_nodes);
+
+    vec![Node::Desc(
+        vec![Node::DescSignature(
+            SignatureType::MultiLine,
+            vec![Node::DescSignatureLine(signature_line)],
+        )],
+        Box::new(content),
+    )]
+}
+
+pub fn render_anonymous_union_member_def(
+    ctx: &Context,
+    member_def: &e::MemberdefType,
+    sub_member_defs: &[&e::MemberdefType],
+) -> Vec<Node> {
     let name = member_kind_name(&member_def.kind);
     let mut content_nodes = Vec::new();
 
