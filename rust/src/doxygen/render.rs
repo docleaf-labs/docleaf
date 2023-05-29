@@ -1,6 +1,5 @@
 use std::cmp::Ordering;
 use std::collections::HashMap;
-use std::collections::HashSet;
 
 use crate::doxygen::compound::generated as e;
 use crate::doxygen::compound::CompoundDefEntry;
@@ -255,136 +254,19 @@ pub fn render_member(ctx: &Context, root: &e::DoxygenType, member_ref_id: &str) 
 }
 
 fn render_section_def(ctx: &Context, section_def: &e::SectiondefType) -> Node {
-    let member_defs = categorize_member_defs(section_def.memberdef.as_slice());
-
     let mut content_nodes = vec![Node::Rubric(vec![Node::Text(section_title(
         &section_def.kind,
     ))])];
 
     content_nodes.append(
-        &mut member_defs
+        &mut section_def
+            .memberdef
             .iter()
-            .flat_map(|cat_member_def| match cat_member_def {
-                CategorizedMemberDef::AnonymousUnion(index, element, subelements) => {
-                    render_anonymous_union_member_def(ctx, *index, element, subelements)
-                }
-                CategorizedMemberDef::Standard(element) => render_member_def(ctx, element),
-            })
+            .flat_map(|element| render_member_def(ctx, element))
             .collect(),
     );
 
     Node::Container(content_nodes)
-}
-
-/// Designed to allow us to distinguish anonymous union member defs and their referenced members from other standard
-/// member defs so that we can render the unions in a different manner
-enum CategorizedMemberDef<'m> {
-    AnonymousUnion(usize, &'m e::MemberdefType, Vec<&'m e::MemberdefType>),
-    Standard(&'m e::MemberdefType),
-}
-
-/// Analyzes an array of member defs and returns a vec of them where the anonymous unions and their members have be
-/// tagged separately to to the rest so we can render them differently
-///
-/// This is required as the xml doesn't have a great representation of anonymous unions and their members. Instead of
-/// a hierarchical structure the union and its members appear in the member defs and the unions has @0, @1, etc within
-/// string parts of its definition which seem to indicate the other member defs which are infact inside the union
-/// itself. So we examine all the entries and try to pull out the hierarchy.
-///
-/// Note: This doesn't work for unions inside unions but I think those should be rare and possibly conceptually
-/// redundant so I hope we don't encounter them.
-fn categorize_member_defs<'m>(
-    member_defs: &'m [e::MemberdefType],
-) -> Vec<CategorizedMemberDef<'m>> {
-    let indexed_members: HashMap<usize, &e::MemberdefType> =
-        member_defs.iter().enumerate().collect();
-
-    // Find all the anonymous unions
-    let indexed_anon_unions: Vec<_> = member_defs
-        .iter()
-        .enumerate()
-        .filter(|(_index, member)| is_anonymous_union(member))
-        .collect();
-
-    // Early exit if there are no anonymous unions as we can render all the members normally
-    if indexed_anon_unions.is_empty() {
-        return member_defs
-            .into_iter()
-            .map(CategorizedMemberDef::Standard)
-            .collect();
-    }
-
-    // Create a map from the indexes of the anonymous unions in the list to the indices of their members in the list
-    // of member defs by parsing the anonymous union 'definition' entry which includes @0, @1, etc, to refer to other
-    // members
-    let union_member_lookup: HashMap<_, _> = indexed_anon_unions
-        .iter()
-        .map(|(union_index, union)| {
-            (
-                union_index,
-                union
-                    // Looks like Option of "union CGroupOtherStruct::@0 CGroupOtherStruct::@1"
-                    .definition
-                    .as_ref()
-                    // Remove the 'union '
-                    .and_then(|definition| definition.strip_prefix("union "))
-                    // Split on ' ' and then on '::@'
-                    .map(|definition| {
-                        // Split on ' ' to get entries
-                        definition
-                            .split(' ')
-                            .flat_map(|entry| {
-                                entry
-                                    // Split on '::@' to get numbers
-                                    .split("::@")
-                                    .last()
-                                    // Parse indicies
-                                    .and_then(|str| str.parse::<usize>().ok())
-                            })
-                            .collect()
-                    })
-                    .unwrap_or_else(Vec::new),
-            )
-        })
-        .collect();
-
-    // Create a set of all the member indices for easy identification
-    let union_member_indexes: HashSet<_> = union_member_lookup.values().flatten().collect();
-
-    // Iterate over the members in their original order and discard any union members and create special entries for
-    // the unions such that they have their members with them
-    member_defs
-        .iter()
-        .enumerate()
-        .flat_map(|(index, member_def)| {
-            if union_member_indexes.contains(&index) {
-                None
-            } else {
-                match union_member_lookup.get(&index) {
-                    Some(specific_union_member_indexes) => {
-                        let union_members = specific_union_member_indexes
-                            .iter()
-                            .flat_map(|index| indexed_members.get(&index).map(|member| *member))
-                            .collect();
-                        Some(CategorizedMemberDef::AnonymousUnion(
-                            index,
-                            member_def,
-                            union_members,
-                        ))
-                    }
-                    None => Some(CategorizedMemberDef::Standard(member_def)),
-                }
-            }
-        })
-        .collect()
-}
-
-fn is_anonymous_union(member_def: &&e::MemberdefType) -> bool {
-    if let Some(ref definition) = member_def.definition {
-        definition.starts_with("union ")
-    } else {
-        false
-    }
 }
 
 const SECTION_ORDER: &[e::DoxSectionKind] = &[
@@ -635,90 +517,6 @@ pub fn render_member_def(ctx: &Context, member_def: &e::MemberdefType) -> Vec<No
             signature_line = basic_signature_line(target);
         }
         _ => {
-            signature_line = basic_signature_line(target);
-        }
-    };
-
-    let content = Node::DescContent(content_nodes);
-
-    vec![Node::Desc(
-        vec![Node::DescSignature(
-            SignatureType::MultiLine,
-            vec![Node::DescSignatureLine(signature_line)],
-        )],
-        Box::new(content),
-    )]
-}
-
-/// Anonymous unions are rendered with a separate approach as Doxygen represents them as member def which reference
-/// other member defs at the same level so we have separate code to find and extract those separate member defs and
-/// provide them as the `sub_member_defs` here.
-pub fn render_anonymous_union_member_def(
-    ctx: &Context,
-    index: usize,
-    member_def: &e::MemberdefType,
-    sub_member_defs: &[&e::MemberdefType],
-) -> Vec<Node> {
-    let name = member_kind_name(&member_def.kind);
-    let mut content_nodes = Vec::new();
-
-    // Create a new context with the location information if it is there
-    let ctx = &ctx.with_domain(member_def.location.as_ref(), None);
-
-    if let Some(ref description) = member_def.briefdescription {
-        content_nodes.append(&mut render_description(ctx, description));
-    }
-
-    if let Some(ref description) = member_def.detaileddescription {
-        content_nodes.append(&mut render_description(ctx, description));
-    }
-
-    // Render the indexed members of the union as sub-members
-    content_nodes.append(
-        &mut sub_member_defs
-            .iter()
-            .flat_map(|element| render_member_def(ctx, element))
-            .collect(),
-    );
-
-    let ids = member_def.id.clone();
-    let names = member_def.id.clone();
-    let target = Target { ids, names };
-
-    let signature_line;
-
-    let basic_signature_line = |target| {
-        vec![
-            Node::Target(target),
-            Node::DescSignatureKeyword(vec![Node::Text(name)]),
-            Node::DescSignatureSpace,
-            Node::DescName(Box::new(Node::DescSignatureName(member_def.name.clone()))),
-        ]
-    };
-
-    match member_def.kind {
-        // Anonymous unions come in as Variable MemberDefs
-        e::DoxMemberKind::Variable => {
-            // Early exit if there is domain information for rendering this entry
-            if let Some(ref domain) = ctx.domain {
-                return vec![Node::DomainEntry(Box::new(DomainEntry {
-                    domain: domain.clone(),
-                    type_: DomainEntryType::Union,
-                    target,
-                    // Sphinx support for anonymous unions requires the name start with '@':
-                    // https://www.sphinx-doc.org/en/master/usage/restructuredtext/domains.html#anonymous-entities
-                    declaration: format!("@{index}"),
-                    content: content_nodes,
-                }))];
-            }
-
-            signature_line = basic_signature_line(target);
-        }
-        _ => {
-            tracing::error!(
-                "Unexpected member def kind '{:?}' in render_anonymous_union_member_def. Rendering basic signature.",
-                member_def.kind
-            );
             signature_line = basic_signature_line(target);
         }
     };
