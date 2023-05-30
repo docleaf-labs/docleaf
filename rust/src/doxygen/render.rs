@@ -118,6 +118,10 @@ pub fn render_compound(
 
     let mut content_nodes = Vec::new();
 
+    for include in compound_def.includes.iter() {
+        content_nodes.push(render_inc_type(&ctx, include));
+    }
+
     if let Some(ref description) = compound_def.briefdescription {
         content_nodes.append(&mut render_description(&ctx, description));
     }
@@ -701,6 +705,21 @@ fn extract_inner_description(nodes: Vec<Node>) -> Vec<Node> {
     } else {
         nodes
     }
+}
+
+/// Render 'includes' file information
+fn render_inc_type(_ctx: &Context, element: &e::IncType) -> Node {
+    let (before, after) = if element.local == e::DoxBool::Yes {
+        ("#include \"", "\"")
+    } else {
+        ("#include <", ">")
+    };
+
+    Node::Container(vec![Node::Emphasis(vec![
+        Node::Text(before.to_string()),
+        Node::Text(element.content.clone()),
+        Node::Text(after.to_string()),
+    ])])
 }
 
 /// Renders the contents of the doc para type but attempts to separate special values like parameters lists from the
