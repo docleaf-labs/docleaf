@@ -138,7 +138,7 @@ pub fn render_enum_value(
     }
 }
 
-fn render_linked_text_type(linked_text_type: &e::LinkedTextType) -> String {
+pub fn render_linked_text_type(linked_text_type: &e::LinkedTextType) -> String {
     let mut nodes = Vec::new();
 
     for entry in linked_text_type.content.iter() {

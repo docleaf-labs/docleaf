@@ -11,6 +11,24 @@
 */
 void example_function_for_c_groups(int arg1, bool arg2);
 
+
+/*! @ingroup group1
+  A struct with nested struct
+*/
+struct NestedStruct {
+  //! Documentation
+  int32_t id;
+};
+
+/*! @ingroup group1
+  A struct with nested struct
+*/
+struct OuterStruct {
+  //! Documentation
+  struct NestedStruct nested;
+};
+
+
 /*! @ingroup group1
   A struct
 */

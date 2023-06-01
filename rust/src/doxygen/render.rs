@@ -491,6 +491,12 @@ pub fn render_member_def(ctx: &Context, member_def: &e::MemberdefType) -> Vec<No
             signature_line = basic_signature_line(target);
         }
         e::DoxMemberKind::Variable => {
+            // Don't return any nodes for an anonymous union member as we don't have a good representation for it
+            // and it ends up confusing Sphinx domains a bit
+            if variable_member_def_is_anonymous_union(member_def) {
+                return vec![];
+            }
+
             // Early exit if there is domain information for rendering this entry
             if let Some(ref domain) = ctx.domain {
                 return vec![Node::DomainEntry(Box::new(DomainEntry {
@@ -534,6 +540,19 @@ pub fn render_member_def(ctx: &Context, member_def: &e::MemberdefType) -> Vec<No
         )],
         Box::new(content),
     )]
+}
+
+/// Returns true if the provided member_def represents an anonymous union to the best of our knowledge
+fn variable_member_def_is_anonymous_union(member_def: &e::MemberdefType) -> bool {
+    if member_def.kind != e::DoxMemberKind::Variable {
+        return false;
+    }
+
+    member_def
+        .definition
+        .as_ref()
+        .map(|str| str.starts_with("union "))
+        .unwrap_or(false)
 }
 
 fn member_kind_name(member_kind: &e::DoxMemberKind) -> String {
