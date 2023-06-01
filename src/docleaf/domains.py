@@ -9,18 +9,10 @@ from .errors import DocleafError
 null_handler = lambda finder: finder
 
 
-def enumerator_handler(finder):
-    # We pass EnumName::EnumeratorName to the CPPEnumeratorObject directive but we don't want to have the
-    # "EnumName::" part in the output so we find the 'desc_addname' that Sphinx uses for it and remove it
-    finder.declarator.children = [
-        node for node in finder.declarator.children if node.tagname != "desc_addname"
-    ]
-
-
-def member_handler(finder):
-    # We pass Struct::member to the CPPEnumeratorObject directive and Struct.member to the CStructObject
-    # directive but we don't want to have the "Struct::" part in either case in the output so we find
-    # the 'desc_addname' that Sphinx uses for it and remove it
+def strip_desc_addname(finder):
+    # We pass qualified values to the domain directives but we don't always want Sphinx to show the qualified part
+    # in the output as normally it is shown but the nesting of the entities so we strip it out which involes removing
+    # the 'desc_addname' node in the output
     finder.declarator.children = [
         node for node in finder.declarator.children if node.tagname != "desc_addname"
     ]
@@ -29,18 +21,18 @@ def member_handler(finder):
 cpp_domain = {
     "class": (cpp.CPPClassObject, "class", null_handler),
     "enum": (cpp.CPPEnumObject, "enum", null_handler),
-    "enumerator": (cpp.CPPEnumeratorObject, "enumerator", enumerator_handler),
-    "function": (cpp.CPPFunctionObject, "function", null_handler),
-    "member": (cpp.CPPMemberObject, "member", member_handler),
+    "enumerator": (cpp.CPPEnumeratorObject, "enumerator", strip_desc_addname),
+    "function": (cpp.CPPFunctionObject, "function", strip_desc_addname),
+    "member": (cpp.CPPMemberObject, "member", strip_desc_addname),
     "struct": (cpp.CPPClassObject, "struct", null_handler),
 }
 
 c_domain = {
     "define": (c.CMacroObject, "macro", null_handler),
     "enum": (c.CEnumObject, "enum", null_handler),
-    "enumerator": (c.CEnumeratorObject, "enumerator", enumerator_handler),
+    "enumerator": (c.CEnumeratorObject, "enumerator", strip_desc_addname),
     "function": (c.CFunctionObject, "function", null_handler),
-    "member": (c.CMemberObject, "member", member_handler),
+    "member": (c.CMemberObject, "member", strip_desc_addname),
     "struct": (c.CStructObject, "struct", null_handler),
     "typedef": (c.CTypeObject, "type", null_handler),
     "union": (c.CUnionObject, "union", null_handler),

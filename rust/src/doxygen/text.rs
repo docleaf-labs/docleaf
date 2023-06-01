@@ -63,7 +63,18 @@ pub fn render_member_def(domain: &Domain, member_def: &e::MemberdefType) -> Stri
                 .as_ref()
                 .map(render_linked_text_type)
                 .map(with_trailing_space),
-            Some(member_def.name.clone()),
+            match domain {
+                // If we're in the C++ domain then try to use the qualified name if possible so that it registers
+                // as a class member when it is a class member
+                Domain::CPlusPlus => Some(
+                    member_def
+                        .qualifiedname
+                        .as_ref()
+                        .unwrap_or(&member_def.name)
+                        .clone(),
+                ),
+                Domain::C => Some(member_def.name.clone()),
+            },
             member_def.argsstring.clone(),
         ]
         .into_iter()
