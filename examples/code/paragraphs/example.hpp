@@ -18,6 +18,5 @@ public:
       \param arg2 the second arg
     */
     void method_1(int arg1, bool arg2);
-
 };
 

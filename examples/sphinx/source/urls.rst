@@ -1,5 +1,5 @@
 URLs
 ====
 
-.. doxygenfunction:: example_function
+.. doxygenfunction:: urls_example_function
    :project: urls

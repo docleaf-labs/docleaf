@@ -20,24 +20,24 @@ Group 3
 .. doxygengroup:: group3
    :project: groups
 
-Group 3 with inner
+Group 4 with inner
 ------------------
 
-.. doxygengroup:: group3
+.. doxygengroup:: group4
    :project: groups
    :inner:
 
 Group 1 with content-only 
 -------------------------
 
-.. doxygengroup:: group1
+.. doxygengroup:: group6
    :project: groups
    :content-only:
 
 Group 1 in C Domain
 -------------------
 
-.. doxygengroup:: group1
+.. doxygengroup:: cgroup1
    :project: groups-c
 
 References

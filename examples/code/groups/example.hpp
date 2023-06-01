@@ -1,6 +1,8 @@
 /*! @defgroup group1 The First Group
     @defgroup group2 The Second Group
     @defgroup group3 The Third Group
+    @defgroup group4 The Fourth Group
+    @defgroup group6 The Sixth Group
 */
 
 /*! @ingroup group1
@@ -9,7 +11,7 @@
   \param arg1 the first arg
   \param arg2 the second arg
 */
-void example_function(int arg1, bool arg2);
+void group_example_function(int arg1, bool arg2);
 
 /*! @ingroup group1
   A class 
@@ -25,7 +27,7 @@ class ExampleClass {
   \param arg1 the first arg
   \param arg2 the second arg
 */
-void another_example_function(int arg1, bool arg2);
+void group_another_example_function(int arg1, bool arg2);
 
 /*! @ingroup group2
   A third function
@@ -33,7 +35,7 @@ void another_example_function(int arg1, bool arg2);
   \param arg1 the first arg
   \param arg2 the second arg
 */
-void a_third_example_function(int arg1, bool arg2);
+void group_a_third_example_function(int arg1, bool arg2);
 
 /*! @ingroup group3
   A fourth function
@@ -41,13 +43,29 @@ void a_third_example_function(int arg1, bool arg2);
   \param arg1 the first arg
   \param arg2 the second arg
 */
-void a_fourth_example_function(int arg1, bool arg2);
+void group_a_fourth_example_function(int arg1, bool arg2);
 
-/*! @defgroup group4 The Fourth Group
-    @ingroup group3
+/*! @ingroup group3
+  A fifth function
+
+  \param arg1 the first arg
+  \param arg2 the second arg
+*/
+void group_a_fifth_example_function(int arg1, bool arg2);
+
+/*! @defgroup group5 The Fifth Group
+    @ingroup group4
     A fifth function
 
     \param arg1 the first arg
     \param arg2 the second arg
 */
-void a_fifth_example_function(int arg1, bool arg2);
+void group_a_sixth_example_function(int arg1, bool arg2);
+
+/*! @ingroup group6
+  A seventh function
+
+  \param arg1 the first arg
+  \param arg2 the second arg
+*/
+void group_a_seventh_example_function(int arg1, bool arg2);

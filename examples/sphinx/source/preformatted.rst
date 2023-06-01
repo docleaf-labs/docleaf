@@ -2,6 +2,6 @@
 Preformatted
 ------------
 
-.. doxygenfunction:: example_function
+.. doxygenfunction:: preformatted_example_function
    :project: preformatted
 

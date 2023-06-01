@@ -10,4 +10,4 @@
   \param arg1 the first arg
   \param arg2 the second arg
 */
-void example_function(int arg1, bool arg2);
+void program_listing_example_function(int arg1, bool arg2);

@@ -6,5 +6,5 @@
   \param arg1 the first arg
   \param arg2 the second arg
 */
-void example_function(int arg1, bool arg2);
+void urls_example_function(int arg1, bool arg2);
 

@@ -1,10 +1,13 @@
 
 Html Only
----------
+=========
 
-.. doxygenfunction:: example_function
+.. doxygenfunction:: html_only_example_function
    :project: html-only
 
-.. doxygenfunction:: example_function
+Skip Nodes
+----------
+
+.. doxygenfunction:: html_only_second_example_function
    :project: html-only
    :skip-xml-nodes: htmlonly
