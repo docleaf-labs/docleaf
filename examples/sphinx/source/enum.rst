@@ -16,4 +16,9 @@ C Domain
 .. doxygenenum:: ExampleCEnum
    :project: enums-c
 
-Reference to a C enumerator :cpp:enumerator:`ExampleCEnum::kEntry1`,
+.. doxygengroup:: anon_enum_group
+   :project: enums-c
+
+Reference to a C enumerator :c:enumerator:`ExampleCEnum.kEntry1`,
+
+Reference to a C enumerator :c:enumerator:`kAnonEntry1`,
