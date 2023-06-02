@@ -113,6 +113,36 @@ union NamedUnion {
   uint32_t b_id  : 8;
 };
 
+
+/*! @ingroup cgroup1
+  Anonymous enum at the top level
+*/
+enum {
+      MY_ENTRY_1 = 0x00,
+      MY_ENTRY_2 = 0x01,
+};
+
+/*! @ingroup cgroup1
+  Define with the same name as the anonymous enum
+ */
+#define MY_ENTRY_1(_a, _b) \
+        OTHER_MACROS(_a, SOMETHING, ELSE, _b)
+
+
+/*! @ingroup cgroup1
+  Named union with struct inner
+ */
+union union_with_struct{
+	struct {
+		/** Entry a */
+		uint32_t a : 7;
+		/** Entry b */
+		uint32_t b : 1;
+	};
+	/** Raw value */
+	uint32_t raw_value;
+};
+
 /*! @ingroup cgroup2
   Another function
 

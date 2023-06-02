@@ -146,25 +146,25 @@ pub fn render_member_def(domain: &Domain, member_def: &e::MemberdefType) -> Stri
 
 pub fn render_enum_value(
     domain: &Domain,
-    enum_name: &str,
+    enum_name_or_anon_id: &str,
     enum_value: &e::EnumvalueType,
 ) -> String {
     match domain {
         // Use the enum name as a qualifier if we're in the C++ domain
         Domain::CPlusPlus => {
-            if enum_name.is_empty() {
+            if enum_name_or_anon_id.is_empty() {
                 enum_value.name.to_string()
             } else {
                 // Use the enum name as a qualifier if we're in the C++ domain
-                format!("{enum_name}::{}", enum_value.name)
+                format!("{enum_name_or_anon_id}::{}", enum_value.name)
             }
         }
         // Otherwise all we want is the enumerator name
         Domain::C => {
-            if enum_name.is_empty() {
+            if enum_name_or_anon_id.is_empty() {
                 enum_value.name.to_string()
             } else {
-                format!("{enum_name}.{}", enum_value.name)
+                format!("{enum_name_or_anon_id}.{}", enum_value.name)
             }
         }
     }

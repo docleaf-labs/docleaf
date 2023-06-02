@@ -399,11 +399,19 @@ pub fn render_member_def(ctx: &Context, member_def: &e::MemberdefType) -> Vec<No
 
     match member_def.kind {
         e::DoxMemberKind::Enum => {
+            // Pass through the name or the id if there is no name. The '@' is used by Sphinx to
+            // determine anonymous enums
+            let enum_name = if member_def.name.is_empty() {
+                format!("@{}", member_def.id)
+            } else {
+                member_def.name.clone()
+            };
+
             content_nodes.append(
                 &mut member_def
                     .enumvalue
                     .iter()
-                    .map(|element| render_enum_value(ctx, &member_def.name, element))
+                    .map(|element| render_enum_value(ctx, &enum_name, element))
                     .collect(),
             );
 
@@ -497,6 +505,13 @@ pub fn render_member_def(ctx: &Context, member_def: &e::MemberdefType) -> Vec<No
                 return vec![];
             }
 
+            // Don't return any nodes if the variable is actually a struct as we don't have a good representation
+            // for it. Nested structs are normally handled with the 'innerclass' xml node but that doesn't seem to
+            // work inside unions so we get this situation instead which isn't really valid
+            if variable_member_def_is_struct(member_def) {
+                return vec![];
+            }
+
             // Early exit if there is domain information for rendering this entry
             if let Some(ref domain) = ctx.domain {
                 return vec![Node::DomainEntry(Box::new(DomainEntry {
@@ -552,6 +567,19 @@ fn variable_member_def_is_anonymous_union(member_def: &e::MemberdefType) -> bool
         .definition
         .as_ref()
         .map(|str| str.starts_with("union "))
+        .unwrap_or(false)
+}
+
+/// Returns true if the provided member_def represents a struct to the best of our knowledge
+fn variable_member_def_is_struct(member_def: &e::MemberdefType) -> bool {
+    if member_def.kind != e::DoxMemberKind::Variable {
+        return false;
+    }
+
+    member_def
+        .definition
+        .as_ref()
+        .map(|str| str.starts_with("struct "))
         .unwrap_or(false)
 }
 
