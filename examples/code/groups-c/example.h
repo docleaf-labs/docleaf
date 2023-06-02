@@ -143,6 +143,24 @@ union union_with_struct{
 	uint32_t raw_value;
 };
 
+/*! @ingroup cgroup1
+  Struct with inline named union member
+ */
+struct struct_with_union {
+  /** Node */
+  union named_union {
+    /// Docs
+    struct a_t *a;
+    /// Docs
+    struct b_t *b;
+    /// Docs
+    struct c_t *c;
+  }
+  /// Docs
+  named_union_field;
+
+};
+
 /*! @ingroup cgroup2
   Another function
 

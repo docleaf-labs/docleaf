@@ -186,7 +186,7 @@ pub fn render_compound(
                 domain: domain.clone(),
                 type_: DomainEntryType::Class,
                 target,
-                declaration: text::render_compound_def(compound_def),
+                declaration: text::render_compound_def(domain, compound_def),
                 content: content_nodes,
             }))]);
         }
@@ -195,7 +195,7 @@ pub fn render_compound(
                 domain: domain.clone(),
                 type_: DomainEntryType::Struct,
                 target,
-                declaration: text::render_compound_def(compound_def),
+                declaration: text::render_compound_def(domain, compound_def),
                 content: content_nodes,
             }))]);
         }
@@ -204,7 +204,7 @@ pub fn render_compound(
                 domain: domain.clone(),
                 type_: DomainEntryType::Union,
                 target,
-                declaration: text::render_compound_def(compound_def),
+                declaration: text::render_compound_def(domain, compound_def),
                 content: content_nodes,
             }))]);
         }

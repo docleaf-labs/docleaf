@@ -35,7 +35,7 @@ c_domain = {
     "member": (c.CMemberObject, "member", strip_desc_addname),
     "struct": (c.CStructObject, "struct", null_handler),
     "typedef": (c.CTypeObject, "type", null_handler),
-    "union": (c.CUnionObject, "union", null_handler),
+    "union": (c.CUnionObject, "union", strip_desc_addname),
 }
 
 domains = {"cpp": cpp_domain, "c": c_domain}

@@ -5,9 +5,12 @@
 use crate::doxygen::compound::generated as e;
 use crate::Domain;
 
-pub fn render_compound_def(compound_def: &e::CompounddefType) -> String {
-    // format!("{} {}", render_compound_kind(&compound_def.kind), compound_def.compoundname)
-    compound_def.compoundname.to_string()
+pub fn render_compound_def(domain: &Domain, compound_def: &e::CompounddefType) -> String {
+    match domain {
+        Domain::CPlusPlus => compound_def.compoundname.to_string(),
+        // For C, for Sphinx, we want to express it with a '.' instead of '::'
+        Domain::C => compound_def.compoundname.replace("::", "."),
+    }
 }
 
 pub fn render_compound_kind(kind: &e::DoxCompoundKind) -> &'static str {
