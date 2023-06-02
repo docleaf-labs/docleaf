@@ -348,6 +348,8 @@ fn render_group(
                     .map(|entry| {
                         doxygen::render::render_compounddef_content(
                             &context,
+                            &compounddef.id,
+                            &compounddef.kind,
                             entry,
                             inner_groups,
                             &mut xml_loader,

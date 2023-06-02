@@ -84,12 +84,19 @@ impl Context {
 /// Entry point
 pub fn render_compounddef_content(
     ctx: &Context,
+    compound_id: &str,
+    compound_kind: &e::DoxCompoundKind,
     entry: CompoundDefEntry,
     inner_groups: bool,
     xml_loader: &mut crate::XmlLoader,
 ) -> anyhow::Result<Vec<Node>> {
     match entry {
-        CompoundDefEntry::SectionDef(section_def) => Ok(vec![render_section_def(ctx, section_def)]),
+        CompoundDefEntry::SectionDef(section_def) => Ok(vec![render_section_def(
+            ctx,
+            compound_id,
+            compound_kind,
+            section_def,
+        )]),
         CompoundDefEntry::Class(ref_type) => {
             let root = xml_loader.load(&ref_type.refid)?;
             render_compound(ctx, root.as_ref(), inner_groups, xml_loader)
@@ -136,7 +143,7 @@ pub fn render_compound(
         .map(|section_def| {
             (
                 section_def.kind.clone(),
-                render_section_def(&ctx, section_def),
+                render_section_def(&ctx, &compound_def.id, &compound_def.kind, section_def),
             )
         })
         .collect();
@@ -250,14 +257,21 @@ pub fn render_member(ctx: &Context, root: &e::DoxygenType, member_ref_id: &str) 
     });
 
     match member_def {
-        Some(member_def) => render_member_def(&ctx, member_def),
+        Some(member_def) => {
+            render_member_def(&ctx, &compound_def.id, &compound_def.kind, member_def)
+        }
         None => {
             vec![]
         }
     }
 }
 
-fn render_section_def(ctx: &Context, section_def: &e::SectiondefType) -> Node {
+fn render_section_def(
+    ctx: &Context,
+    compound_id: &str,
+    compound_kind: &e::DoxCompoundKind,
+    section_def: &e::SectiondefType,
+) -> Node {
     let mut content_nodes = vec![Node::Rubric(vec![Node::Text(section_title(
         &section_def.kind,
     ))])];
@@ -266,7 +280,7 @@ fn render_section_def(ctx: &Context, section_def: &e::SectiondefType) -> Node {
         &mut section_def
             .memberdef
             .iter()
-            .flat_map(|element| render_member_def(ctx, element))
+            .flat_map(|element| render_member_def(ctx, compound_id, compound_kind, element))
             .collect(),
     );
 
@@ -367,7 +381,12 @@ fn section_title(section_kind: &e::DoxSectionKind) -> String {
     }
 }
 
-pub fn render_member_def(ctx: &Context, member_def: &e::MemberdefType) -> Vec<Node> {
+pub fn render_member_def(
+    ctx: &Context,
+    compound_id: &str,
+    compound_kind: &e::DoxCompoundKind,
+    member_def: &e::MemberdefType,
+) -> Vec<Node> {
     let name = member_kind_name(&member_def.kind);
     let mut content_nodes = Vec::new();
 
@@ -505,10 +524,12 @@ pub fn render_member_def(ctx: &Context, member_def: &e::MemberdefType) -> Vec<No
                 return vec![];
             }
 
-            // Don't return any nodes if the variable is actually a struct as we don't have a good representation
-            // for it. Nested structs are normally handled with the 'innerclass' xml node but that doesn't seem to
-            // work inside unions so we get this situation instead which isn't really valid
-            if variable_member_def_is_struct(member_def) {
+            // Don't return any nodes if the variable is actually a struct inside a union and the struct's id matches
+            // the compound id that we're inside as this represents a confused, perhaps failure, case in Doxygen where
+            // this are not linked up properly and rendering the resulting entry wouldn't make sense
+            if compound_kind == &e::DoxCompoundKind::Union
+                && variable_member_def_is_struct_matching_id(member_def, compound_id)
+            {
                 return vec![];
             }
 
@@ -570,17 +591,43 @@ fn variable_member_def_is_anonymous_union(member_def: &e::MemberdefType) -> bool
         .unwrap_or(false)
 }
 
-/// Returns true if the provided member_def represents a struct to the best of our knowledge
-fn variable_member_def_is_struct(member_def: &e::MemberdefType) -> bool {
+/// Returns true if the provided member_def represents a struct with a type that matches the provided id. This helps
+/// us to determine which structs to filter out of the display.
+fn variable_member_def_is_struct_matching_id(member_def: &e::MemberdefType, id: &str) -> bool {
     if member_def.kind != e::DoxMemberKind::Variable {
         return false;
     }
 
-    member_def
+    let is_struct = member_def
         .definition
         .as_ref()
         .map(|str| str.starts_with("struct "))
-        .unwrap_or(false)
+        .unwrap_or(false);
+
+    if is_struct {
+        member_def
+            .type_
+            .as_ref()
+            .map(|type_| has_ref_matching(&type_, id))
+            .unwrap_or(false)
+    } else {
+        false
+    }
+}
+
+fn has_ref_matching(linked_text_type: &e::LinkedTextType, id: &str) -> bool {
+    for entry in linked_text_type.content.iter() {
+        match entry {
+            e::LinkedTextTypeItem::Ref(ref_) => {
+                if ref_.refid.as_str() == id {
+                    return true;
+                }
+            }
+            e::LinkedTextTypeItem::Text(_) => {}
+        }
+    }
+
+    false
 }
 
 fn member_kind_name(member_kind: &e::DoxMemberKind) -> String {
