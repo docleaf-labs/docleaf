@@ -93,7 +93,15 @@ pub fn render_member_def(domain: &Domain, member_def: &e::MemberdefType) -> Stri
                 format!("{}({})", member_def.name, params)
             }
         }
-        e::DoxMemberKind::Enum => member_def.name.clone(),
+        e::DoxMemberKind::Enum => {
+            // Some enums are anonymous so we use the name if it isn't empty but otherwise we use the auto-generated
+            // id from doxygen with an '@' at the start as '@' is how Sphinx distinguishes anonymous entries
+            if !member_def.name.is_empty() {
+                member_def.name.clone()
+            } else {
+                format!("@{}", member_def.id)
+            }
+        }
         e::DoxMemberKind::Typedef => member_def
             .definition
             .as_ref()
