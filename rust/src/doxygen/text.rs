@@ -151,7 +151,14 @@ pub fn render_enum_value(
 ) -> String {
     match domain {
         // Use the enum name as a qualifier if we're in the C++ domain
-        Domain::CPlusPlus => format!("{enum_name}::{}", enum_value.name),
+        Domain::CPlusPlus => {
+            if enum_name.is_empty() {
+                enum_value.name.to_string()
+            } else {
+                // Use the enum name as a qualifier if we're in the C++ domain
+                format!("{enum_name}::{}", enum_value.name)
+            }
+        }
         // Otherwise all we want is the enumerator name
         Domain::C => {
             if enum_name.is_empty() {
