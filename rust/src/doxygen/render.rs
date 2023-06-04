@@ -281,9 +281,10 @@ fn render_section_def(
     compound_kind: &e::DoxCompoundKind,
     section_def: &e::SectiondefType,
 ) -> Node {
-    let mut content_nodes = vec![Node::Rubric(vec![Node::Text(section_title(
-        &section_def.kind,
-    ))])];
+    let mut content_nodes = vec![Node::Rubric {
+        classes: vec!["docleaf-sectiondef-title".to_string()],
+        nodes: vec![Node::Text(section_title(&section_def.kind))],
+    }];
 
     content_nodes.append(
         &mut section_def

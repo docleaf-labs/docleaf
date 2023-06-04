@@ -200,7 +200,10 @@ pub enum Node {
         refuri: Option<String>,
         children: Vec<Node>,
     },
-    Rubric(Vec<Node>),
+    Rubric {
+        classes: Vec<String>,
+        nodes: Vec<Node>,
+    },
     Strong(Vec<Node>),
     Target(Target),
 
@@ -460,9 +463,14 @@ impl IntoPy<PyObject> for Node {
 
                 node(py, "reference", CallAs::SourceText, attributes, children).into_py(py)
             }
-            Self::Rubric(nodes) => {
-                node(py, "rubric", CallAs::Source, Attributes::new(), nodes).into_py(py)
-            }
+            Self::Rubric { classes, nodes } => node(
+                py,
+                "rubric",
+                CallAs::Source,
+                Attributes::from([("classes".into(), classes.into_py(py))]),
+                nodes,
+            )
+            .into_py(py),
             Self::Target(target) => node(
                 py,
                 "target",
