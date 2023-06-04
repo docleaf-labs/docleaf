@@ -96,6 +96,11 @@ typedef uint32_t my_type_def;
 typedef void (*func_ptr)(struct mytype *value, int err, uint8_t id);
 
 /*! @ingroup cgroup1
+  Struct with callable macro member
+ */
+typedef int (*func_typedef)(const struct a_t *a, enum b_t b, struct c_t *c);
+
+/*! @ingroup cgroup1
   A static inline function
 */
 static inline uint32_t get_end(uint32_t index)

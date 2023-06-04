@@ -110,19 +110,15 @@ pub fn render_member_def(domain: &Domain, member_def: &e::MemberdefType) -> Stri
                 format!("@{}", member_def.id)
             }
         }
-        e::DoxMemberKind::Typedef => member_def
-            .definition
-            .as_ref()
-            .map(|definition| {
-                definition
-                    // Remove the 'typedef ' prefix as the Sphinx C-Domain doesn't expect to see it
-                    .strip_prefix("typedef ")
-                    .unwrap_or(definition)
-                    .to_string()
-            })
-            // Note: This could be improved but we expect there to always be a definition
-            // in this case
-            .unwrap_or_else(|| member_def.name.clone()),
+        e::DoxMemberKind::Typedef => [
+            member_def.type_.as_ref().map(render_linked_text_type),
+            Some(member_def.name.clone()),
+            member_def.argsstring.clone(),
+        ]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<_>>()
+        .join(" "),
         e::DoxMemberKind::Variable => {
             let name = member_def
                 .qualifiedname
