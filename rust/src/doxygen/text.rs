@@ -36,8 +36,13 @@ pub fn render_compound_kind(kind: &e::DoxCompoundKind) -> &'static str {
     }
 }
 
-fn with_trailing_space(mut string: String) -> String {
-    string.push(' ');
+fn with_trailing(mut string: String, suffix: &str) -> String {
+    string.push_str(suffix);
+    string
+}
+
+fn with_leading(mut string: String, char: char) -> String {
+    string.insert(0, char);
     string
 }
 
@@ -65,7 +70,7 @@ pub fn render_member_def(domain: &Domain, member_def: &e::MemberdefType) -> Stri
                 .type_
                 .as_ref()
                 .map(render_linked_text_type)
-                .map(with_trailing_space),
+                .map(|str| with_trailing(str, " ")),
             match domain {
                 // If we're in the C++ domain then try to use the qualified name if possible so that it registers
                 // as a class member when it is a class member
@@ -152,24 +157,32 @@ pub fn render_enum_value(
     enum_name_or_anon_id: &str,
     enum_value: &e::EnumvalueType,
 ) -> String {
-    match domain {
-        // Use the enum name as a qualifier if we're in the C++ domain
-        Domain::CPlusPlus => {
-            if enum_name_or_anon_id.is_empty() {
-                enum_value.name.to_string()
-            } else {
-                // Use the enum name as a qualifier if we're in the C++ domain
-                format!("{enum_name_or_anon_id}::{}", enum_value.name)
-            }
-        }
-        // Otherwise all we want is the enumerator name
-        Domain::C => {
-            if enum_name_or_anon_id.is_empty() {
-                enum_value.name.to_string()
-            } else {
-                format!("{enum_name_or_anon_id}.{}", enum_value.name)
-            }
-        }
+    let separator = match domain {
+        // Use the enum name as a qualifier with :: if we're in the C++ domain
+        Domain::CPlusPlus => "::",
+        // Use the enum name as a qualifier with . if we're in the C domain
+        Domain::C => ".",
+    };
+
+    [
+        option_from_str(&enum_name_or_anon_id).map(|str| with_trailing(str.to_string(), separator)),
+        Some(enum_value.name.to_string()),
+        enum_value
+            .initializer
+            .as_ref()
+            .map(render_linked_text_type)
+            .map(|str| with_leading(str, ' ')),
+    ]
+    .into_iter()
+    .flatten()
+    .collect()
+}
+
+fn option_from_str(str: &str) -> Option<&str> {
+    if str.is_empty() {
+        None
+    } else {
+        Some(str)
     }
 }
 

@@ -2,11 +2,11 @@
 enum ExampleCEnum
 {
     kEntry1 = 0,     //!< First entry
-    kEntry2,         //!< Second
-    kEntry3          //!< And third
+    kEntry2 = 4,     //!< Second
+    kEntry3 = 8      //!< And third
 };
 
-/*! @defgroup anon_enum_group */
+/*! @defgroup anon_enum_group Anon Enum Group */
 /*! @ingroup anon_enum_group
 
 Anonymous enum */
