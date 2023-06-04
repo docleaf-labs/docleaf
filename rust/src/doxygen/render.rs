@@ -9,6 +9,15 @@ use crate::doxygen::nodes::{
 use crate::doxygen::text;
 use crate::XmlLoader;
 
+#[derive(Debug, Clone, PartialEq)]
+pub enum Skip {
+    /// Ignore any members which all caps names as in some situations it just means we haven't handled some
+    /// macros properly and we'd rather ignore them
+    MembersAllCaps,
+    /// Doxygen xml node to ignore whilst rendering - limited support
+    XmlNode(String),
+}
+
 fn domain_from_language(language: &e::DoxLanguage) -> Option<Domain> {
     match language {
         e::DoxLanguage::CPlusPlus => Some(Domain::CPlusPlus),
@@ -29,8 +38,8 @@ fn domain_from_location(ctx: &Context, location: &e::LocationType) -> Option<Dom
 #[derive(Debug, Default)]
 pub struct Context {
     pub domain: Option<Domain>,
-    /// A list of Doxygen xml nodes names to ignore when rendering. Limited support.
-    pub skip_xml_nodes: Vec<String>,
+    /// A list of things to ignore when rendering
+    pub skip: Vec<Skip>,
     pub extension_domain_lookup: HashMap<String, Domain>,
     pub enumerated_list_depth: usize,
 }
@@ -53,7 +62,7 @@ impl Context {
 
         Context {
             domain,
-            skip_xml_nodes: self.skip_xml_nodes.clone(),
+            skip: self.skip.clone(),
             extension_domain_lookup: self.extension_domain_lookup.clone(),
             enumerated_list_depth: self.enumerated_list_depth,
         }
@@ -62,7 +71,7 @@ impl Context {
     fn with_next_enumerated_list_level(&self) -> Context {
         Context {
             domain: self.domain.clone(),
-            skip_xml_nodes: self.skip_xml_nodes.clone(),
+            skip: self.skip.clone(),
             extension_domain_lookup: self.extension_domain_lookup.clone(),
             enumerated_list_depth: self.enumerated_list_depth + 1,
         }
@@ -387,6 +396,21 @@ pub fn render_member_def(
     compound_kind: &e::DoxCompoundKind,
     member_def: &e::MemberdefType,
 ) -> Vec<Node> {
+    // Ignore variables and functions that have all-caps names if the skip option is provided as they are often
+    // mishandled macros and shouldn't really be included in the output as they will cause issues with the Sphinx
+    // domains
+    //
+    // TODO: We could explore rendering them but not sending them through the domain handling process as that is
+    // the root of our issue
+    if matches!(
+        member_def.kind,
+        e::DoxMemberKind::Variable | e::DoxMemberKind::Function
+    ) && ctx.skip.contains(&Skip::MembersAllCaps)
+        && is_upper_snake_case(&member_def.name)
+    {
+        return Vec::new();
+    }
+
     let name = member_kind_name(&member_def.kind);
     let mut content_nodes = Vec::new();
 
@@ -576,6 +600,11 @@ pub fn render_member_def(
         )],
         Box::new(content),
     )]
+}
+
+fn is_upper_snake_case(str: &str) -> bool {
+    str.chars()
+        .all(|char| (char >= 'A' && char <= 'Z') || char == '_')
 }
 
 /// Returns true if the provided member_def represents an anonymous union to the best of our knowledge
@@ -1295,7 +1324,7 @@ fn render_doc_title_cmd_group(
         // This might not be the correct way to handle it but there isn't a reStructuredText line break node
         e::DocTitleCmdGroup::Linebreak => Some(Node::Text("\n".to_string())),
         e::DocTitleCmdGroup::Htmlonly(element) => {
-            if ctx.skip_xml_nodes.contains(&"htmlonly".to_string()) {
+            if ctx.skip.contains(&Skip::XmlNode("htmlonly".to_string())) {
                 None
             } else {
                 Some(Node::HtmlOnly(vec![Node::RawHtml(element.content.clone())]))

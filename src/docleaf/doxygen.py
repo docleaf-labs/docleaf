@@ -208,9 +208,9 @@ class StructDirective(BaseDirective):
         name = self.arguments[0]
         project = self.options["project"] or self.app.config.docleaf_default_project
         path = self.app.config.docleaf_projects[project]
-        skip_xml_nodes = get_skip_xml_nodes(self.app, self.options)
+        skip_settings = get_skip_settings(self.app, self.options)
         context = backend.Context(
-            skip_xml_nodes,
+            skip_settings,
             self.app.config.docleaf_domain_by_extension,
         )
         node_list = backend.render_struct(name, path, context, self.cache)
@@ -233,10 +233,10 @@ class EnumDirective(BaseDirective):
         name = self.arguments[0]
         project = self.options["project"] or self.app.config.docleaf_default_project
         path = self.app.config.docleaf_projects[project]
-        skip_xml_nodes = get_skip_xml_nodes(self.app, self.options)
+        skip_settings = get_skip_settings(self.app, self.options)
 
         context = backend.Context(
-            skip_xml_nodes,
+            skip_settings,
             self.app.config.docleaf_domain_by_extension,
         )
         node_list = backend.render_enum(name, path, context, self.cache)
@@ -259,10 +259,10 @@ class FunctionDirective(BaseDirective):
         name = self.arguments[0]
         project = self.options["project"] or self.app.config.docleaf_default_project
         path = self.app.config.docleaf_projects[project]
-        skip_xml_nodes = get_skip_xml_nodes(self.app, self.options)
+        skip_settings = get_skip_settings(self.app, self.options)
 
         context = backend.Context(
-            skip_xml_nodes,
+            skip_settings,
             self.app.config.docleaf_domain_by_extension,
         )
         node_list = backend.render_function(name, path, context, self.cache)
@@ -288,11 +288,11 @@ class GroupDirective(BaseDirective):
         project = self.options.get("project", self.app.config.docleaf_default_project)
         path = self.app.config.docleaf_projects[project]
 
-        skip_xml_nodes = get_skip_xml_nodes(self.app, self.options)
+        skip_settings = get_skip_settings(self.app, self.options)
         content_only = "content-only" in self.options
         inner_group = "inner" in self.options
         context = backend.Context(
-            skip_xml_nodes,
+            skip_settings,
             self.app.config.docleaf_domain_by_extension,
         )
         node_list = backend.render_group(
@@ -308,16 +308,16 @@ class GroupDirective(BaseDirective):
         return render_node_list(node_list, node_builder)
 
 
-def get_skip_xml_nodes(app, options):
+def get_skip_settings(app, options):
     """
     Get the option for the directive and fallback to the app option if not defined on the directive
     """
-    skip_xml_nodes = options.get("skip-xml-nodes", None)
-    if skip_xml_nodes is None:
-        skip_xml_nodes = app.config.docleaf_skip_doxygen_xml_nodes
+    skip_settings = options.get("skip", None)
+    if skip_settings is None:
+        skip_settings = app.config.docleaf_doxygen_skip
     else:
-        skip_xml_nodes = skip_xml_nodes.split(",")
-    return skip_xml_nodes
+        skip_settings = skip_settings.split(",")
+    return skip_settings
 
 
 class ExtensionContext:
@@ -345,7 +345,7 @@ def setup(app: Sphinx):
 
     app.add_config_value("docleaf_projects", {}, "env")
     app.add_config_value("docleaf_default_project", None, "env")
-    app.add_config_value("docleaf_skip_doxygen_xml_nodes", [], "env")
+    app.add_config_value("docleaf_doxygen_skip", [], "env")
     app.add_config_value("docleaf_domain_by_extension", {}, True)
 
     return {"version": __version__, "parallel_read_safe": True, "parallel_write_safe": True}

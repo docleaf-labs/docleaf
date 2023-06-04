@@ -11,6 +11,7 @@ use pyo3::prelude::*;
 use crate::doxygen::compound::generated as compound;
 use crate::doxygen::index::generated as index;
 use crate::doxygen::nodes::{Domain, Node};
+use crate::doxygen::render::Skip;
 
 /// Cache class exposed to python with no function methods beyond the
 /// constructor. Used to hold the Arc Mutex for the inner cache so that
@@ -78,7 +79,7 @@ impl CacheInner {
 
 #[pyclass]
 struct Context {
-    pub skip_xml_nodes: Vec<String>,
+    pub skip_settings: Vec<Skip>,
     pub domain_by_extension: HashMap<String, Domain>,
 }
 
@@ -86,14 +87,29 @@ struct Context {
 impl Context {
     #[new]
     fn new(
-        skip_xml_nodes: Vec<String>,
+        skip_settings: Vec<String>,
         domain_by_extension: HashMap<String, String>,
     ) -> PyResult<Self> {
         let domain_by_extension = Domain::create_lookup(domain_by_extension)
             .map_err(|err| PyValueError::new_err(format!("{}", err)))?;
 
+        let skip_settings = skip_settings
+            .into_iter()
+            .map(|value| {
+                if value == "members:all_caps" {
+                    Ok(Skip::MembersAllCaps)
+                } else {
+                    match value.strip_prefix("xml-nodes:") {
+                        Some(node) => Ok(Skip::XmlNode(node.to_string())),
+                        None => Err(format!("Unrecognised skip setting: {value}")),
+                    }
+                }
+            })
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|err| PyValueError::new_err(format!("{}", err)))?;
+
         Ok(Self {
-            skip_xml_nodes,
+            skip_settings,
             domain_by_extension,
         })
     }
@@ -178,7 +194,7 @@ fn render_struct(
 
             let context = doxygen::render::Context {
                 domain: None,
-                skip_xml_nodes: context.skip_xml_nodes.clone(),
+                skip: context.skip_settings.clone(),
                 extension_domain_lookup: context.domain_by_extension.clone(),
                 enumerated_list_depth: 0,
             };
@@ -252,7 +268,7 @@ fn render_member(
 
             let context = doxygen::render::Context {
                 domain: None,
-                skip_xml_nodes: context.skip_xml_nodes.clone(),
+                skip: context.skip_settings.clone(),
                 extension_domain_lookup: context.domain_by_extension.clone(),
                 enumerated_list_depth: 0,
             };
@@ -331,7 +347,7 @@ fn render_group(
 
             let context = doxygen::render::Context {
                 domain: None,
-                skip_xml_nodes: context.skip_xml_nodes.clone(),
+                skip: context.skip_settings.clone(),
                 extension_domain_lookup: context.domain_by_extension.clone(),
                 enumerated_list_depth: 0,
             };

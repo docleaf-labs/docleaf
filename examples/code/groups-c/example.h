@@ -161,6 +161,14 @@ struct struct_with_union {
 
 };
 
+/*! @ingroup cgroup1
+  Struct with callable macro member
+ */
+struct struct_with_macro_member {
+  //! Docs
+  LOG_MEMBERS(LOG);
+};
+
 /*! @ingroup cgroup2
   Another function
 
