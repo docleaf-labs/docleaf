@@ -192,7 +192,13 @@ pub fn render_linked_text_type(linked_text_type: &e::LinkedTextType) -> String {
     for entry in linked_text_type.content.iter() {
         match entry {
             e::LinkedTextTypeItem::Ref(ref content) => nodes.push(render_ref_text_type(content)),
-            e::LinkedTextTypeItem::Text(text) => nodes.push(text.clone()),
+            e::LinkedTextTypeItem::Text(text) => {
+                // HTML escaping is primarily done for enumerator initializers which seem to have html entities in
+                // them quite often. It is likely that it is also useful for other blocks of text but we generally
+                // don't render other blocks of of text with this set of 'text' functions as they are mostly focused
+                // on prepping text for signatures for Sphinx domain arguments
+                nodes.push(html_escape::decode_html_entities(text).to_string())
+            }
         }
     }
 
@@ -200,5 +206,9 @@ pub fn render_linked_text_type(linked_text_type: &e::LinkedTextType) -> String {
 }
 
 fn render_ref_text_type(ref_text_type: &e::RefTextType) -> String {
-    ref_text_type.content.clone()
+    // HTML escaping is primarily done for enumerator initializers which seem to have html entities in
+    // them quite often. It is likely that it is also useful for other blocks of text but we generally
+    // don't render other blocks of of text with this set of 'text' functions as they are mostly focused
+    // on prepping text for signatures for Sphinx domain arguments
+    html_escape::decode_html_entities(&ref_text_type.content).to_string()
 }
