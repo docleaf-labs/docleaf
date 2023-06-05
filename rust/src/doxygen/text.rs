@@ -167,11 +167,17 @@ pub fn render_enum_value(
             .initializer
             .as_ref()
             .map(render_linked_text_type)
-            .map(|str| with_leading(str, ' ')),
+            .map(|str| with_leading(str, ' '))
+            // Some initializers have new lines which make it into the XML but confuse Sphinx
+            .map(|str| collapse_lines(&str)),
     ]
     .into_iter()
     .flatten()
     .collect()
+}
+
+fn collapse_lines(str: &str) -> String {
+    str.replace("\n", " ")
 }
 
 fn option_from_str(str: &str) -> Option<&str> {

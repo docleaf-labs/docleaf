@@ -16,6 +16,9 @@ C Domain
 .. doxygenenum:: ExampleCEnum
    :project: enums-c
 
+.. doxygenenum:: MultiLineInitializer
+   :project: enums-c
+
 .. doxygengroup:: anon_enum_group
    :project: enums-c
 
