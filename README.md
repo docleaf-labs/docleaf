@@ -111,6 +111,22 @@ Generate documentation for specific group as specified within your Doxygen set u
   - `xml-nodes:<node name>` - Skips reading and process of the given XML node and its children in the Doxygen XML 
     output. Support is limited to the `htmlonly` node.
 
+## Performance
+
+When doing a clean build of the Zephyr RTOS documentation suite, Docleaf is 2.1x faster than Breathe.
+
+```
+Benchmark: docleaf
+  Time (mean ± σ):     180.383 s ±  3.213 s    [User: 448.242 s, System: 12.908 s]
+  Range (min … max):   175.695 s … 185.187 s    10 runs
+```
+
+```
+Benchmark: breathe
+  Time (mean ± σ):     389.658 s ±  5.271 s    [User: 1839.366 s, System: 24.895 s]
+  Range (min … max):   379.093 s … 394.315 s    10 runs
+```
+
 ## History
 
 Docleaf is written and maintained by the creator of the [Breathe](https://github.com/breathe-doc/breathe) project.
