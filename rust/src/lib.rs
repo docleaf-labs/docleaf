@@ -53,14 +53,6 @@ impl Context {
     }
 }
 
-#[pyclass]
-pub struct RenderOutput {
-    #[pyo3(get)]
-    pub nodes: Vec<Node>,
-    #[pyo3(get)]
-    pub xml_paths: Vec<String>,
-}
-
 #[pyfunction]
 fn render_class(name: String, path: String, cache: &TrackedCache) -> PyResult<Vec<Node>> {
     tracing::info!("render_class {} {}", name, path);
