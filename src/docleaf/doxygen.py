@@ -369,10 +369,6 @@ def update_sphinx_env_file_data(env: BuildEnvironment, xml_paths: List[str], rst
     if not hasattr(env, "docleaf_file_data"):
         env.docleaf_file_data = {}
 
-    # pprint.pprint(xml_files)
-    # pprint.pprint(rst_file)
-    # pprint.pprint(env.docleaf_file_data)
-
     for path in xml_paths:
         if path in env.docleaf_file_data:
             env.docleaf_file_data[path].rst_files.add(rst_file)
@@ -422,6 +418,18 @@ def calculate_files_to_refresh(app: Sphinx, env, added, changed, removed):
     return rst_files_to_refresh
 
 
+def purge_file_data(app, env, docname):
+    """
+    Clear any file data associated with 'docname' in accordance with the Sphinx API
+    """
+    logger.debug("docleaf: purge_file_data - %s", docname)
+    if not hasattr(app.env, "docleaf_file_data"):
+        return
+
+    for xml_file_path, info in app.env.docleaf_file_data.items():
+        info.rst_files.discard(docname)
+
+
 class ExtensionContext:
     def __init__(self, app: Sphinx, cache):
         self.app = app
@@ -451,5 +459,6 @@ def setup(app: Sphinx):
     app.add_config_value("docleaf_domain_by_extension", {}, True)
 
     app.connect("env-get-outdated", calculate_files_to_refresh)
+    app.connect("env-purge-doc", purge_file_data)
 
     return {"version": __version__, "parallel_read_safe": True, "parallel_write_safe": True}
