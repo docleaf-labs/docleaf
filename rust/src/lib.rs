@@ -115,8 +115,16 @@ impl Context {
     }
 }
 
+#[pyclass]
+pub struct RenderOutput {
+    #[pyo3(get)]
+    pub nodes: Vec<Node>,
+    #[pyo3(get)]
+    pub xml_paths: Vec<String>,
+}
+
 #[pyfunction]
-fn render_class(name: String, path: String, cache: &Cache) -> PyResult<Vec<Node>> {
+fn render_class(name: String, path: String, cache: &Cache) -> PyResult<RenderOutput> {
     tracing::info!("render_class {} {}", name, path);
     let xml_directory = PathBuf::from(path);
 
@@ -144,13 +152,26 @@ fn render_class(name: String, path: String, cache: &Cache) -> PyResult<Vec<Node>
             let compound_xml_path = std::fs::canonicalize(xml_path.join(format!("{ref_id}.xml")))?;
             let root = {
                 let mut cache = cache.inner.lock().unwrap();
-                cache.parse_compound(compound_xml_path)?
+                cache.parse_compound(compound_xml_path.clone())?
             };
 
             let context = doxygen::render::Context::default();
             let inner_groups = false;
-            doxygen::render::render_compound(&context, root.as_ref(), inner_groups, &mut xml_loader)
-                .map_err(|err| PyValueError::new_err(format!("{}", err)))
+            let (nodes, mut xml_paths) = doxygen::render::render_compound(
+                &context,
+                root.as_ref(),
+                inner_groups,
+                &mut xml_loader,
+            )
+            .map_err(|err| PyValueError::new_err(format!("{}", err)))?;
+
+            xml_paths.push(compound_xml_path);
+            let xml_paths: Vec<_> = xml_paths
+                .into_iter()
+                .map(|path| path.display().to_string())
+                .collect();
+
+            Ok(RenderOutput { nodes, xml_paths })
         }
         None => Err(PyValueError::new_err(format!(
             "Unable to find class matching '{name}'"
@@ -200,8 +221,14 @@ fn render_struct(
             };
 
             let inner_groups = false;
-            doxygen::render::render_compound(&context, root.as_ref(), inner_groups, &mut xml_loader)
-                .map_err(|err| PyValueError::new_err(format!("{}", err)))
+            let (nodes, _xml_nodes) = doxygen::render::render_compound(
+                &context,
+                root.as_ref(),
+                inner_groups,
+                &mut xml_loader,
+            )
+            .map_err(|err| PyValueError::new_err(format!("{}", err)))?;
+            Ok(nodes)
         }
         None => Err(PyValueError::new_err(format!(
             "Unable to find struct matching '{name}'"
@@ -373,18 +400,20 @@ fn render_group(
                     })
                     .collect::<Result<Vec<_>, _>>()?
                     .into_iter()
+                    .map(|(nodes, _xml_paths)| nodes)
                     .flatten()
                     .collect();
 
                 Ok(nodes)
             } else {
-                doxygen::render::render_compound(
+                let (nodes, _xml_paths) = doxygen::render::render_compound(
                     &context,
                     root.as_ref(),
                     inner_groups,
                     &mut xml_loader,
                 )
-                .map_err(|err| PyValueError::new_err(format!("{}", err)))
+                .map_err(|err| PyValueError::new_err(format!("{}", err)))?;
+                Ok(nodes)
             }
         }
         None => Err(PyValueError::new_err(format!(

@@ -1,5 +1,6 @@
 use std::cmp::Ordering;
 use std::collections::HashMap;
+use std::path::PathBuf;
 
 use crate::doxygen::compound::generated as e;
 use crate::doxygen::compound::CompoundDefEntry;
@@ -98,14 +99,17 @@ pub fn render_compounddef_content(
     entry: CompoundDefEntry,
     inner_groups: bool,
     xml_loader: &mut crate::XmlLoader,
-) -> anyhow::Result<Vec<Node>> {
+) -> anyhow::Result<(Vec<Node>, Vec<PathBuf>)> {
     match entry {
-        CompoundDefEntry::SectionDef(section_def) => Ok(vec![render_section_def(
-            ctx,
-            compound_id,
-            compound_kind,
-            section_def,
-        )]),
+        CompoundDefEntry::SectionDef(section_def) => Ok((
+            vec![render_section_def(
+                ctx,
+                compound_id,
+                compound_kind,
+                section_def,
+            )],
+            Vec::new(),
+        )),
         CompoundDefEntry::Class(ref_type) => {
             let root = xml_loader.load(&ref_type.refid)?;
             render_compound(ctx, root.as_ref(), inner_groups, xml_loader)
@@ -122,9 +126,11 @@ pub fn render_compound(
     root: &e::DoxygenType,
     inner_groups: bool,
     xml_loader: &mut XmlLoader,
-) -> anyhow::Result<Vec<Node>> {
+) -> anyhow::Result<(Vec<Node>, Vec<PathBuf>)> {
+    let mut xml_paths = Vec::new();
+
     let Some(ref compound_def) = root.compounddef else {
-        return Ok(Vec::new());
+        return Ok((Vec::new(), xml_paths));
     };
 
     let ctx = ctx.with_domain(
@@ -168,12 +174,10 @@ pub fn render_compound(
 
     for innerclass in compound_def.innerclass.iter() {
         let root = xml_loader.load(&innerclass.refid)?;
-        content_nodes.append(&mut render_compound(
-            &ctx,
-            root.as_ref(),
-            inner_groups,
-            xml_loader,
-        )?);
+        let (mut nodes, mut extra_xml_paths) =
+            render_compound(&ctx, root.as_ref(), inner_groups, xml_loader)?;
+        content_nodes.append(&mut nodes);
+        xml_paths.append(&mut extra_xml_paths);
     }
 
     // TODO: Add innernamepace rendering here
@@ -181,12 +185,10 @@ pub fn render_compound(
     if inner_groups {
         for innergroup in compound_def.innergroup.iter() {
             let root = xml_loader.load(&innergroup.refid)?;
-            content_nodes.append(&mut render_compound(
-                &ctx,
-                root.as_ref(),
-                inner_groups,
-                xml_loader,
-            )?);
+            let (mut nodes, mut extra_xml_paths) =
+                render_compound(&ctx, root.as_ref(), inner_groups, xml_loader)?;
+            content_nodes.append(&mut nodes);
+            xml_paths.append(&mut extra_xml_paths);
         }
     }
 
@@ -198,31 +200,40 @@ pub fn render_compound(
     // instead of attempting to render the compound signature ourselves
     match (ctx.domain.as_ref(), &compound_def.kind) {
         (Some(domain), e::DoxCompoundKind::Class) => {
-            return Ok(vec![Node::DomainEntry(Box::new(DomainEntry {
-                domain: domain.clone(),
-                type_: DomainEntryType::Class,
-                target,
-                declaration: text::render_compound_def(domain, compound_def),
-                content: content_nodes,
-            }))]);
+            return Ok((
+                vec![Node::DomainEntry(Box::new(DomainEntry {
+                    domain: domain.clone(),
+                    type_: DomainEntryType::Class,
+                    target,
+                    declaration: text::render_compound_def(domain, compound_def),
+                    content: content_nodes,
+                }))],
+                xml_paths,
+            ));
         }
         (Some(domain), e::DoxCompoundKind::Struct) => {
-            return Ok(vec![Node::DomainEntry(Box::new(DomainEntry {
-                domain: domain.clone(),
-                type_: DomainEntryType::Struct,
-                target,
-                declaration: text::render_compound_def(domain, compound_def),
-                content: content_nodes,
-            }))]);
+            return Ok((
+                vec![Node::DomainEntry(Box::new(DomainEntry {
+                    domain: domain.clone(),
+                    type_: DomainEntryType::Struct,
+                    target,
+                    declaration: text::render_compound_def(domain, compound_def),
+                    content: content_nodes,
+                }))],
+                xml_paths,
+            ));
         }
         (Some(domain), e::DoxCompoundKind::Union) => {
-            return Ok(vec![Node::DomainEntry(Box::new(DomainEntry {
-                domain: domain.clone(),
-                type_: DomainEntryType::Union,
-                target,
-                declaration: text::render_compound_def(domain, compound_def),
-                content: content_nodes,
-            }))]);
+            return Ok((
+                vec![Node::DomainEntry(Box::new(DomainEntry {
+                    domain: domain.clone(),
+                    type_: DomainEntryType::Union,
+                    target,
+                    declaration: text::render_compound_def(domain, compound_def),
+                    content: content_nodes,
+                }))],
+                xml_paths,
+            ));
         }
         _ => {}
     }
@@ -231,20 +242,23 @@ pub fn render_compound(
 
     let kind = text::render_compound_kind(&compound_def.kind);
 
-    Ok(vec![Node::Desc(
-        vec![Node::DescSignature(
-            SignatureType::MultiLine,
-            vec![Node::DescSignatureLine(vec![
-                Node::Target(target),
-                Node::DescSignatureKeyword(vec![Node::Text(kind.to_string())]),
-                Node::DescSignatureSpace,
-                Node::DescName(Box::new(Node::DescSignatureName(
-                    compound_def.compoundname.clone(),
-                ))),
-            ])],
+    Ok((
+        vec![Node::Desc(
+            vec![Node::DescSignature(
+                SignatureType::MultiLine,
+                vec![Node::DescSignatureLine(vec![
+                    Node::Target(target),
+                    Node::DescSignatureKeyword(vec![Node::Text(kind.to_string())]),
+                    Node::DescSignatureSpace,
+                    Node::DescName(Box::new(Node::DescSignatureName(
+                        compound_def.compoundname.clone(),
+                    ))),
+                ])],
+            )],
+            Box::new(content),
         )],
-        Box::new(content),
-    )])
+        xml_paths,
+    ))
 }
 
 /// Entry point
