@@ -287,6 +287,7 @@ class FunctionDirective(BaseDirective):
 
         tracked_cache = backend.TrackedCache(self.cache)
         node_list = backend.render_function(name, path, context, tracked_cache)
+        update_sphinx_env_file_data(self.app.env, tracked_cache.xml_paths(), self.app.env.docname)
 
         node_builder = NodeManager(self.state, self.get_directive_args())
         return render_node_list(node_list, node_builder)
@@ -326,6 +327,7 @@ class GroupDirective(BaseDirective):
             inner_group,
             tracked_cache,
         )
+        update_sphinx_env_file_data(self.app.env, tracked_cache.xml_paths(), self.app.env.docname)
 
         node_builder = NodeManager(self.state, self.get_directive_args())
         return render_node_list(node_list, node_builder)
