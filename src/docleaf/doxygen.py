@@ -199,12 +199,13 @@ class ClassDirective(BaseDirective):
         name = self.arguments[0]
         project = self.options["project"] or self.app.config.docleaf_default_project
         path = self.app.config.docleaf_projects[project]
-        result = backend.render_class(name, path, self.cache)
 
-        update_file_map(self.app.env, result.xml_paths, self.app.env.docname)
+        tracked_cache = backend.TrackedCache(self.cache)
+        node_list = backend.render_class(name, path, tracked_cache)
+        update_sphinx_env_file_data(self.app.env, tracked_cache.xml_paths(), self.app.env.docname)
 
         node_builder = NodeManager(self.state, self.get_directive_args())
-        return render_node_list(result.nodes, node_builder)
+        return render_node_list(node_list, node_builder)
 
 
 class StructDirective(BaseDirective):
@@ -225,7 +226,10 @@ class StructDirective(BaseDirective):
             skip_settings,
             self.app.config.docleaf_domain_by_extension,
         )
-        node_list = backend.render_struct(name, path, context, self.cache)
+
+        tracked_cache = backend.TrackedCache(self.cache)
+        node_list = backend.render_struct(name, path, context, tracked_cache)
+        update_sphinx_env_file_data(self.app.env, tracked_cache.xml_paths(), self.app.env.docname)
 
         node_builder = NodeManager(self.state, self.get_directive_args())
         return render_node_list(node_list, node_builder)
@@ -251,7 +255,10 @@ class EnumDirective(BaseDirective):
             skip_settings,
             self.app.config.docleaf_domain_by_extension,
         )
-        node_list = backend.render_enum(name, path, context, self.cache)
+
+        tracked_cache = backend.TrackedCache(self.cache)
+        node_list = backend.render_enum(name, path, context, tracked_cache)
+        update_sphinx_env_file_data(self.app.env, tracked_cache.xml_paths(), self.app.env.docname)
 
         node_builder = NodeManager(self.state, self.get_directive_args())
         return render_node_list(node_list, node_builder)
@@ -277,7 +284,9 @@ class FunctionDirective(BaseDirective):
             skip_settings,
             self.app.config.docleaf_domain_by_extension,
         )
-        node_list = backend.render_function(name, path, context, self.cache)
+
+        tracked_cache = backend.TrackedCache(self.cache)
+        node_list = backend.render_function(name, path, context, tracked_cache)
 
         node_builder = NodeManager(self.state, self.get_directive_args())
         return render_node_list(node_list, node_builder)
@@ -307,13 +316,15 @@ class GroupDirective(BaseDirective):
             skip_settings,
             self.app.config.docleaf_domain_by_extension,
         )
+
+        tracked_cache = backend.TrackedCache(self.cache)
         node_list = backend.render_group(
             name,
             path,
             context,
             content_only,
             inner_group,
-            self.cache,
+            tracked_cache,
         )
 
         node_builder = NodeManager(self.state, self.get_directive_args())
@@ -330,18 +341,6 @@ def get_skip_settings(app, options):
     else:
         skip_settings = skip_settings.split(",")
     return skip_settings
-
-
-class ExtensionContext:
-    def __init__(self, app: Sphinx, cache):
-        self.app = app
-        self.cache = cache
-
-
-def add_directive(context, name, Cls):
-    Cls.app = context.app
-    Cls.cache = context.cache
-    context.app.add_directive(name, Cls)
 
 
 class XmlFileInfo:
@@ -363,7 +362,7 @@ def hash_file(path):
         return hash.hexdigest()
 
 
-def update_file_map(env: BuildEnvironment, xml_paths: List[str], rst_file: str):
+def update_sphinx_env_file_data(env: BuildEnvironment, xml_paths: List[str], rst_file: str):
     """
     Update our file_data store to indicate which rst files are dependent on which xml files
     """
@@ -423,8 +422,20 @@ def calculate_files_to_refresh(app: Sphinx, env, added, changed, removed):
     return rst_files_to_refresh
 
 
+class ExtensionContext:
+    def __init__(self, app: Sphinx, cache):
+        self.app = app
+        self.cache = cache
+
+
+def add_directive(context, name, Cls):
+    Cls.app = context.app
+    Cls.cache = context.cache
+    context.app.add_directive(name, Cls)
+
+
 def setup(app: Sphinx):
-    cache = backend.Cache()
+    cache = backend.FileCache()
 
     context = ExtensionContext(app, cache)
 

@@ -1,81 +1,19 @@
+mod cache;
 mod doxygen;
 mod xml;
 
 use std::collections::HashMap;
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 
+use crate::cache::{Cache, FileCache, TrackedCache};
 use crate::doxygen::compound::generated as compound;
 use crate::doxygen::index::generated as index;
 use crate::doxygen::nodes::{Domain, Node};
 use crate::doxygen::render::Skip;
-
-/// Cache class exposed to python with no function methods beyond the
-/// constructor. Used to hold the Arc Mutex for the inner cache so that
-/// we can more easily mutate with actual cache data without worrying
-/// about accessing it through a &mut the whole time as it is easy to
-/// fall foul of the borrow checker with that.
-#[pyclass]
-struct Cache {
-    inner: Arc<Mutex<CacheInner>>,
-}
-
-#[pymethods]
-impl Cache {
-    #[new]
-    fn new() -> Self {
-        Self {
-            inner: Arc::new(Mutex::new(CacheInner::new())),
-        }
-    }
-}
-
-/// Inner cache data which is held with an Arc Mutex by the exposed Cache to
-/// make it easier to access and mutate.
-///
-/// Cache for xml files so that we don't have to keep re-reading them
-pub struct CacheInner {
-    index_cache: HashMap<PathBuf, Arc<index::DoxygenType>>,
-    compound_cache: HashMap<PathBuf, Arc<compound::DoxygenType>>,
-}
-
-impl CacheInner {
-    fn new() -> Self {
-        Self {
-            index_cache: HashMap::new(),
-            compound_cache: HashMap::new(),
-        }
-    }
-}
-
-impl CacheInner {
-    fn parse_index(&mut self, path: PathBuf) -> anyhow::Result<Arc<index::DoxygenType>> {
-        // TODO: Figure out how to avoid double lookup - previous attempt led to borrow checker errors
-        if self.index_cache.contains_key(&path) {
-            return Ok(self.index_cache.get(&path).unwrap().clone());
-        } else {
-            let info = doxygen::index::parse_file(&path)?;
-            let info = Arc::new(info);
-            self.index_cache.insert(path, info.clone());
-            Ok(info)
-        }
-    }
-
-    fn parse_compound(&mut self, path: PathBuf) -> anyhow::Result<Arc<compound::DoxygenType>> {
-        // TODO: Figure out how to avoid double lookup - previous attempt led to borrow checker errors
-        if self.compound_cache.contains_key(&path) {
-            return Ok(self.compound_cache.get(&path).unwrap().clone());
-        } else {
-            let info = doxygen::compound::parse_file(&path)?;
-            let info = Arc::new(info);
-            self.compound_cache.insert(path, info.clone());
-            Ok(info)
-        }
-    }
-}
 
 #[pyclass]
 struct Context {
@@ -124,7 +62,7 @@ pub struct RenderOutput {
 }
 
 #[pyfunction]
-fn render_class(name: String, path: String, cache: &Cache) -> PyResult<RenderOutput> {
+fn render_class(name: String, path: String, cache: &TrackedCache) -> PyResult<Vec<Node>> {
     tracing::info!("render_class {} {}", name, path);
     let xml_directory = PathBuf::from(path);
 
@@ -134,12 +72,9 @@ fn render_class(name: String, path: String, cache: &Cache) -> PyResult<RenderOut
     let xml_path = source_directory.join(xml_directory);
     let index_xml_path = std::fs::canonicalize(xml_path.join("index.xml"))?;
 
-    let mut xml_loader = XmlLoader::new(xml_path.clone(), cache.inner.clone());
+    let mut xml_loader = XmlLoader::new(xml_path.clone(), (*cache).clone());
 
-    let index = {
-        let mut cache = cache.inner.lock().unwrap();
-        cache.parse_index(index_xml_path)?
-    };
+    let index = cache.parse_index(index_xml_path)?;
 
     let compound = index
         .compound
@@ -150,28 +85,12 @@ fn render_class(name: String, path: String, cache: &Cache) -> PyResult<RenderOut
         Some(compound) => {
             let ref_id = &compound.refid;
             let compound_xml_path = std::fs::canonicalize(xml_path.join(format!("{ref_id}.xml")))?;
-            let root = {
-                let mut cache = cache.inner.lock().unwrap();
-                cache.parse_compound(compound_xml_path.clone())?
-            };
+            let root = cache.parse_compound(compound_xml_path.clone())?;
 
             let context = doxygen::render::Context::default();
             let inner_groups = false;
-            let (nodes, mut xml_paths) = doxygen::render::render_compound(
-                &context,
-                root.as_ref(),
-                inner_groups,
-                &mut xml_loader,
-            )
-            .map_err(|err| PyValueError::new_err(format!("{}", err)))?;
-
-            xml_paths.push(compound_xml_path);
-            let xml_paths: Vec<_> = xml_paths
-                .into_iter()
-                .map(|path| path.display().to_string())
-                .collect();
-
-            Ok(RenderOutput { nodes, xml_paths })
+            doxygen::render::render_compound(&context, root.as_ref(), inner_groups, &mut xml_loader)
+                .map_err(|err| PyValueError::new_err(format!("{}", err)))
         }
         None => Err(PyValueError::new_err(format!(
             "Unable to find class matching '{name}'"
@@ -184,7 +103,7 @@ fn render_struct(
     name: String,
     path: String,
     context: &Context,
-    cache: &Cache,
+    cache: &TrackedCache,
 ) -> PyResult<Vec<Node>> {
     tracing::info!("render_struct {} {}", name, path);
     let xml_directory = PathBuf::from(path);
@@ -195,7 +114,7 @@ fn render_struct(
     let xml_path = source_directory.join(xml_directory);
     let index_xml_path = std::fs::canonicalize(xml_path.join("index.xml"))?;
 
-    let mut xml_loader = XmlLoader::new(xml_path.clone(), cache.inner.clone());
+    let mut xml_loader = XmlLoader::new(xml_path.clone(), cache.clone());
 
     let index = doxygen::index::parse_file(&index_xml_path)?;
 
@@ -208,10 +127,7 @@ fn render_struct(
         Some(compound) => {
             let ref_id = &compound.refid;
             let compound_xml_path = std::fs::canonicalize(xml_path.join(format!("{ref_id}.xml")))?;
-            let root = {
-                let mut cache = cache.inner.lock().unwrap();
-                cache.parse_compound(compound_xml_path)?
-            };
+            let root = cache.parse_compound(compound_xml_path.clone())?;
 
             let context = doxygen::render::Context {
                 domain: None,
@@ -221,14 +137,8 @@ fn render_struct(
             };
 
             let inner_groups = false;
-            let (nodes, _xml_nodes) = doxygen::render::render_compound(
-                &context,
-                root.as_ref(),
-                inner_groups,
-                &mut xml_loader,
-            )
-            .map_err(|err| PyValueError::new_err(format!("{}", err)))?;
-            Ok(nodes)
+            doxygen::render::render_compound(&context, root.as_ref(), inner_groups, &mut xml_loader)
+                .map_err(|err| PyValueError::new_err(format!("{}", err)))
         }
         None => Err(PyValueError::new_err(format!(
             "Unable to find struct matching '{name}'"
@@ -241,7 +151,7 @@ fn render_enum(
     name: String,
     path: String,
     context: &Context,
-    cache: &Cache,
+    cache: &TrackedCache,
 ) -> PyResult<Vec<Node>> {
     tracing::info!("render_enum {} {}", name, path);
     render_member(name, index::MemberKind::Enum, path, context, cache)
@@ -252,7 +162,7 @@ fn render_function(
     name: String,
     path: String,
     context: &Context,
-    cache: &Cache,
+    cache: &TrackedCache,
 ) -> PyResult<Vec<Node>> {
     tracing::info!("render_function {} {}", name, path);
     render_member(name, index::MemberKind::Function, path, context, cache)
@@ -263,7 +173,7 @@ fn render_member(
     kind: index::MemberKind,
     path: String,
     context: &Context,
-    cache: &Cache,
+    cache: &TrackedCache,
 ) -> PyResult<Vec<Node>> {
     let xml_directory = PathBuf::from(path);
 
@@ -288,10 +198,7 @@ fn render_member(
         Some((compound, member)) => {
             let ref_id = &compound.refid;
             let compound_xml_path = std::fs::canonicalize(xml_path.join(format!("{ref_id}.xml")))?;
-            let root = {
-                let mut cache = cache.inner.lock().unwrap();
-                cache.parse_compound(compound_xml_path)?
-            };
+            let root = cache.parse_compound(compound_xml_path)?;
 
             let context = doxygen::render::Context {
                 domain: None,
@@ -316,24 +223,22 @@ fn render_member(
 /// caching the resulting parsed data in the cache
 pub struct XmlLoader {
     root: PathBuf,
-    cache: Arc<Mutex<CacheInner>>,
+    cache: TrackedCache,
 }
 
 impl XmlLoader {
-    pub fn new(root: PathBuf, cache: Arc<Mutex<CacheInner>>) -> Self {
+    pub fn new(root: PathBuf, cache: TrackedCache) -> Self {
         Self { root, cache }
     }
 
     pub fn load_index(&mut self) -> anyhow::Result<Arc<index::DoxygenType>> {
         let index_xml_path = std::fs::canonicalize(self.root.join("index.xml"))?;
-        let mut cache = self.cache.lock().unwrap();
-        cache.parse_index(index_xml_path)
+        self.cache.parse_index(index_xml_path)
     }
 
     pub fn load(&mut self, ref_id: &str) -> anyhow::Result<Arc<compound::DoxygenType>> {
         let xml_path = std::fs::canonicalize(self.root.join(format!("{ref_id}.xml")))?;
-        let mut cache = self.cache.lock().unwrap();
-        cache.parse_compound(xml_path)
+        self.cache.parse_compound(xml_path)
     }
 }
 
@@ -345,7 +250,7 @@ fn render_group(
     content_only: bool,
     // TODO: Use 'filter' concept instead of passing this bool around
     inner_groups: bool,
-    cache: &Cache,
+    cache: &TrackedCache,
 ) -> PyResult<Vec<Node>> {
     tracing::info!("render_group {} {}", name, path);
     let xml_directory = PathBuf::from(path);
@@ -355,7 +260,7 @@ fn render_group(
 
     let xml_path = source_directory.join(xml_directory);
 
-    let mut xml_loader = XmlLoader::new(xml_path, cache.inner.clone());
+    let mut xml_loader = XmlLoader::new(xml_path, (*cache).clone());
     let compound_ref_id = {
         let index = xml_loader.load_index()?;
 
@@ -386,7 +291,7 @@ fn render_group(
 
                 let contents =
                     doxygen::compound::extract_compounddef_contents(compounddef, inner_groups);
-                let nodes = contents
+                Ok(contents
                     .into_iter()
                     .map(|entry| {
                         doxygen::render::render_compounddef_content(
@@ -400,20 +305,16 @@ fn render_group(
                     })
                     .collect::<Result<Vec<_>, _>>()?
                     .into_iter()
-                    .map(|(nodes, _xml_paths)| nodes)
                     .flatten()
-                    .collect();
-
-                Ok(nodes)
+                    .collect())
             } else {
-                let (nodes, _xml_paths) = doxygen::render::render_compound(
+                doxygen::render::render_compound(
                     &context,
                     root.as_ref(),
                     inner_groups,
                     &mut xml_loader,
                 )
-                .map_err(|err| PyValueError::new_err(format!("{}", err)))?;
-                Ok(nodes)
+                .map_err(|err| PyValueError::new_err(format!("{}", err)))
             }
         }
         None => Err(PyValueError::new_err(format!(
@@ -438,7 +339,8 @@ fn backend(_py: Python, module: &PyModule) -> PyResult<()> {
             .init();
     }
 
-    module.add_class::<Cache>()?;
+    module.add_class::<FileCache>()?;
+    module.add_class::<TrackedCache>()?;
     module.add_class::<Context>()?;
 
     module.add_wrapped(pyo3::wrap_pyfunction!(render_class))?;
