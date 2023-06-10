@@ -227,7 +227,7 @@ jobs:
     runs-on: ubuntu-latest
     if: "startsWith(github.ref, 'refs/tags/')"
     # needs: [ macos, windows, linux, linux-cross, musllinux, musllinux-cross ]
-    needs: [ linux ]
+    needs: [ linux, windows ]
     steps:
       - uses: actions/download-artifact@v3
         with:
