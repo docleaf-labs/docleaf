@@ -38,32 +38,38 @@ jobs:
   #         name: wheels
   #         path: dist
 
-  # windows:
-  #   runs-on: windows-latest
-  #   strategy:
-  #     matrix:
-  #       target: [x64, x86]
-  #   steps:
-  #     - uses: actions/checkout@v3
-  #     - uses: actions/setup-python@v4
-  #       with:
-  #         python-version: 3.9
-  #         architecture: ${{ matrix.target }}
-  #     - uses: dtolnay/rust-toolchain@stable
-  #     - name: Build wheels
-  #       uses: PyO3/maturin-action@v1
-  #       with:
-  #         target: ${{ matrix.target }}
-  #         args: --release --out dist -m python/Cargo.toml
-  #     - name: Install built wheel
-  #       run: |
-  #         pip install crfs --no-index --find-links dist --force-reinstall
-  #         python -c "import crfs"
-  #     - name: Upload wheels
-  #       uses: actions/upload-artifact@v3
-  #       with:
-  #         name: wheels
-  #         path: dist
+  windows:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        python-version: ['3.7', '3.8', '3.9', '3.10', '3.11']
+        target: [x64, x86]
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        architecture: ${{ matrix.target }}
+    - name: Install poetry
+      uses: abatilo/actions-poetry@v2
+      with:
+        poetry-version: 1.3.2
+    - uses: dtolnay/rust-toolchain@stable
+    - name: Build wheels
+      uses: PyO3/maturin-action@v1
+      with:
+        target: ${{ matrix.target }}
+        args: --interpreter ${{ matrix.python-version }} --release --out dist
+    - name: Install built wheel
+      run: |
+        # Install built package directly from whl and check we can import it
+        pip install dist/*.whl
+        python -c "import docleaf"
+    - name: Upload wheels
+      uses: actions/upload-artifact@v3
+      with:
+        name: wheels
+        path: dist
 
   linux:
     runs-on: ubuntu-latest
