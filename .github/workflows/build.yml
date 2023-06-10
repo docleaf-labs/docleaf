@@ -63,7 +63,7 @@ jobs:
     - name: Install built wheel
       run: |
         # Install built package directly from whl and check we can import it
-        pip install &(Resolve-Path 'dist\*.whl')
+        pip install (Resolve-Path 'dist\*.whl')
         python -c "import docleaf"
     - name: Upload wheels
       uses: actions/upload-artifact@v3
