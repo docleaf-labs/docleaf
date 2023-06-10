@@ -4,16 +4,26 @@ version = "0.3.0"
 description = "Integrate your doxygen-generated technical documentation into Sphinx"
 license = { file = "LICENSE.md" }
 readme = "README.md"
+requires-python = ">=3.7"
+keywords = ["sphinx", "doxygen"]
 authors = [
-    { name = "Michael Jones" }
+    { name = "Michael Jones", email = "michael.jones@docleaf.io" }
 ]
 dependencies = [
     "docutils>=0.12",
     "Sphinx>=4.0,<6,!=5.0.0"
 ]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Framework :: Sphinx :: Extension",
+    "Programming Language :: Python :: 3",
+    "Topic :: Documentation",
+]
 
 [project.urls]
+homepage = "https://docleaf.io"
 repository = "https://github.com/docleaf-labs/docleaf"
+changelog = "https://github.com/docleaf-labs/docleaf/blob/main/CHANGELOG.md"
 
 [build-system]
 requires = ["maturin>=0.14,<0.15"]
@@ -41,8 +51,10 @@ version = "0.3.0"
 description = "Integrate your doxygen-generated technical documentation into Sphinx"
 license = "Parity-7.0.0"
 readme = "README.md"
+homepage = "https://docleaf.io"
+keywords = ["sphinx", "doxygen"]
 authors = [
-    "Michael Jones"
+    "Michael Jones <michael.jones@docleaf.io>"
 ]
 
 [tool.poetry.dependencies]
