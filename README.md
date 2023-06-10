@@ -1,5 +1,10 @@
+<h1 align="center">
+  Docleaf
+</h1>
 
-# Docleaf
+<p align="center">
+   Your technical docs, beautifully integrated
+</p>
 
 Docleaf smoothly integrates your technical and long-form documentation. It is a Sphinx extension which reads Doxygen
 XML output and formats the information seamlessly with your user documentation.
