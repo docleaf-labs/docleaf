@@ -26,16 +26,17 @@ jobs:
         args: --interpreter ${{ matrix.python-version }} --release --out dist
     - name: Install built wheel - x86_64
       run: |
-        pip install crfs --no-index --find-links dist --force-reinstall
-        python -c "import crfs"
+        # Install built package directly from whl and check we can import it
+        pip install dist/*.whl
+        python -c "import docleaf"
     - name: Build wheels - universal2
       uses: PyO3/maturin-action@v1
       with:
-        args: --release --universal2 --out dist -m python/Cargo.toml
+        args: --interpreter ${{ matrix.python-version }} --release --universal2 --out dist
     - name: Install built wheel - universal2
       run: |
-        # Install built package directly from whl and check we can import it
-        pip install dist/*.whl
+        # Install built package directly from universal2 whl and check we can import it
+        pip install dist/*universal2.whl
         python -c "import docleaf"
     - name: Upload wheels
       uses: actions/upload-artifact@v3
