@@ -11,7 +11,7 @@ Methods
 .. doxygenclass:: Example
    :project: class_methods
 
-   
+
 References
 ~~~~~~~~~~
 
