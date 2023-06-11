@@ -1,5 +1,10 @@
+<h1 align="center">
+  Docleaf
+</h1>
 
-# Docleaf
+<p align="center">
+   Your technical docs, beautifully integrated
+</p>
 
 Docleaf smoothly integrates your technical and long-form documentation. It is a Sphinx extension which reads Doxygen
 XML output and formats the information seamlessly with your user documentation.
@@ -8,8 +13,9 @@ XML output and formats the information seamlessly with your user documentation.
 
 Docleaf is licensed under the [Parity Public License](./LICENSE.md). The Parity license allows permissive use of 
 Docleaf to help document open source projects. If you have a closed source project that you would like to document with
-Docleaf then you must purchase a commercial license. For further information please email
-[support@docleaf.io](mailto:support@docleaf.io).
+Docleaf then you must purchase a commercial license.
+
+For further information please email: [support@docleaf.io](mailto:support@docleaf.io)
 
 ## Installation
 
