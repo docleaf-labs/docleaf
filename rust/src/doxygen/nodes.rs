@@ -1,6 +1,11 @@
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    path::{Path, PathBuf},
+};
 
 use pyo3::prelude::*;
+
+use crate::doxygen::compound::generated as e;
 
 #[derive(Clone)]
 pub enum CallAs {
@@ -156,10 +161,39 @@ impl IntoPy<PyObject> for DomainEntryType {
 }
 
 #[derive(Debug, Clone)]
+pub struct Location {
+    pub path: String,
+    pub line: i32,
+}
+
+impl Location {
+    pub fn from(root: &Path, location_type: &e::LocationType) -> Option<Self> {
+        location_type.line.map(|line| Self {
+            path: root
+                .join(&PathBuf::from(&location_type.file))
+                .display()
+                .to_string(),
+            line,
+        })
+    }
+}
+
+impl IntoPy<PyObject> for Location {
+    fn into_py(self, py: Python<'_>) -> PyObject {
+        HashMap::<String, PyObject>::from([
+            ("path".into(), self.path.into_py(py)),
+            ("line".into(), self.line.into_py(py)),
+        ])
+        .into_py(py)
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct DomainEntry {
     pub domain: Domain,
     pub type_: DomainEntryType,
     pub target: Target,
+    pub location: Option<Location>,
     pub declaration: String,
     pub content: Vec<Node>,
 }
@@ -286,12 +320,18 @@ impl IntoPy<PyObject> for Node {
                 py,
                 "domain_entry",
                 CallAs::Args,
-                Attributes::from([
-                    ("domain".into(), entry.domain.into_py(py)),
-                    ("type".into(), entry.type_.into_py(py)),
-                    ("declaration".into(), entry.declaration.into_py(py)),
-                    ("target".into(), entry.target.into_py(py)),
-                ]),
+                [
+                    Some(("domain".into(), entry.domain.into_py(py))),
+                    Some(("type".into(), entry.type_.into_py(py))),
+                    Some(("declaration".into(), entry.declaration.into_py(py))),
+                    entry
+                        .location
+                        .map(|loc| ("location".into(), loc.into_py(py))),
+                    Some(("target".into(), entry.target.into_py(py))),
+                ]
+                .into_iter()
+                .flatten()
+                .collect::<HashMap<_, _>>(),
                 entry.content,
             )
             .into_py(py),

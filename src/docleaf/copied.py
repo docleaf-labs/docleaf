@@ -8,6 +8,7 @@ class NodeFinder(nodes.SparseNodeVisitor):
     def __init__(self, document):
         super().__init__(document)
         self.declarator = None
+        self.signature = None
         self.content = None
 
     def visit_desc_signature(self, node):
@@ -15,6 +16,7 @@ class NodeFinder(nodes.SparseNodeVisitor):
         # rather than "template <...>". In Sphinx 1.4.1 we'll be able to use sphinx_cpp_tagname:
         # https://github.com/michaeljones/breathe/issues/242
         self.declarator = node
+        self.signature = node
 
     def visit_desc_signature_line(self, node):
         # In sphinx 1.5, there is now a desc_signature_line node within the desc_signature

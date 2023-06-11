@@ -1,10 +1,11 @@
 use std::cmp::Ordering;
 use std::collections::HashMap;
+use std::path::PathBuf;
 
 use crate::doxygen::compound::generated as e;
 use crate::doxygen::compound::CompoundDefEntry;
 use crate::doxygen::nodes::{
-    Domain, DomainEntry, DomainEntryType, ListEnumType, Node, SignatureType, Target,
+    Domain, DomainEntry, DomainEntryType, ListEnumType, Location, Node, SignatureType, Target,
 };
 use crate::doxygen::text;
 use crate::XmlLoader;
@@ -35,8 +36,9 @@ fn domain_from_location(ctx: &Context, location: &e::LocationType) -> Option<Dom
 }
 
 /// Information and options for rendering
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Context {
+    pub project_root: PathBuf,
     pub domain: Option<Domain>,
     /// A list of things to ignore when rendering
     pub skip: Vec<Skip>,
@@ -61,6 +63,7 @@ impl Context {
             .or(self.domain.clone());
 
         Context {
+            project_root: self.project_root.clone(),
             domain,
             skip: self.skip.clone(),
             extension_domain_lookup: self.extension_domain_lookup.clone(),
@@ -70,6 +73,7 @@ impl Context {
 
     fn with_next_enumerated_list_level(&self) -> Context {
         Context {
+            project_root: self.project_root.clone(),
             domain: self.domain.clone(),
             skip: self.skip.clone(),
             extension_domain_lookup: self.extension_domain_lookup.clone(),
@@ -203,6 +207,10 @@ pub fn render_compound(
                 type_: DomainEntryType::Class,
                 target,
                 declaration: text::render_compound_def(domain, compound_def),
+                location: compound_def
+                    .location
+                    .as_ref()
+                    .and_then(|loc| Location::from(&ctx.project_root, &loc)),
                 content: content_nodes,
             }))]);
         }
@@ -212,6 +220,10 @@ pub fn render_compound(
                 type_: DomainEntryType::Struct,
                 target,
                 declaration: text::render_compound_def(domain, compound_def),
+                location: compound_def
+                    .location
+                    .as_ref()
+                    .and_then(|loc| Location::from(&ctx.project_root, &loc)),
                 content: content_nodes,
             }))]);
         }
@@ -221,6 +233,10 @@ pub fn render_compound(
                 type_: DomainEntryType::Union,
                 target,
                 declaration: text::render_compound_def(domain, compound_def),
+                location: compound_def
+                    .location
+                    .as_ref()
+                    .and_then(|loc| Location::from(&ctx.project_root, &loc)),
                 content: content_nodes,
             }))]);
         }
@@ -466,6 +482,10 @@ pub fn render_member_def(
                     type_: DomainEntryType::Enum,
                     target,
                     declaration: text::render_member_def(domain, member_def),
+                    location: member_def
+                        .location
+                        .as_ref()
+                        .and_then(|loc| Location::from(&ctx.project_root, &loc)),
                     content: content_nodes,
                 }))];
             }
@@ -480,6 +500,10 @@ pub fn render_member_def(
                     type_: DomainEntryType::Function,
                     target,
                     declaration: text::render_member_def(domain, member_def),
+                    location: member_def
+                        .location
+                        .as_ref()
+                        .and_then(|loc| Location::from(&ctx.project_root, &loc)),
                     content: content_nodes,
                 }))];
             }
@@ -536,6 +560,10 @@ pub fn render_member_def(
                     type_: DomainEntryType::Define,
                     target,
                     declaration: text::render_member_def(domain, member_def),
+                    location: member_def
+                        .location
+                        .as_ref()
+                        .and_then(|loc| Location::from(&ctx.project_root, &loc)),
                     content: content_nodes,
                 }))];
             }
@@ -567,6 +595,10 @@ pub fn render_member_def(
                     type_: DomainEntryType::Member,
                     target,
                     declaration: text::render_member_def(domain, member_def),
+                    location: member_def
+                        .location
+                        .as_ref()
+                        .and_then(|loc| Location::from(&ctx.project_root, &loc)),
                     content: content_nodes,
                 }))];
             }
@@ -581,6 +613,10 @@ pub fn render_member_def(
                     type_: DomainEntryType::Typedef,
                     target,
                     declaration: text::render_member_def(domain, member_def),
+                    location: member_def
+                        .location
+                        .as_ref()
+                        .and_then(|loc| Location::from(&ctx.project_root, &loc)),
                     content: content_nodes,
                 }))];
             }
@@ -699,6 +735,7 @@ pub fn render_enum_value(ctx: &Context, enum_name: &str, enum_value: &e::Enumval
             type_: DomainEntryType::Enumerator,
             target,
             declaration: text::render_enum_value(domain, enum_name, enum_value),
+            location: None,
             content: content_nodes,
         }))
     } else {

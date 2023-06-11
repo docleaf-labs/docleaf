@@ -17,6 +17,7 @@ use crate::doxygen::render::Skip;
 
 #[pyclass]
 struct Context {
+    pub project_root: PathBuf,
     pub skip_settings: Vec<Skip>,
     pub domain_by_extension: HashMap<String, Domain>,
 }
@@ -25,6 +26,7 @@ struct Context {
 impl Context {
     #[new]
     fn new(
+        project_root: String,
         skip_settings: Vec<String>,
         domain_by_extension: HashMap<String, String>,
     ) -> PyResult<Self> {
@@ -47,6 +49,7 @@ impl Context {
             .map_err(|err| PyValueError::new_err(format!("{}", err)))?;
 
         Ok(Self {
+            project_root: PathBuf::from(project_root),
             skip_settings,
             domain_by_extension,
         })
@@ -54,14 +57,17 @@ impl Context {
 }
 
 #[pyfunction]
-fn render_class(name: String, path: String, cache: &TrackedCache) -> PyResult<Vec<Node>> {
+fn render_class(
+    name: String,
+    path: String,
+    context: &Context,
+    cache: &TrackedCache,
+) -> PyResult<Vec<Node>> {
     tracing::info!("render_class {} {}", name, path);
     let xml_directory = PathBuf::from(path);
 
     let cwd = std::env::current_dir()?;
-    let source_directory = cwd.join("source");
-
-    let xml_path = source_directory.join(xml_directory);
+    let xml_path = cwd.join(xml_directory);
     let index_xml_path = std::fs::canonicalize(xml_path.join("index.xml"))?;
 
     let mut xml_loader = XmlLoader::new(xml_path.clone(), (*cache).clone());
@@ -79,7 +85,13 @@ fn render_class(name: String, path: String, cache: &TrackedCache) -> PyResult<Ve
             let compound_xml_path = std::fs::canonicalize(xml_path.join(format!("{ref_id}.xml")))?;
             let root = cache.parse_compound(compound_xml_path.clone())?;
 
-            let context = doxygen::render::Context::default();
+            let context = doxygen::render::Context {
+                project_root: context.project_root.clone(),
+                domain: None,
+                skip: context.skip_settings.clone(),
+                extension_domain_lookup: context.domain_by_extension.clone(),
+                enumerated_list_depth: 0,
+            };
             let inner_groups = false;
             doxygen::render::render_compound(&context, root.as_ref(), inner_groups, &mut xml_loader)
                 .map_err(|err| PyValueError::new_err(format!("{}", err)))
@@ -101,9 +113,7 @@ fn render_struct(
     let xml_directory = PathBuf::from(path);
 
     let cwd = std::env::current_dir()?;
-    let source_directory = cwd.join("source");
-
-    let xml_path = source_directory.join(xml_directory);
+    let xml_path = cwd.join(xml_directory);
     let index_xml_path = std::fs::canonicalize(xml_path.join("index.xml"))?;
 
     let mut xml_loader = XmlLoader::new(xml_path.clone(), cache.clone());
@@ -122,6 +132,7 @@ fn render_struct(
             let root = cache.parse_compound(compound_xml_path.clone())?;
 
             let context = doxygen::render::Context {
+                project_root: context.project_root.clone(),
                 domain: None,
                 skip: context.skip_settings.clone(),
                 extension_domain_lookup: context.domain_by_extension.clone(),
@@ -170,9 +181,7 @@ fn render_member(
     let xml_directory = PathBuf::from(path);
 
     let cwd = std::env::current_dir()?;
-    let source_directory = cwd.join("source");
-
-    let xml_path = source_directory.join(xml_directory);
+    let xml_path = cwd.join(xml_directory);
     let index_xml_path = std::fs::canonicalize(xml_path.join("index.xml"))?;
 
     let index = doxygen::index::parse_file(&index_xml_path)?;
@@ -193,6 +202,7 @@ fn render_member(
             let root = cache.parse_compound(compound_xml_path)?;
 
             let context = doxygen::render::Context {
+                project_root: context.project_root.clone(),
                 domain: None,
                 skip: context.skip_settings.clone(),
                 extension_domain_lookup: context.domain_by_extension.clone(),
@@ -248,9 +258,7 @@ fn render_group(
     let xml_directory = PathBuf::from(path);
 
     let cwd = std::env::current_dir()?;
-    let source_directory = cwd.join("source");
-
-    let xml_path = source_directory.join(xml_directory);
+    let xml_path = cwd.join(xml_directory);
 
     let mut xml_loader = XmlLoader::new(xml_path, (*cache).clone());
     let compound_ref_id = {
@@ -270,6 +278,7 @@ fn render_group(
             tracing::debug!("Compound root: {root:?}");
 
             let context = doxygen::render::Context {
+                project_root: context.project_root.clone(),
                 domain: None,
                 skip: context.skip_settings.clone(),
                 extension_domain_lookup: context.domain_by_extension.clone(),
