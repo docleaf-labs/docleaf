@@ -17,6 +17,8 @@ Docleaf then you must purchase a commercial license.
 
 For further information please email: [support@docleaf.io](mailto:support@docleaf.io)
 
+## Features
+
 ## Installation
 
 Docleaf can be installed from [PyPI](https://pypi.org/project/docleaf/):
@@ -33,12 +35,16 @@ Include `docleaf.doxygen` as an extension in your Sphinx `conf.py` file:
 extensions = ["docleaf.doxygen"]
 ```
 
-Configure the extenion to know where the Doxygen XML output has been generated for your project and optionally set the
-default project:
+Configure the extension to know where your source code is stored and the Doxygen XML output has been generated for
+your project. Optionally set the default project:
 
 ```python
 docleaf_projects = {
-  "my_project": "../doxygen/xml"
+  "my_project": {
+    "root": "../src",
+    "xml": "../doxygen/xml"
+  }
+
 }
 docleaf_default_project = "my_project"
 ```
@@ -83,11 +89,14 @@ Generate documentation for specific group as specified within your Doxygen set u
 .. doxygengroup:: group_name
 ```
 
+All directives take a `:project:` option to specify the project to use from your `conf.py` if you don't want to use
+the default project.
+
 ### Settings
 
 - `docleaf_projects` 
 
-  A Python dictionary mapping each project name to the folder where its Doxygen XML output is stored.
+  A Python dictionary mapping each project name to the folders where its source code and Doxygen XML output are stored.
 
 - `docleaf_default_project`
 
@@ -116,6 +125,36 @@ Generate documentation for specific group as specified within your Doxygen set u
     if desirable.
   - `xml-nodes:<node name>` - Skips reading and process of the given XML node and its children in the Doxygen XML 
     output. Support is limited to the `htmlonly` node.
+
+### Integration with `sphinx.ext.linkcode`
+
+Docleaf can integrate with the `sphinx.ext.linkcode` extension in order to add `[source]` links next to various
+supported entries in your documentation. Linking to GitHub based repositories is supported.
+
+In order to use it, add the `sphinx.ext.linkcode` extension to the `extensions` list in your Sphinx `conf.py` and use
+the `docleaf.doxygen.GitHubLinkResolver` with appropriate parameters for your repository.
+
+```python
+extensions = [
+  "docleaf.doxygen",
+  "sphinx.ext.linkcode",
+  ]
+
+linkcode_resolve = docleaf.doxygen.GitHubLinkResolver(
+    root="../../../", user="docleaf-labs", repo="docleaf", branch="main"
+)
+```
+
+Where:
+- `root` is the relative path to the root of your repository.
+- `user` is the user or organisation name for your GitHub repository.
+- `repo` is the name of your GitHub repository.
+- `tag` is the git tag that you would like the generated link URLs to target.
+- `branch` is the git branch that you would like the generated link URLs to target.
+- `commit` is the git commit SHA that you would like the generated link URLs to target.
+
+Only one of `tag`, `branch` and `commit` is necessary.
+
 
 ## Performance
 
