@@ -21,6 +21,7 @@ For further information please email: [support@docleaf.io](mailto:support@doclea
 
 - Custom directives allowing you to target various parts of C and C++ code bases.
 - Integration with Sphinx C and C++ domains to support easily linking to your generated output.
+- Hash-based content checks, as well as timestamp checks, to minimize incremental build times after a Doxygen run.
 - Integration with the `sphinx.ext.linkcode` extension to support links to source code locations in a GitHub
   repository.
 
@@ -180,5 +181,5 @@ Benchmark: breathe
 ## History
 
 Docleaf is written and maintained by the creator of the [Breathe](https://github.com/breathe-doc/breathe) project.
-It was created to resolve some of the performance and memory consumption issues with Breathe by re-writing the code
+It was created to resolve some of the performance and memory consumption issues with Breathe by rewriting the code
 base to use Rust. The user experience is designed to match and improve on Breathe.
