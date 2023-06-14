@@ -32,10 +32,17 @@ logger = logging.getLogger(__name__)
 
 
 class GitHubLinkResolver:
-    def __init__(self, *, root, user, repo, branch=None, revision=None):
+    """
+    This works on the assumption that we can insert our own data into the 'names' field of desc_signature nodes in
+    domain entries. That assumption might fail or clash with other things so we try to be careful when extracting the
+    data from 'names' and fail early and quietly.
+    """
+
+    def __init__(self, *, root, user, repo, tag=None, branch=None, revision=None):
         self.root = Path(root).resolve()
         self.user = user
         self.repo = repo
+        self.tag = tag
         self.branch = branch
         self.revision = revision
 
@@ -47,18 +54,24 @@ class GitHubLinkResolver:
         if not names:
             return None
 
-        (relative_path, line) = names.rsplit(":", 1)
-        path = Path(relative_path).resolve()
+        entries = names.rsplit(":", 1)
+        if len(entries) != 2:
+            return None
+
+        path = Path(entries[0]).resolve()
         relative = path.relative_to(self.root)
 
-        if self.branch:
-            return (
-                f"https://github.com/{self.user}/{self.repo}/blob/{self.branch}/{relative}#L{line}"
-            )
-        elif self.revision:
-            return f"https://github.com/{self.user}/{self.repo}/blob/{self.revision}/{relative}#L{line}"
-        else:
+        try:
+            line = int(entries[1])
+        except ValueError:
+            # Unable to get line number - exit quietly
             return None
+
+        reference = self.tag or self.branch or self.revision
+        if not reference:
+            return None
+
+        return f"https://github.com/{self.user}/{self.repo}/blob/{reference}/{relative}#L{line}"
 
 
 def as_list(node):
