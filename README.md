@@ -19,6 +19,11 @@ For further information please email: [support@docleaf.io](mailto:support@doclea
 
 ## Features
 
+- Custom directives allowing you to target various parts of C and C++ code bases.
+- Integration with Sphinx C and C++ domains to support easily linking to your generated output.
+- Integration with the `sphinx.ext.linkcode` extension to support links to source code locations in a GitHub
+  repository.
+
 ## Installation
 
 Docleaf can be installed from [PyPI](https://pypi.org/project/docleaf/):
@@ -176,4 +181,4 @@ Benchmark: breathe
 
 Docleaf is written and maintained by the creator of the [Breathe](https://github.com/breathe-doc/breathe) project.
 It was created to resolve some of the performance and memory consumption issues with Breathe by re-writing the code
-base to use Rust. The user experience is designed to match Breathe.
+base to use Rust. The user experience is designed to match and improve on Breathe.
