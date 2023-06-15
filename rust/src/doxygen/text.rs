@@ -59,11 +59,11 @@ pub fn render_member_def(domain: &Domain, member_def: &e::MemberdefType) -> Stri
         e::DoxMemberKind::Function => [
             if_yes(&member_def.static_, "static "),
             if_yes(
-                &member_def.inline.as_ref().unwrap_or(&e::DoxBool::No),
+                member_def.inline.as_ref().unwrap_or(&e::DoxBool::No),
                 "inline ",
             ),
             if_yes(
-                &member_def.const_.as_ref().unwrap_or(&e::DoxBool::No),
+                member_def.const_.as_ref().unwrap_or(&e::DoxBool::No),
                 "const ",
             ),
             member_def
@@ -161,7 +161,7 @@ pub fn render_enum_value(
     };
 
     [
-        option_from_str(&enum_name_or_anon_id).map(|str| with_trailing(str.to_string(), separator)),
+        option_from_str(enum_name_or_anon_id).map(|str| with_trailing(str.to_string(), separator)),
         Some(enum_value.name.to_string()),
         enum_value
             .initializer
@@ -177,7 +177,7 @@ pub fn render_enum_value(
 }
 
 fn collapse_lines(str: &str) -> String {
-    str.replace("\n", " ")
+    str.replace('\n', " ")
 }
 
 fn option_from_str(str: &str) -> Option<&str> {

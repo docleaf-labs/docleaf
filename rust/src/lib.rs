@@ -46,7 +46,7 @@ impl Context {
                 }
             })
             .collect::<Result<Vec<_>, _>>()
-            .map_err(|err| PyValueError::new_err(format!("{}", err)))?;
+            .map_err(PyValueError::new_err)?;
 
         Ok(Self {
             project_root: PathBuf::from(project_root),
@@ -83,7 +83,7 @@ fn render_class(
         Some(compound) => {
             let ref_id = &compound.refid;
             let compound_xml_path = std::fs::canonicalize(xml_path.join(format!("{ref_id}.xml")))?;
-            let root = cache.parse_compound(compound_xml_path.clone())?;
+            let root = cache.parse_compound(compound_xml_path)?;
 
             let context = doxygen::render::Context {
                 project_root: context.project_root.clone(),
@@ -129,7 +129,7 @@ fn render_struct(
         Some(compound) => {
             let ref_id = &compound.refid;
             let compound_xml_path = std::fs::canonicalize(xml_path.join(format!("{ref_id}.xml")))?;
-            let root = cache.parse_compound(compound_xml_path.clone())?;
+            let root = cache.parse_compound(compound_xml_path)?;
 
             let context = doxygen::render::Context {
                 project_root: context.project_root.clone(),

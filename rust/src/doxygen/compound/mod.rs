@@ -1,5 +1,7 @@
 pub mod generated {
     #![allow(dead_code)]
+    #![allow(clippy::single_match)]
+    #![allow(clippy::match_single_binding)]
 
     include!(concat!(env!("OUT_DIR"), "/xsds/compound.rs"));
 }

@@ -39,7 +39,7 @@ fn main() -> anyhow::Result<()> {
 fn format(path: &Path) {
     // Attempt to run rustfmt on the resulting code but don't worry if it
     // fails for any reason. The build should still work without it.
-    let output = std::process::Command::new("rustfmt").arg(&path).output();
+    let output = std::process::Command::new("rustfmt").arg(path).output();
     match output {
         Ok(output) => {
             if !output.status.success() {

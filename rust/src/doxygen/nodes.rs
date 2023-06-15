@@ -170,7 +170,7 @@ impl Location {
     pub fn from(root: &Path, location_type: &e::LocationType) -> Option<Self> {
         location_type.line.map(|line| Self {
             path: root
-                .join(&PathBuf::from(&location_type.file))
+                .join(PathBuf::from(&location_type.file))
                 .display()
                 .to_string(),
             line,

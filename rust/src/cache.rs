@@ -54,26 +54,30 @@ impl CacheInner {
 
 impl CacheInner {
     fn parse_index(&mut self, path: PathBuf) -> anyhow::Result<Arc<index::DoxygenType>> {
-        // TODO: Figure out how to avoid double lookup - previous attempt led to borrow checker errors
-        if self.index_cache.contains_key(&path) {
-            return Ok(self.index_cache.get(&path).unwrap().clone());
-        } else {
-            let info = crate::doxygen::index::parse_file(&path)?;
-            let info = Arc::new(info);
-            self.index_cache.insert(path, info.clone());
-            Ok(info)
+        match self.index_cache.entry(path) {
+            std::collections::hash_map::Entry::Vacant(potential_entry) => {
+                let info = crate::doxygen::index::parse_file(potential_entry.key())?;
+                let info = Arc::new(info);
+                potential_entry.insert(info.clone());
+                Ok(info)
+            }
+            std::collections::hash_map::Entry::Occupied(entry) => {
+                return Ok(entry.get().clone());
+            }
         }
     }
 
     fn parse_compound(&mut self, path: PathBuf) -> anyhow::Result<Arc<compound::DoxygenType>> {
-        // TODO: Figure out how to avoid double lookup - previous attempt led to borrow checker errors
-        if self.compound_cache.contains_key(&path) {
-            return Ok(self.compound_cache.get(&path).unwrap().clone());
-        } else {
-            let info = crate::doxygen::compound::parse_file(&path)?;
-            let info = Arc::new(info);
-            self.compound_cache.insert(path, info.clone());
-            Ok(info)
+        match self.compound_cache.entry(path) {
+            std::collections::hash_map::Entry::Vacant(potential_entry) => {
+                let info = crate::doxygen::compound::parse_file(potential_entry.key())?;
+                let info = Arc::new(info);
+                potential_entry.insert(info.clone());
+                Ok(info)
+            }
+            std::collections::hash_map::Entry::Occupied(entry) => {
+                return Ok(entry.get().clone());
+            }
         }
     }
 }

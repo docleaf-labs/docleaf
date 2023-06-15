@@ -210,7 +210,7 @@ pub fn render_compound(
                 location: compound_def
                     .location
                     .as_ref()
-                    .and_then(|loc| Location::from(&ctx.project_root, &loc)),
+                    .and_then(|loc| Location::from(&ctx.project_root, loc)),
                 content: content_nodes,
             }))]);
         }
@@ -223,7 +223,7 @@ pub fn render_compound(
                 location: compound_def
                     .location
                     .as_ref()
-                    .and_then(|loc| Location::from(&ctx.project_root, &loc)),
+                    .and_then(|loc| Location::from(&ctx.project_root, loc)),
                 content: content_nodes,
             }))]);
         }
@@ -236,7 +236,7 @@ pub fn render_compound(
                 location: compound_def
                     .location
                     .as_ref()
-                    .and_then(|loc| Location::from(&ctx.project_root, &loc)),
+                    .and_then(|loc| Location::from(&ctx.project_root, loc)),
                 content: content_nodes,
             }))]);
         }
@@ -485,7 +485,7 @@ pub fn render_member_def(
                     location: member_def
                         .location
                         .as_ref()
-                        .and_then(|loc| Location::from(&ctx.project_root, &loc)),
+                        .and_then(|loc| Location::from(&ctx.project_root, loc)),
                     content: content_nodes,
                 }))];
             }
@@ -503,7 +503,7 @@ pub fn render_member_def(
                     location: member_def
                         .location
                         .as_ref()
-                        .and_then(|loc| Location::from(&ctx.project_root, &loc)),
+                        .and_then(|loc| Location::from(&ctx.project_root, loc)),
                     content: content_nodes,
                 }))];
             }
@@ -563,7 +563,7 @@ pub fn render_member_def(
                     location: member_def
                         .location
                         .as_ref()
-                        .and_then(|loc| Location::from(&ctx.project_root, &loc)),
+                        .and_then(|loc| Location::from(&ctx.project_root, loc)),
                     content: content_nodes,
                 }))];
             }
@@ -598,7 +598,7 @@ pub fn render_member_def(
                     location: member_def
                         .location
                         .as_ref()
-                        .and_then(|loc| Location::from(&ctx.project_root, &loc)),
+                        .and_then(|loc| Location::from(&ctx.project_root, loc)),
                     content: content_nodes,
                 }))];
             }
@@ -616,7 +616,7 @@ pub fn render_member_def(
                     location: member_def
                         .location
                         .as_ref()
-                        .and_then(|loc| Location::from(&ctx.project_root, &loc)),
+                        .and_then(|loc| Location::from(&ctx.project_root, loc)),
                     content: content_nodes,
                 }))];
             }
@@ -641,7 +641,7 @@ pub fn render_member_def(
 
 fn is_upper_snake_case(str: &str) -> bool {
     str.chars()
-        .all(|char| (char >= 'A' && char <= 'Z') || char == '_')
+        .all(|char| char.is_ascii_uppercase() || char == '_')
 }
 
 /// Returns true if the provided member_def represents an anonymous union to the best of our knowledge
@@ -674,7 +674,7 @@ fn variable_member_def_is_struct_matching_id(member_def: &e::MemberdefType, id: 
         member_def
             .type_
             .as_ref()
-            .map(|type_| has_ref_matching(&type_, id))
+            .map(|type_| has_ref_matching(type_, id))
             .unwrap_or(false)
     } else {
         false
@@ -917,7 +917,7 @@ enum CategorizedNode {
 }
 
 impl CategorizedNode {
-    pub fn to_node(self) -> Node {
+    pub fn into_node(self) -> Node {
         match self {
             Self::FieldListEntry(_, node) => node,
             Self::Block(node) => node,
@@ -943,7 +943,7 @@ trait ToNodes {
 // important
 impl ToNodes for Vec<CategorizedNode> {
     fn into_nodes(self) -> Vec<Node> {
-        self.into_iter().map(|cn| cn.to_node()).collect()
+        self.into_iter().map(|cn| cn.into_node()).collect()
     }
 }
 
@@ -1167,7 +1167,7 @@ fn render_doc_list_type(ctx: &Context, element: &e::DocListType, type_: ListType
             let items = element
                 .listitem
                 .iter()
-                .map(|element| render_doc_list_item_type(&ctx, element))
+                .map(|element| render_doc_list_item_type(ctx, element))
                 .collect();
             Node::BulletList(items)
         }
