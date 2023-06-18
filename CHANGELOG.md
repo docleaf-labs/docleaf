@@ -1,5 +1,11 @@
 # Docleaf Changelog
 
+## Version 0.5.0 - 2023-06-18
+
+### Fixed
+
+- Fixed Doxygen-based cross-references between restructured text source files.
+
 ## Version 0.4.0 - 2023-06-14
 
 ### Added
