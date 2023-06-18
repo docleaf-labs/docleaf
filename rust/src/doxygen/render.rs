@@ -1313,10 +1313,8 @@ fn render_linked_text_type(ctx: &Context, linked_text_type: &e::LinkedTextType) 
 }
 
 fn render_ref_text_type(_ctx: &Context, ref_text_type: &e::RefTextType) -> Node {
-    Node::Reference {
-        internal: Some(true),
-        refid: Some(ref_text_type.refid.clone()),
-        refuri: None,
+    Node::InternalReference {
+        refid: ref_text_type.refid.clone(),
         children: vec![Node::DescSignatureName(ref_text_type.content.clone())],
     }
 }
@@ -1335,10 +1333,8 @@ fn render_doc_ref_text_type(ctx: &Context, doc_ref_text_type: &e::DocRefTextType
         }
     }
 
-    Node::Reference {
-        internal: Some(true),
-        refid: Some(doc_ref_text_type.refid.clone()),
-        refuri: None,
+    Node::InternalReference {
+        refid: doc_ref_text_type.refid.clone(),
         children: nodes,
     }
 }
@@ -1436,10 +1432,8 @@ fn render_doc_url_link(ctx: &Context, element: &e::DocUrlLink) -> Node {
         }
     }
 
-    Node::Reference {
-        internal: None,
-        refid: None,
-        refuri: Some(element.url.clone()),
+    Node::ExternalReference {
+        refuri: element.url.clone(),
         children: nodes,
     }
 }

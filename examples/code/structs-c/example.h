@@ -13,3 +13,10 @@ struct ExampleCStruct
   string myString;
 };
 
+/*! Another example struct that references the ExampleCStruct from its documentation to check references.
+*/
+struct ExampleCStructWithReference
+{
+  //! An integer field
+  int anInt;
+};

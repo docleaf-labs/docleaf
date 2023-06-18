@@ -228,12 +228,6 @@ pub enum Node {
     LiteralStrong(Vec<Node>),
     Paragraph(Vec<Node>),
     RawHtml(String),
-    Reference {
-        internal: Option<bool>,
-        refid: Option<String>,
-        refuri: Option<String>,
-        children: Vec<Node>,
-    },
     Rubric {
         classes: Vec<String>,
         nodes: Vec<Node>,
@@ -256,6 +250,16 @@ pub enum Node {
     TableRowEntry {
         heading: bool,
         nodes: Vec<Node>,
+    },
+
+    // References
+    InternalReference {
+        refid: String,
+        children: Vec<Node>,
+    },
+    ExternalReference {
+        refuri: String,
+        children: Vec<Node>,
     },
 
     // Field lists
@@ -486,23 +490,22 @@ impl IntoPy<PyObject> for Node {
                 vec![text(content).into_py(py)],
             )
             .into_py(py),
-            Self::Reference {
-                internal,
-                refid,
-                refuri,
+            Self::InternalReference { refid, children } => node(
+                py,
+                "internal_reference",
+                CallAs::Source,
+                Attributes::from([("refid".into(), refid.into_py(py))]),
                 children,
-            } => {
-                let attributes = [
-                    internal.map(|value| ("internal".to_string(), value.into_py(py))),
-                    refid.map(|value| ("refid".to_string(), value.into_py(py))),
-                    refuri.map(|value| ("refuri".to_string(), value.into_py(py))),
-                ]
-                .into_iter()
-                .flatten()
-                .collect::<HashMap<_, _>>();
-
-                node(py, "reference", CallAs::SourceText, attributes, children).into_py(py)
-            }
+            )
+            .into_py(py),
+            Self::ExternalReference { refuri, children } => node(
+                py,
+                "external_reference",
+                CallAs::SourceText,
+                Attributes::from([("refuri".into(), refuri.into_py(py))]),
+                children,
+            )
+            .into_py(py),
             Self::Rubric { classes, nodes } => node(
                 py,
                 "rubric",

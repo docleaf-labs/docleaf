@@ -116,7 +116,8 @@ class NodeManager:
             "only": as_list(sphinx.addnodes.only),
             "paragraph": as_list(nodes.paragraph),
             "raw": as_list(nodes.raw),
-            "reference": as_list(nodes.reference),
+            "internal_reference": self.build_internal_reference,
+            "external_reference": as_list(nodes.reference),
             "restructured_text_block": self.build_restructured_text_block,
             "restructured_text_inline": self.build_restructured_text_inline,
             "row": as_list(nodes.row),
@@ -152,6 +153,17 @@ class NodeManager:
             self.directive_arguments,
             children,
         )
+
+    def build_internal_reference(self, *children, **attributes):
+        reference = sphinx.addnodes.pending_xref(
+            *children,
+            reftype="ref",
+            refdomain="std",
+            refexplicit=True,
+            refid=attributes["refid"],
+            reftarget=attributes["refid"],
+        )
+        return [reference]
 
     def build_restructured_text_block(self, *children, **attributes):
         text = textwrap.dedent(children[0])
