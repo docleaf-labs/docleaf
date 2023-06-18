@@ -215,6 +215,42 @@ def render_node(node, node_manager):
         raise DocleafError("Call As not implemented: " + node.call_as)
 
 
+class Project:
+    def __init__(self, root, xml):
+        self._root = root
+        self._xml = xml
+
+    def root(self):
+        return self._root
+
+    def xml(self):
+        return self._xml
+
+    def get(projects, name: str):
+        try:
+            data = projects[name]
+        except KeyError:
+            raise DocleafError(
+                f"Unable to find a project called '{name}' defined in the docleaf_projects config variable"
+            )
+
+        try:
+            root = data["root"]
+        except KeyError:
+            raise DocleafError(
+                f"Unable to find the 'root' entry in the data for '{name}' project defined in the docleaf_projects config variable"
+            )
+
+        try:
+            xml = data["xml"]
+        except KeyError:
+            raise DocleafError(
+                f"Unable to find the 'xml' entry in the data for '{name}' project defined in the docleaf_projects config variable"
+            )
+
+        return Project(root, xml)
+
+
 class BaseDirective(Directive):
     def get_directive_args(self) -> list:
         # Must match order in docutils.parsers.rst.Directive.__init__
@@ -243,17 +279,17 @@ class ClassDirective(BaseDirective):
     def run(self) -> List[Node]:
         name = self.arguments[0]
         project_name = self.options["project"] or self.app.config.docleaf_default_project
-        project = self.app.config.docleaf_projects[project_name]
+        project = Project.get(self.app.config.docleaf_projects, project_name)
 
         skip_settings = get_skip_settings(self.app, self.options)
         context = backend.Context(
-            project["root"],
+            project.root(),
             skip_settings,
             self.app.config.docleaf_domain_by_extension,
         )
 
         tracked_cache = backend.TrackedCache(self.cache)
-        node_list = backend.render_class(name, project["xml"], context, tracked_cache)
+        node_list = backend.render_class(name, project.xml(), context, tracked_cache)
         update_sphinx_env_file_data(self.app.env, tracked_cache.xml_paths(), self.app.env.docname)
 
         node_builder = NodeManager(self.state, self.get_directive_args())
@@ -272,16 +308,16 @@ class StructDirective(BaseDirective):
     def run(self) -> List[Node]:
         name = self.arguments[0]
         project_name = self.options["project"] or self.app.config.docleaf_default_project
-        project = self.app.config.docleaf_projects[project_name]
+        project = Project.get(self.app.config.docleaf_projects, project_name)
         skip_settings = get_skip_settings(self.app, self.options)
         context = backend.Context(
-            project["root"],
+            project.root(),
             skip_settings,
             self.app.config.docleaf_domain_by_extension,
         )
 
         tracked_cache = backend.TrackedCache(self.cache)
-        node_list = backend.render_struct(name, project["xml"], context, tracked_cache)
+        node_list = backend.render_struct(name, project.xml(), context, tracked_cache)
         update_sphinx_env_file_data(self.app.env, tracked_cache.xml_paths(), self.app.env.docname)
 
         node_builder = NodeManager(self.state, self.get_directive_args())
@@ -301,17 +337,17 @@ class EnumDirective(BaseDirective):
     def run(self) -> List[Node]:
         name = self.arguments[0]
         project_name = self.options["project"] or self.app.config.docleaf_default_project
-        project = self.app.config.docleaf_projects[project_name]
+        project = Project.get(self.app.config.docleaf_projects, project_name)
         skip_settings = get_skip_settings(self.app, self.options)
 
         context = backend.Context(
-            project["root"],
+            project.root(),
             skip_settings,
             self.app.config.docleaf_domain_by_extension,
         )
 
         tracked_cache = backend.TrackedCache(self.cache)
-        node_list = backend.render_enum(name, project["xml"], context, tracked_cache)
+        node_list = backend.render_enum(name, project.xml(), context, tracked_cache)
         update_sphinx_env_file_data(self.app.env, tracked_cache.xml_paths(), self.app.env.docname)
 
         node_builder = NodeManager(self.state, self.get_directive_args())
@@ -331,17 +367,17 @@ class FunctionDirective(BaseDirective):
     def run(self) -> List[Node]:
         name = self.arguments[0]
         project_name = self.options["project"] or self.app.config.docleaf_default_project
-        project = self.app.config.docleaf_projects[project_name]
+        project = Project.get(self.app.config.docleaf_projects, project_name)
         skip_settings = get_skip_settings(self.app, self.options)
 
         context = backend.Context(
-            project["root"],
+            project.root(),
             skip_settings,
             self.app.config.docleaf_domain_by_extension,
         )
 
         tracked_cache = backend.TrackedCache(self.cache)
-        node_list = backend.render_function(name, project["xml"], context, tracked_cache)
+        node_list = backend.render_function(name, project.xml(), context, tracked_cache)
         update_sphinx_env_file_data(self.app.env, tracked_cache.xml_paths(), self.app.env.docname)
 
         node_builder = NodeManager(self.state, self.get_directive_args())
@@ -363,13 +399,13 @@ class GroupDirective(BaseDirective):
     def run(self) -> List[Node]:
         name = self.arguments[0]
         project_name = self.options.get("project", self.app.config.docleaf_default_project)
-        project = self.app.config.docleaf_projects[project_name]
+        project = Project.get(self.app.config.docleaf_projects, project_name)
 
         skip_settings = get_skip_settings(self.app, self.options)
         content_only = "content-only" in self.options
         inner_group = "inner" in self.options
         context = backend.Context(
-            project["root"],
+            project.root(),
             skip_settings,
             self.app.config.docleaf_domain_by_extension,
         )
@@ -377,7 +413,7 @@ class GroupDirective(BaseDirective):
         tracked_cache = backend.TrackedCache(self.cache)
         node_list = backend.render_group(
             name,
-            project["xml"],
+            project.xml(),
             context,
             content_only,
             inner_group,
