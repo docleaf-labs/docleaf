@@ -227,23 +227,26 @@ class Project:
         return self._xml
 
     def get(projects, name: str):
+        # For each 'try' block we need to catch KeyError and TypeError (if project is a string) so we catch everything
+        # as there isn't much else that could go wrong
+
         try:
             data = projects[name]
-        except KeyError:
+        except Exception:
             raise DocleafError(
                 f"Unable to find a project called '{name}' defined in the docleaf_projects config variable"
             )
 
         try:
             root = data["root"]
-        except KeyError:
+        except Exception:
             raise DocleafError(
                 f"Unable to find the 'root' entry in the data for '{name}' project defined in the docleaf_projects config variable"
             )
 
         try:
             xml = data["xml"]
-        except KeyError:
+        except Exception:
             raise DocleafError(
                 f"Unable to find the 'xml' entry in the data for '{name}' project defined in the docleaf_projects config variable"
             )
