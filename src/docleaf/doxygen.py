@@ -282,64 +282,7 @@ class BaseDirective(Directive):
         ]
 
 
-class ClassDirective(BaseDirective):
-    has_content = True
-    required_arguments = 1
-    optional_arguments = 0
-    final_argument_whitespace = True
-    option_spec = {
-        "project": directives.unchanged,
-    }
-
-    def run(self) -> List[Node]:
-        name = self.arguments[0]
-        project_name = self.options["project"] or self.app.config.docleaf_default_project
-        project = Project.get(self.app.config.docleaf_projects, project_name)
-
-        skip_settings = get_skip_settings(self.app, self.options)
-        context = backend.Context(
-            project.root(),
-            skip_settings,
-            self.app.config.docleaf_domain_by_extension,
-        )
-
-        tracked_cache = backend.TrackedCache(self.cache)
-        node_list = backend.render_class(name, project.xml(), context, tracked_cache)
-        update_sphinx_env_file_data(self.app.env, tracked_cache.xml_paths(), self.app.env.docname)
-
-        node_builder = NodeManager(self.state, self.get_directive_args())
-        return render_node_list(node_list, node_builder)
-
-
-class StructDirective(BaseDirective):
-    has_content = True
-    required_arguments = 1
-    optional_arguments = 0
-    final_argument_whitespace = True
-    option_spec = {
-        "project": directives.unchanged,
-    }
-
-    def run(self) -> List[Node]:
-        name = self.arguments[0]
-        project_name = self.options["project"] or self.app.config.docleaf_default_project
-        project = Project.get(self.app.config.docleaf_projects, project_name)
-        skip_settings = get_skip_settings(self.app, self.options)
-        context = backend.Context(
-            project.root(),
-            skip_settings,
-            self.app.config.docleaf_domain_by_extension,
-        )
-
-        tracked_cache = backend.TrackedCache(self.cache)
-        node_list = backend.render_struct(name, project.xml(), context, tracked_cache)
-        update_sphinx_env_file_data(self.app.env, tracked_cache.xml_paths(), self.app.env.docname)
-
-        node_builder = NodeManager(self.state, self.get_directive_args())
-        return render_node_list(node_list, node_builder)
-
-
-class EnumDirective(BaseDirective):
+class BasicDoxygenDirective(BaseDirective):
     has_content = True
     required_arguments = 1
     optional_arguments = 0
@@ -362,41 +305,27 @@ class EnumDirective(BaseDirective):
         )
 
         tracked_cache = backend.TrackedCache(self.cache)
-        node_list = backend.render_enum(name, project.xml(), context, tracked_cache)
+        node_list = self.render_function(name, project.xml(), context, tracked_cache)
         update_sphinx_env_file_data(self.app.env, tracked_cache.xml_paths(), self.app.env.docname)
 
         node_builder = NodeManager(self.state, self.get_directive_args())
         return render_node_list(node_list, node_builder)
 
 
-class FunctionDirective(BaseDirective):
-    has_content = True
-    required_arguments = 1
-    optional_arguments = 0
-    final_argument_whitespace = True
-    option_spec = {
-        "project": directives.unchanged,
-        "skip-xml-nodes": directives.unchanged,
-    }
+class ClassDirective(BasicDoxygenDirective):
+    render_function = backend.render_class
 
-    def run(self) -> List[Node]:
-        name = self.arguments[0]
-        project_name = self.options["project"] or self.app.config.docleaf_default_project
-        project = Project.get(self.app.config.docleaf_projects, project_name)
-        skip_settings = get_skip_settings(self.app, self.options)
 
-        context = backend.Context(
-            project.root(),
-            skip_settings,
-            self.app.config.docleaf_domain_by_extension,
-        )
+class StructDirective(BasicDoxygenDirective):
+    render_function = backend.render_struct
 
-        tracked_cache = backend.TrackedCache(self.cache)
-        node_list = backend.render_function(name, project.xml(), context, tracked_cache)
-        update_sphinx_env_file_data(self.app.env, tracked_cache.xml_paths(), self.app.env.docname)
 
-        node_builder = NodeManager(self.state, self.get_directive_args())
-        return render_node_list(node_list, node_builder)
+class EnumDirective(BasicDoxygenDirective):
+    render_function = backend.render_enum
+
+
+class FunctionDirective(BasicDoxygenDirective):
+    render_function = backend.render_function
 
 
 class GroupDirective(BaseDirective):
@@ -557,10 +486,10 @@ def setup(app: Sphinx):
     context = ExtensionContext(app, cache)
 
     add_directive(context, "doxygenclass", ClassDirective)
-    add_directive(context, "doxygenstruct", StructDirective)
-    add_directive(context, "doxygenfunction", FunctionDirective)
     add_directive(context, "doxygenenum", EnumDirective)
+    add_directive(context, "doxygenfunction", FunctionDirective)
     add_directive(context, "doxygengroup", GroupDirective)
+    add_directive(context, "doxygenstruct", StructDirective)
 
     app.add_config_value("docleaf_projects", {}, "env")
     app.add_config_value("docleaf_default_project", None, "env")
