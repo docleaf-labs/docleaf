@@ -1,5 +1,11 @@
 # Docleaf Changelog
 
+## Version 0.6.0 - 2023-06-20
+
+### Fixed 
+
+- Construction of various docutils nodes, including `literal`, which derive from docutils `TextElement` base class.
+
 ## Version 0.5.0 - 2023-06-18
 
 ### Fixed
