@@ -156,6 +156,7 @@ class NodeManager:
 
     def build_internal_reference(self, *children, **attributes):
         reference = sphinx.addnodes.pending_xref(
+            "",
             *children,
             reftype="ref",
             refdomain="std",
@@ -217,11 +218,11 @@ def render_node(node, node_manager):
     node_builder = node_manager.get_builder(node.type)
     children = render_node_list(node.children, node_manager)
 
-    if node.call_as == "source-text":
+    if node.call_as == "text-element":
         return node_builder("", "", *children, **node.attributes)
-    elif node.call_as == "source":
+    elif node.call_as == "element":
         return node_builder("", *children, **node.attributes)
-    elif node.call_as == "args":
+    elif node.call_as == "function":
         return node_builder(*children, **node.attributes)
     else:
         raise DocleafError("Call As not implemented: " + node.call_as)

@@ -9,17 +9,17 @@ use crate::doxygen::compound::generated as e;
 
 #[derive(Clone)]
 pub enum CallAs {
-    Source,
-    SourceText,
-    Args,
+    Element,
+    TextElement,
+    Function,
 }
 
 impl IntoPy<PyObject> for CallAs {
     fn into_py(self, py: Python<'_>) -> PyObject {
         match self {
-            Self::Source => "source".into_py(py),
-            Self::SourceText => "source-text".into_py(py),
-            Self::Args => "args".into_py(py),
+            Self::Element => "element".into_py(py),
+            Self::TextElement => "text-element".into_py(py),
+            Self::Function => "function".into_py(py),
         }
     }
 }
@@ -323,7 +323,7 @@ impl IntoPy<PyObject> for Node {
             Self::DomainEntry(entry) => node(
                 py,
                 "domain_entry",
-                CallAs::Args,
+                CallAs::Function,
                 [
                     Some(("domain".into(), entry.domain.into_py(py))),
                     Some(("type".into(), entry.type_.into_py(py))),
@@ -342,25 +342,30 @@ impl IntoPy<PyObject> for Node {
 
             // Nodes
             Self::Strong(nodes) => {
-                node(py, "strong", CallAs::Source, Attributes::new(), nodes).into_py(py)
+                node(py, "strong", CallAs::TextElement, Attributes::new(), nodes).into_py(py)
             }
             Self::Container(nodes) => {
-                node(py, "container", CallAs::Source, Attributes::new(), nodes).into_py(py)
+                node(py, "container", CallAs::Element, Attributes::new(), nodes).into_py(py)
             }
             Self::Desc(lines, content) => {
                 let mut children: Vec<_> =
                     lines.into_iter().map(|entry| entry.into_py(py)).collect();
                 children.push(content.into_py(py));
 
-                node(py, "desc", CallAs::Source, Attributes::new(), children).into_py(py)
+                node(py, "desc", CallAs::Element, Attributes::new(), children).into_py(py)
             }
-            Self::DescContent(nodes) => {
-                node(py, "desc_content", CallAs::Source, Attributes::new(), nodes).into_py(py)
-            }
+            Self::DescContent(nodes) => node(
+                py,
+                "desc_content",
+                CallAs::Element,
+                Attributes::new(),
+                nodes,
+            )
+            .into_py(py),
             Self::DescName(desc_sig_name) => node(
                 py,
                 "desc_name",
-                CallAs::SourceText,
+                CallAs::TextElement,
                 Attributes::new(),
                 vec![*desc_sig_name],
             )
@@ -368,7 +373,7 @@ impl IntoPy<PyObject> for Node {
             Self::DescParameter(nodes) => node(
                 py,
                 "desc_parameter",
-                CallAs::SourceText,
+                CallAs::TextElement,
                 Attributes::new(),
                 nodes,
             )
@@ -376,7 +381,7 @@ impl IntoPy<PyObject> for Node {
             Self::DescParameterList(nodes) => node(
                 py,
                 "desc_parameterlist",
-                CallAs::SourceText,
+                CallAs::TextElement,
                 Attributes::new(),
                 nodes,
             )
@@ -386,7 +391,7 @@ impl IntoPy<PyObject> for Node {
                 node(
                     py,
                     "desc_signature",
-                    CallAs::SourceText,
+                    CallAs::TextElement,
                     Attributes::new(),
                     nodes,
                 )
@@ -395,7 +400,7 @@ impl IntoPy<PyObject> for Node {
             Self::DescSignatureKeyword(nodes) => node(
                 py,
                 "desc_sig_keyword",
-                CallAs::SourceText,
+                CallAs::TextElement,
                 Attributes::new(),
                 nodes,
             )
@@ -403,7 +408,7 @@ impl IntoPy<PyObject> for Node {
             Self::DescSignatureLine(nodes) => node(
                 py,
                 "desc_signature_line",
-                CallAs::SourceText,
+                CallAs::TextElement,
                 Attributes::new(),
                 nodes,
             )
@@ -411,7 +416,7 @@ impl IntoPy<PyObject> for Node {
             Self::DescSignatureName(name) => node(
                 py,
                 "desc_sig_name",
-                CallAs::SourceText,
+                CallAs::TextElement,
                 Attributes::new(),
                 vec![text(name)],
             )
@@ -429,18 +434,23 @@ impl IntoPy<PyObject> for Node {
             Self::DescSignatureSpace => node(
                 py,
                 "desc_sig_space",
-                CallAs::SourceText,
+                CallAs::TextElement,
                 Attributes::new(),
                 vec![text(" ".to_string())],
             )
             .into_py(py),
-            Self::Emphasis(nodes) => {
-                node(py, "emphasis", CallAs::Source, Attributes::new(), nodes).into_py(py)
-            }
+            Self::Emphasis(nodes) => node(
+                py,
+                "emphasis",
+                CallAs::TextElement,
+                Attributes::new(),
+                nodes,
+            )
+            .into_py(py),
             Self::HtmlOnly(nodes) => node(
                 py,
                 "only",
-                CallAs::Source,
+                CallAs::Element,
                 Attributes::from([("expr".into(), "html".into_py(py))]),
                 nodes,
             )
@@ -456,12 +466,12 @@ impl IntoPy<PyObject> for Node {
             .into_py(py),
             */
             Self::Literal(nodes) => {
-                node(py, "literal", CallAs::Source, Attributes::new(), nodes).into_py(py)
+                node(py, "literal", CallAs::TextElement, Attributes::new(), nodes).into_py(py)
             }
             Self::LiteralBlock(nodes) => node(
                 py,
                 "literal_block",
-                CallAs::Source,
+                CallAs::TextElement,
                 Attributes::new(),
                 nodes,
             )
@@ -469,7 +479,7 @@ impl IntoPy<PyObject> for Node {
             Self::LiteralStrong(nodes) => node(
                 py,
                 "literal_strong",
-                CallAs::Source,
+                CallAs::Element,
                 Attributes::new(),
                 nodes,
             )
@@ -477,7 +487,7 @@ impl IntoPy<PyObject> for Node {
             Self::Paragraph(children) => node(
                 py,
                 "paragraph",
-                CallAs::SourceText,
+                CallAs::TextElement,
                 Attributes::new(),
                 children,
             )
@@ -485,7 +495,7 @@ impl IntoPy<PyObject> for Node {
             Self::RawHtml(content) => node(
                 py,
                 "raw",
-                CallAs::Source,
+                CallAs::TextElement,
                 Attributes::from([("format".into(), "html".into_py(py))]),
                 vec![text(content).into_py(py)],
             )
@@ -493,7 +503,7 @@ impl IntoPy<PyObject> for Node {
             Self::InternalReference { refid, children } => node(
                 py,
                 "internal_reference",
-                CallAs::Source,
+                CallAs::Function,
                 Attributes::from([("refid".into(), refid.into_py(py))]),
                 children,
             )
@@ -501,7 +511,7 @@ impl IntoPy<PyObject> for Node {
             Self::ExternalReference { refuri, children } => node(
                 py,
                 "external_reference",
-                CallAs::SourceText,
+                CallAs::TextElement,
                 Attributes::from([("refuri".into(), refuri.into_py(py))]),
                 children,
             )
@@ -509,7 +519,7 @@ impl IntoPy<PyObject> for Node {
             Self::Rubric { classes, nodes } => node(
                 py,
                 "rubric",
-                CallAs::Source,
+                CallAs::TextElement,
                 Attributes::from([("classes".into(), classes.into_py(py))]),
                 nodes,
             )
@@ -517,7 +527,7 @@ impl IntoPy<PyObject> for Node {
             Self::Target(target) => node(
                 py,
                 "target",
-                CallAs::Source,
+                CallAs::TextElement,
                 Attributes::from([
                     ("ids".into(), vec![target.ids].into_py(py)),
                     ("names".into(), vec![target.names].into_py(py)),
@@ -530,7 +540,7 @@ impl IntoPy<PyObject> for Node {
             Self::Table(nodes) => node(
                 py,
                 "table",
-                CallAs::Source,
+                CallAs::Element,
                 Attributes::from([("classes".into(), vec!["colwidths-auto"].into_py(py))]),
                 nodes,
             )
@@ -538,7 +548,7 @@ impl IntoPy<PyObject> for Node {
             Self::TableGroup { cols, nodes } => node(
                 py,
                 "tgroup",
-                CallAs::Source,
+                CallAs::Element,
                 Attributes::from([("cols".into(), cols.into_py(py))]),
                 nodes,
             )
@@ -546,24 +556,24 @@ impl IntoPy<PyObject> for Node {
             Self::TableColSpec { colwidth } => node(
                 py,
                 "colspec",
-                CallAs::Source,
+                CallAs::Element,
                 Attributes::from([("colwidth".into(), colwidth.into_py(py))]),
                 Vec::<Node>::new(),
             )
             .into_py(py),
             Self::TableHead(nodes) => {
-                node(py, "thead", CallAs::Source, Attributes::new(), nodes).into_py(py)
+                node(py, "thead", CallAs::Element, Attributes::new(), nodes).into_py(py)
             }
             Self::TableBody(nodes) => {
-                node(py, "tbody", CallAs::Source, Attributes::new(), nodes).into_py(py)
+                node(py, "tbody", CallAs::Element, Attributes::new(), nodes).into_py(py)
             }
             Self::TableRow(nodes) => {
-                node(py, "row", CallAs::Source, Attributes::new(), nodes).into_py(py)
+                node(py, "row", CallAs::Element, Attributes::new(), nodes).into_py(py)
             }
             Self::TableRowEntry { heading, nodes } => node(
                 py,
                 "entry",
-                CallAs::Source,
+                CallAs::Element,
                 if heading {
                     Attributes::from([("heading".into(), heading.into_py(py))])
                 } else {
@@ -575,12 +585,12 @@ impl IntoPy<PyObject> for Node {
 
             // Field lists
             Self::FieldList(nodes) => {
-                node(py, "field_list", CallAs::Source, Attributes::new(), nodes).into_py(py)
+                node(py, "field_list", CallAs::Element, Attributes::new(), nodes).into_py(py)
             }
             Self::Field(name, body) => node(
                 py,
                 "field",
-                CallAs::Source,
+                CallAs::Element,
                 Attributes::new(),
                 vec![*name, *body],
             )
@@ -588,18 +598,18 @@ impl IntoPy<PyObject> for Node {
             Self::FieldName(nodes) => node(
                 py,
                 "field_name",
-                CallAs::SourceText,
+                CallAs::TextElement,
                 Attributes::new(),
                 nodes,
             )
             .into_py(py),
             Self::FieldBody(nodes) => {
-                node(py, "field_body", CallAs::Source, Attributes::new(), nodes).into_py(py)
+                node(py, "field_body", CallAs::Element, Attributes::new(), nodes).into_py(py)
             }
 
             // Lists
             Self::BulletList(nodes) => {
-                node(py, "bullet_list", CallAs::Source, Attributes::new(), nodes).into_py(py)
+                node(py, "bullet_list", CallAs::Element, Attributes::new(), nodes).into_py(py)
             }
             Self::EnumeratedList { type_, items } => {
                 let attributes = [type_.map(|value| ("enumtype".to_string(), value.into_py(py)))]
@@ -607,28 +617,28 @@ impl IntoPy<PyObject> for Node {
                     .flatten()
                     .collect::<HashMap<_, _>>();
 
-                node(py, "enumerated_list", CallAs::Source, attributes, items).into_py(py)
+                node(py, "enumerated_list", CallAs::Element, attributes, items).into_py(py)
             }
             Self::ListItem(nodes) => {
-                node(py, "list_item", CallAs::Source, Attributes::new(), nodes).into_py(py)
+                node(py, "list_item", CallAs::Element, Attributes::new(), nodes).into_py(py)
             }
 
             // Notes
             Self::Note(nodes) => {
-                node(py, "note", CallAs::Source, Attributes::new(), nodes).into_py(py)
+                node(py, "note", CallAs::Element, Attributes::new(), nodes).into_py(py)
             }
             Self::SeeAlso(nodes) => {
-                node(py, "see_also", CallAs::Source, Attributes::new(), nodes).into_py(py)
+                node(py, "see_also", CallAs::Element, Attributes::new(), nodes).into_py(py)
             }
             Self::Warning(nodes) => {
-                node(py, "warning", CallAs::Source, Attributes::new(), nodes).into_py(py)
+                node(py, "warning", CallAs::Element, Attributes::new(), nodes).into_py(py)
             }
 
             // Embedded ReStructuredText
             Self::ReStructuredTextBlock(text_) => node(
                 py,
                 "restructured_text_block",
-                CallAs::Args,
+                CallAs::Function,
                 Attributes::new(),
                 vec![text(text_)],
             )
@@ -636,7 +646,7 @@ impl IntoPy<PyObject> for Node {
             Self::ReStructuredTextInline(text_) => node(
                 py,
                 "restructured_text_inline",
-                CallAs::Args,
+                CallAs::Function,
                 Attributes::new(),
                 vec![text(text_)],
             )
@@ -644,7 +654,7 @@ impl IntoPy<PyObject> for Node {
 
             // Just show empty text at the moment
             Self::UnknownInline(nodes) => {
-                node(py, "inline", CallAs::Source, Attributes::new(), nodes).into_py(py)
+                node(py, "inline", CallAs::TextElement, Attributes::new(), nodes).into_py(py)
             }
         }
     }
