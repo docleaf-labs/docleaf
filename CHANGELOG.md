@@ -1,5 +1,12 @@
 # Docleaf Changelog
 
+## Version 0.8.0 - 2023-06-22
+
+### Fixed 
+
+- HTML entities are escaped in embedded restructured text blocks which allows restructured texted hyperlinks to be
+  processed correctly.
+
 ## Version 0.7.0 - 2023-06-22
 
 ### Fixed 
