@@ -1,5 +1,14 @@
 # Docleaf Changelog
 
+## Version 0.7.0 - 2023-06-22
+
+### Fixed 
+
+- Fixed handling of args string values for member variables. Docleaf uses the args string if it is detected as part
+  of a function pointer member variable otherwise it does not attempt to pass it on to the Sphinx C or C++ domain as
+  it might be long and complex and fail the parsing in the domain code.
+- Fixed namespacing indicator in text rendering of member variable types in C when passing to Sphinx domains.
+
 ## Version 0.6.0 - 2023-06-20
 
 ### Fixed 
