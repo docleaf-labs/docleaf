@@ -8,4 +8,5 @@ build:
 	make -C examples/sphinx html
 
 wheel:
+	rm -f rust/target/wheels/*
 	maturin build --release
