@@ -640,7 +640,7 @@ impl IntoPy<PyObject> for Node {
                 "restructured_text_block",
                 CallAs::Function,
                 Attributes::new(),
-                vec![text(text_)],
+                vec![text(html_escape::decode_html_entities(&text_).into_owned()).into_py(py)],
             )
             .into_py(py),
             Self::ReStructuredTextInline(text_) => node(
@@ -648,7 +648,7 @@ impl IntoPy<PyObject> for Node {
                 "restructured_text_inline",
                 CallAs::Function,
                 Attributes::new(),
-                vec![text(text_)],
+                vec![text(html_escape::decode_html_entities(&text_).into_owned()).into_py(py)],
             )
             .into_py(py),
 
