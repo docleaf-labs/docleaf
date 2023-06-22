@@ -132,9 +132,27 @@ pub fn render_member_def(domain: &Domain, member_def: &e::MemberdefType) -> Stri
                 .unwrap_or_else(|| member_def.name.clone());
 
             [
-                member_def.type_.as_ref().map(render_linked_text_type),
+                member_def
+                    .type_
+                    .as_ref()
+                    .map(render_linked_text_type)
+                    .map(|type_| match domain {
+                        Domain::CPlusPlus => type_,
+                        // For structs nested in other structs the type can render to something with a '::' separator
+                        // in it and like with other situations we want '.' separators for C code.
+                        Domain::C => type_.replace("::", "."),
+                    }),
                 Some(name),
-                member_def.argsstring.clone(),
+                member_def.argsstring.as_ref().and_then(|str| {
+                    // If the argsstring starts with a ')' then it is likely the args for a function pointer and so
+                    // we should include them in the output, otherwise we skip them as they might include complex
+                    // expressions which cause issues
+                    if str.starts_with(')') {
+                        Some(html_escape::decode_html_entities(str).to_string())
+                    } else {
+                        None
+                    }
+                }),
             ]
             .into_iter()
             .flatten()
