@@ -1,5 +1,12 @@
 # Docleaf Changelog
 
+## Version 0.8.1 - 2023-07-03
+
+### Changed
+
+- Changed the Sphinx dependency to have no upper bound on the version number. It might not work with all future
+  versions of Sphinx but we shouldn't be unnecessarily restrictive.
+
 ## Version 0.8.0 - 2023-06-22
 
 ### Fixed 

@@ -1,6 +1,6 @@
 [project]
 name = "docleaf"
-version = "0.8.0"
+version = "0.8.1"
 description = "Integrate your doxygen-generated technical documentation into Sphinx"
 license = { file = "LICENSE.md" }
 readme = "README.md"
@@ -47,7 +47,7 @@ extend-exclude = '''
 # support the use of the main [project] and dependencies information
 [tool.poetry]
 name = "docleaf"
-version = "0.8.0"
+version = "0.8.1"
 description = "Integrate your doxygen-generated technical documentation into Sphinx"
 license = "Parity-7.0.0"
 readme = "README.md"
