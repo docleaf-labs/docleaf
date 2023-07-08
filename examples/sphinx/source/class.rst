@@ -12,6 +12,13 @@ Methods
    :project: class_methods
 
 
+Inheritance
+-----------
+
+.. doxygenclass:: Base
+   :project: classes
+
+
 References
 ~~~~~~~~~~
 

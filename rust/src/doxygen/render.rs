@@ -4,6 +4,7 @@ use std::path::PathBuf;
 
 use crate::doxygen::compound::generated as e;
 use crate::doxygen::compound::CompoundDefEntry;
+use crate::doxygen::graph;
 use crate::doxygen::nodes::{
     Domain, DomainEntry, DomainEntryType, ListEnumType, Location, Node, SignatureType, Target,
 };
@@ -192,6 +193,10 @@ pub fn render_compound(
                 xml_loader,
             )?);
         }
+    }
+
+    if let Some(ref inheritancegraph) = compound_def.inheritancegraph {
+        graph::render(&compound_def.id, inheritancegraph)?;
     }
 
     let ids = compound_def.id.clone();

@@ -36,6 +36,10 @@ docleaf_projects = {
         "root": "../code/class_methods/",
         "xml": "../code/class_methods/xml/",
     },
+    "classes": {
+        "root": "../code/classes/",
+        "xml": "../code/classes/xml/",
+    },
     "enums": {"root": "../code/enums/", "xml": "../code/enums/xml/"},
     "enums-c": {"root": "../code/enums-c/", "xml": "../code/enums-c/xml/"},
     "functions": {"root": "../code/functions/", "xml": "../code/functions/xml/"},
