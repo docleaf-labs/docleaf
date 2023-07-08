@@ -10,3 +10,6 @@ __pycache__
 
 # Examples
 /examples/**/xml
+
+# JS dependencies
+/node_modules

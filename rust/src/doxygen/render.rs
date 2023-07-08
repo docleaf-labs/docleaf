@@ -40,6 +40,7 @@ fn domain_from_location(ctx: &Context, location: &e::LocationType) -> Option<Dom
 #[derive(Debug)]
 pub struct Context {
     pub project_root: PathBuf,
+    pub build_dir: PathBuf,
     pub domain: Option<Domain>,
     /// A list of things to ignore when rendering
     pub skip: Vec<Skip>,
@@ -65,6 +66,7 @@ impl Context {
 
         Context {
             project_root: self.project_root.clone(),
+            build_dir: self.build_dir.clone(),
             domain,
             skip: self.skip.clone(),
             extension_domain_lookup: self.extension_domain_lookup.clone(),
@@ -75,6 +77,7 @@ impl Context {
     fn with_next_enumerated_list_level(&self) -> Context {
         Context {
             project_root: self.project_root.clone(),
+            build_dir: self.build_dir.clone(),
             domain: self.domain.clone(),
             skip: self.skip.clone(),
             extension_domain_lookup: self.extension_domain_lookup.clone(),
@@ -139,6 +142,11 @@ pub fn render_compound(
 
     let mut content_nodes = Vec::new();
 
+    if let Some(ref inheritancegraph) = compound_def.inheritancegraph {
+        let image_path = graph::render(&compound_def.id, inheritancegraph, &ctx.build_dir)?;
+        content_nodes.push(Node::Image(image_path));
+    }
+
     for include in compound_def.includes.iter() {
         content_nodes.push(render_inc_type(&ctx, include));
     }
@@ -193,10 +201,6 @@ pub fn render_compound(
                 xml_loader,
             )?);
         }
-    }
-
-    if let Some(ref inheritancegraph) = compound_def.inheritancegraph {
-        graph::render(&compound_def.id, inheritancegraph)?;
     }
 
     let ids = compound_def.id.clone();

@@ -1,9 +1,13 @@
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use crate::doxygen::compound::generated as e;
 
-pub fn render(compound_id: &str, inheritancegraph: &e::GraphType) -> anyhow::Result<PathBuf> {
+pub fn render(
+    compound_id: &str,
+    inheritancegraph: &e::GraphType,
+    build_dir: &Path,
+) -> anyhow::Result<PathBuf> {
     let mut template_lines: Vec<String> = Vec::new();
 
     let node_lookup: HashMap<&str, &e::NodeType> = HashMap::from_iter(
@@ -30,10 +34,22 @@ pub fn render(compound_id: &str, inheritancegraph: &e::GraphType) -> anyhow::Res
         .map(|line| format!("    {line}"))
         .collect::<Vec<_>>()
         .join("\n");
-    let content = format!("classDiagram\n{lines}");
+    let content = format!("classDiagram\n{lines}\n");
 
-    let path = PathBuf::from(format!("{compound_id}.mermaid"));
-    let file = std::fs::write(&path, content);
+    let mmd_file_name = format!("{compound_id}.mmd");
+    let svg_file_name = format!("{compound_id}.svg");
+    let mmd_file_path = build_dir.join(&mmd_file_name);
+    let svg_file_path = build_dir.join(&svg_file_name);
+    let file = std::fs::write(&mmd_file_path, content);
 
-    Ok(path)
+    let output = std::process::Command::new("mmdc")
+        .args([
+            &std::ffi::OsStr::new("-i"),
+            mmd_file_path.as_os_str(),
+            &std::ffi::OsStr::new("-o"),
+            svg_file_path.as_os_str(),
+        ])
+        .output()?;
+
+    Ok(svg_file_path)
 }

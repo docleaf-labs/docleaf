@@ -18,6 +18,7 @@ use crate::doxygen::render::Skip;
 #[pyclass]
 struct Context {
     pub project_root: PathBuf,
+    pub build_dir: PathBuf,
     pub skip_settings: Vec<Skip>,
     pub domain_by_extension: HashMap<String, Domain>,
 }
@@ -27,6 +28,7 @@ impl Context {
     #[new]
     fn new(
         project_root: String,
+        build_dir: String,
         skip_settings: Vec<String>,
         domain_by_extension: HashMap<String, String>,
     ) -> PyResult<Self> {
@@ -50,6 +52,7 @@ impl Context {
 
         Ok(Self {
             project_root: PathBuf::from(project_root),
+            build_dir: PathBuf::from(build_dir),
             skip_settings,
             domain_by_extension,
         })
@@ -87,6 +90,7 @@ fn render_class(
 
             let context = doxygen::render::Context {
                 project_root: context.project_root.clone(),
+                build_dir: context.build_dir.clone(),
                 domain: None,
                 skip: context.skip_settings.clone(),
                 extension_domain_lookup: context.domain_by_extension.clone(),
@@ -133,6 +137,7 @@ fn render_struct(
 
             let context = doxygen::render::Context {
                 project_root: context.project_root.clone(),
+                build_dir: context.build_dir.clone(),
                 domain: None,
                 skip: context.skip_settings.clone(),
                 extension_domain_lookup: context.domain_by_extension.clone(),
@@ -203,6 +208,7 @@ fn render_member(
 
             let context = doxygen::render::Context {
                 project_root: context.project_root.clone(),
+                build_dir: context.build_dir.clone(),
                 domain: None,
                 skip: context.skip_settings.clone(),
                 extension_domain_lookup: context.domain_by_extension.clone(),
@@ -279,6 +285,7 @@ fn render_group(
 
             let context = doxygen::render::Context {
                 project_root: context.project_root.clone(),
+                build_dir: context.build_dir.clone(),
                 domain: None,
                 skip: context.skip_settings.clone(),
                 extension_domain_lookup: context.domain_by_extension.clone(),

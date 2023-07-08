@@ -101,6 +101,7 @@ class NodeManager:
             "field": as_list(nodes.field),
             "field_name": as_list(nodes.field_name),
             "field_body": as_list(nodes.field_body),
+            "image": as_list(nodes.image),
             "index": as_list(sphinx.addnodes.index),
             "inline": as_list(nodes.inline),
             "list_item": as_list(nodes.list_item),
@@ -296,8 +297,12 @@ class BasicDoxygenDirective(BaseDirective):
         project = Project.get(self.app.config.docleaf_projects, project_name)
         skip_settings = get_skip_settings(self.app, self.options)
 
+        build_dir = Path(self.app.doctreedir).parent / "docleaf"
+        build_dir.mkdir(parents=True, exist_ok=True)
+
         context = backend.Context(
             project.root(),
+            str(build_dir),
             skip_settings,
             self.app.config.docleaf_domain_by_extension,
         )
@@ -343,11 +348,15 @@ class GroupDirective(BaseDirective):
         project_name = self.options.get("project", self.app.config.docleaf_default_project)
         project = Project.get(self.app.config.docleaf_projects, project_name)
 
+        build_dir = Path(self.app.doctreedir).parent / "docleaf"
+        build_dir.mkdir(parents=True, exist_ok=True)
+
         skip_settings = get_skip_settings(self.app, self.options)
         content_only = "content-only" in self.options
         inner_group = "inner" in self.options
         context = backend.Context(
             project.root(),
+            str(build_dir),
             skip_settings,
             self.app.config.docleaf_domain_by_extension,
         )

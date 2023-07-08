@@ -285,6 +285,9 @@ pub enum Node {
     ReStructuredTextBlock(String),
     ReStructuredTextInline(String),
 
+    // Images
+    Image(PathBuf),
+
     // Placeholder node for when we haven't handled the case
     UnknownInline(Vec<Node>),
 }
@@ -649,6 +652,19 @@ impl IntoPy<PyObject> for Node {
                 CallAs::Function,
                 Attributes::new(),
                 vec![text(html_escape::decode_html_entities(&text_).into_owned()).into_py(py)],
+            )
+            .into_py(py),
+
+            // Images
+            Self::Image(path) => node(
+                py,
+                "image",
+                CallAs::Element,
+                Attributes::from([(
+                    "uri".into(),
+                    format!("file://{}", path.display()).into_py(py),
+                )]),
+                Vec::<Node>::new(),
             )
             .into_py(py),
 
