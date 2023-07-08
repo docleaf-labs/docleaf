@@ -1,4 +1,6 @@
+use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
+use std::hash::{Hash, Hasher};
 use std::path::{Path, PathBuf};
 
 use crate::doxygen::compound::generated as e;
@@ -36,20 +38,28 @@ pub fn render(
         .join("\n");
     let content = format!("classDiagram\n{lines}\n");
 
-    let mmd_file_name = format!("{compound_id}.mmd");
-    let svg_file_name = format!("{compound_id}.svg");
-    let mmd_file_path = build_dir.join(&mmd_file_name);
-    let svg_file_path = build_dir.join(&svg_file_name);
-    let file = std::fs::write(&mmd_file_path, content);
+    // Hash contents so that we only re-run mermaid image generation if we haven't already got the appropriate file
+    let mut hasher = DefaultHasher::new();
+    content.hash(&mut hasher);
+    let hash = hasher.finish();
 
-    let output = std::process::Command::new("mmdc")
-        .args([
-            &std::ffi::OsStr::new("-i"),
-            mmd_file_path.as_os_str(),
-            &std::ffi::OsStr::new("-o"),
-            svg_file_path.as_os_str(),
-        ])
-        .output()?;
+    let svg_file_name = format!("{hash:x}_{compound_id}.svg");
+    let svg_file_path = build_dir.join(&svg_file_name);
+
+    if !svg_file_path.exists() {
+        tracing::info!("Generating {svg_file_name}");
+        let mmd_file_name = format!("{hash:x}_{compound_id}.mmd");
+        let mmd_file_path = build_dir.join(&mmd_file_name);
+        std::fs::write(&mmd_file_path, content)?;
+        std::process::Command::new("mmdc")
+            .args([
+                &std::ffi::OsStr::new("-i"),
+                mmd_file_path.as_os_str(),
+                &std::ffi::OsStr::new("-o"),
+                svg_file_path.as_os_str(),
+            ])
+            .output()?;
+    }
 
     Ok(svg_file_path)
 }
