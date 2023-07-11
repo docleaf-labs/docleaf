@@ -1,5 +1,12 @@
 # Docleaf Changelog
 
+## Unreleased
+
+### Added
+
+- Added third-party licenses file to the distributed Python wheels to include the licenses for the Rust crates used
+  in the Rust part of the this project.
+
 ## Version 0.8.1 - 2023-07-03
 
 ### Changed
