@@ -46,6 +46,11 @@ pub struct Context {
     pub skip: Vec<Skip>,
     pub extension_domain_lookup: HashMap<String, Domain>,
     pub enumerated_list_depth: usize,
+    /// Base entries for invoking the mermaid command - could be vec!["mmdc"] or, for example, vec!["npx", "mmdc"] if
+    /// we're running it from an npm install
+    ///
+    /// TODO: Change to Vec1
+    pub mermaid_command: Vec<String>,
 }
 
 impl Context {
@@ -71,6 +76,7 @@ impl Context {
             skip: self.skip.clone(),
             extension_domain_lookup: self.extension_domain_lookup.clone(),
             enumerated_list_depth: self.enumerated_list_depth,
+            mermaid_command: self.mermaid_command.clone(),
         }
     }
 
@@ -82,6 +88,7 @@ impl Context {
             skip: self.skip.clone(),
             extension_domain_lookup: self.extension_domain_lookup.clone(),
             enumerated_list_depth: self.enumerated_list_depth + 1,
+            mermaid_command: self.mermaid_command.clone(),
         }
     }
 
@@ -143,7 +150,15 @@ pub fn render_compound(
     let mut content_nodes = Vec::new();
 
     if let Some(ref inheritancegraph) = compound_def.inheritancegraph {
-        let image_path = graph::render(&compound_def.id, inheritancegraph, &ctx.build_dir)?;
+        let image_path = graph::render(
+            &compound_def.id,
+            inheritancegraph,
+            &ctx.build_dir,
+            &ctx.mermaid_command
+                .iter()
+                .map(String::as_str)
+                .collect::<Vec<_>>(),
+        )?;
         content_nodes.push(Node::Image(image_path));
     }
 

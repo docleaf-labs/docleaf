@@ -77,6 +77,8 @@ docleaf_domain_by_extension = {"hpp": "cpp", "h": "c"}
 docleaf_skip_doxygen_xml_nodes = []
 docleaf_doxygen_skip = ["members:all_caps"]
 
+docleaf_mermaid_command = ["npx", "mmdc"]
+
 linkcode_resolve = docleaf.doxygen.GitHubLinkResolver(
     root="../../../", user="docleaf-labs", repo="docleaf", branch="main"
 )

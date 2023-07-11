@@ -3,12 +3,15 @@ use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
 use std::path::{Path, PathBuf};
 
+use anyhow::Context;
+
 use crate::doxygen::compound::generated as e;
 
 pub fn render(
     compound_id: &str,
     inheritancegraph: &e::GraphType,
     build_dir: &Path,
+    mermaid_command: &[&str],
 ) -> anyhow::Result<PathBuf> {
     let mut template_lines: Vec<String> = Vec::new();
 
@@ -50,15 +53,39 @@ pub fn render(
         tracing::info!("Generating {svg_file_name}");
         let mmd_file_name = format!("{hash:x}_{compound_id}.mmd");
         let mmd_file_path = build_dir.join(&mmd_file_name);
-        std::fs::write(&mmd_file_path, content)?;
-        std::process::Command::new("mmdc")
-            .args([
-                &std::ffi::OsStr::new("-i"),
-                mmd_file_path.as_os_str(),
-                &std::ffi::OsStr::new("-o"),
-                svg_file_path.as_os_str(),
-            ])
-            .output()?;
+        std::fs::write(&mmd_file_path, content)
+            .with_context(|| format!("Failed to write to path: {}", mmd_file_path.display()))?;
+
+        // Allow users to provide multi-component way to run the mermaid command line program. It might just be
+        // ["mmdc"] but it might also be ["npx", "mmdc"] or something else if installed in a specific way
+        match mermaid_command.split_first() {
+            // Split off the first from the rest so that we can prep the values for std::process::Command
+            Some((first, rest)) => {
+                // Concatenate the user provided 'rest' with the args that we know we need to pass to mermaid
+                let args: Vec<_> = rest
+                    .iter()
+                    .map(|str| std::ffi::OsStr::new(str))
+                    .chain([
+                        &std::ffi::OsStr::new("-i"),
+                        mmd_file_path.as_os_str(),
+                        &std::ffi::OsStr::new("-o"),
+                        svg_file_path.as_os_str(),
+                    ])
+                    .collect();
+
+                // Attempt to run the command and provide a reasonable error message if it fails
+                std::process::Command::new(first)
+                    .args(&args)
+                    .output()
+                    .with_context(|| {
+                        format!(
+                            "Failed to run mermaid command: {:?}",
+                            [&[*first], rest].concat()
+                        )
+                    })?;
+            }
+            None => {}
+        }
     }
 
     Ok(svg_file_path)

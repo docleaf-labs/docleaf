@@ -293,7 +293,7 @@ class BasicDoxygenDirective(BaseDirective):
 
     def run(self) -> List[Node]:
         name = self.arguments[0]
-        project_name = self.options["project"] or self.app.config.docleaf_default_project
+        project_name = self.options.get("project", self.app.config.docleaf_default_project)
         project = Project.get(self.app.config.docleaf_projects, project_name)
         skip_settings = get_skip_settings(self.app, self.options)
 
@@ -305,6 +305,7 @@ class BasicDoxygenDirective(BaseDirective):
             str(build_dir),
             skip_settings,
             self.app.config.docleaf_domain_by_extension,
+            self.app.config.docleaf_mermaid_command,
         )
 
         tracked_cache = backend.TrackedCache(self.cache)
@@ -316,18 +317,22 @@ class BasicDoxygenDirective(BaseDirective):
 
 
 class ClassDirective(BasicDoxygenDirective):
+    directive_name = "doxygen-class"
     render_function = backend.render_class
 
 
 class StructDirective(BasicDoxygenDirective):
+    directive_name = "doxygen-struct"
     render_function = backend.render_struct
 
 
 class EnumDirective(BasicDoxygenDirective):
+    directive_name = "doxygen-enum"
     render_function = backend.render_enum
 
 
 class FunctionDirective(BasicDoxygenDirective):
+    directive_name = "doxygen-function"
     render_function = backend.render_function
 
 
@@ -359,6 +364,7 @@ class GroupDirective(BaseDirective):
             str(build_dir),
             skip_settings,
             self.app.config.docleaf_domain_by_extension,
+            self.app.config.docleaf_mermaid_command,
         )
 
         tracked_cache = backend.TrackedCache(self.cache)
@@ -370,6 +376,39 @@ class GroupDirective(BaseDirective):
             inner_group,
             tracked_cache,
         )
+        update_sphinx_env_file_data(self.app.env, tracked_cache.xml_paths(), self.app.env.docname)
+
+        node_builder = NodeManager(self.state, self.get_directive_args())
+        return render_node_list(node_list, node_builder)
+
+
+class InheritanceGraphDirective(BaseDirective):
+    has_content = True
+    required_arguments = 1
+    optional_arguments = 0
+    final_argument_whitespace = True
+    option_spec = {
+        "project": directives.unchanged,
+    }
+
+    def run(self) -> List[Node]:
+        name = self.arguments[0]
+        project_name = self.options.get("project", self.app.config.docleaf_default_project)
+        project = Project.get(self.app.config.docleaf_projects, project_name)
+
+        build_dir = Path(self.app.doctreedir).parent / "docleaf"
+        build_dir.mkdir(parents=True, exist_ok=True)
+
+        context = backend.Context(
+            project.root(),
+            str(build_dir),
+            skip_settings,
+            self.app.config.docleaf_domain_by_extension,
+            self.app.config.docleaf_mermaid_command,
+        )
+
+        tracked_cache = backend.TrackedCache(self.cache)
+        node_list = self.render_inheritance_graph(name, project.xml(), context, tracked_cache)
         update_sphinx_env_file_data(self.app.env, tracked_cache.xml_paths(), self.app.env.docname)
 
         node_builder = NodeManager(self.state, self.get_directive_args())
@@ -490,16 +529,29 @@ def setup(app: Sphinx):
 
     context = ExtensionContext(app, cache)
 
-    add_directive(context, "doxygenclass", ClassDirective)
-    add_directive(context, "doxygenenum", EnumDirective)
-    add_directive(context, "doxygenfunction", FunctionDirective)
-    add_directive(context, "doxygengroup", GroupDirective)
-    add_directive(context, "doxygenstruct", StructDirective)
+    add_directive(context, "doxygen-class", ClassDirective)
+    add_directive(context, "doxygenclass", ClassDirective)  # Deprecated
 
+    add_directive(context, "doxygen-enum", EnumDirective)
+    add_directive(context, "doxygenenum", EnumDirective)  # Deprecated
+
+    add_directive(context, "doxygen-function", FunctionDirective)
+    add_directive(context, "doxygenfunction", FunctionDirective)  # Deprecated
+
+    add_directive(context, "doxygen-group", GroupDirective)
+    add_directive(context, "doxygengroup", GroupDirective)  # Deprecated
+
+    add_directive(context, "doxygen-struct", StructDirective)
+    add_directive(context, "doxygenstruct", StructDirective)  # Deprecated
+
+    add_directive(context, "doxygen-inheritance-graph", InheritanceGraphDirective)
+
+    # Args: name = str, default = Any, rebuild = bool | str, types = Any
     app.add_config_value("docleaf_projects", {}, "env")
     app.add_config_value("docleaf_default_project", None, "env")
     app.add_config_value("docleaf_doxygen_skip", [], "env")
     app.add_config_value("docleaf_domain_by_extension", {}, True)
+    app.add_config_value("docleaf_mermaid_command", ["mmdc"], True)
 
     app.connect("env-get-outdated", calculate_files_to_refresh)
     app.connect("env-purge-doc", purge_file_data)

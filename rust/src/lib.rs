@@ -21,6 +21,7 @@ struct Context {
     pub build_dir: PathBuf,
     pub skip_settings: Vec<Skip>,
     pub domain_by_extension: HashMap<String, Domain>,
+    pub mermaid_command: Vec<String>,
 }
 
 #[pymethods]
@@ -31,6 +32,7 @@ impl Context {
         build_dir: String,
         skip_settings: Vec<String>,
         domain_by_extension: HashMap<String, String>,
+        mermaid_command: Vec<String>,
     ) -> PyResult<Self> {
         let domain_by_extension = Domain::create_lookup(domain_by_extension)
             .map_err(|err| PyValueError::new_err(format!("{}", err)))?;
@@ -55,6 +57,7 @@ impl Context {
             build_dir: PathBuf::from(build_dir),
             skip_settings,
             domain_by_extension,
+            mermaid_command,
         })
     }
 }
@@ -95,6 +98,7 @@ fn render_class(
                 skip: context.skip_settings.clone(),
                 extension_domain_lookup: context.domain_by_extension.clone(),
                 enumerated_list_depth: 0,
+                mermaid_command: context.mermaid_command.clone(),
             };
             let inner_groups = false;
             doxygen::render::render_compound(&context, root.as_ref(), inner_groups, &mut xml_loader)
@@ -142,6 +146,7 @@ fn render_struct(
                 skip: context.skip_settings.clone(),
                 extension_domain_lookup: context.domain_by_extension.clone(),
                 enumerated_list_depth: 0,
+                mermaid_command: context.mermaid_command.clone(),
             };
 
             let inner_groups = false;
@@ -213,6 +218,7 @@ fn render_member(
                 skip: context.skip_settings.clone(),
                 extension_domain_lookup: context.domain_by_extension.clone(),
                 enumerated_list_depth: 0,
+                mermaid_command: context.mermaid_command.clone(),
             };
 
             Ok(doxygen::render::render_member(
@@ -290,6 +296,7 @@ fn render_group(
                 skip: context.skip_settings.clone(),
                 extension_domain_lookup: context.domain_by_extension.clone(),
                 enumerated_list_depth: 0,
+                mermaid_command: context.mermaid_command.clone(),
             };
 
             if content_only {

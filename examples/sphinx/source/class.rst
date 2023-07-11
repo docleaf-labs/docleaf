@@ -2,20 +2,20 @@
 Class
 =====
 
-.. doxygenclass:: Nutshell
+.. doxygen-class:: Nutshell
    :project: nutshell
 
 Methods
 -------
 
-.. doxygenclass:: Example
+.. doxygen-class:: Example
    :project: class_methods
 
 
 Inheritance
 -----------
 
-.. doxygenclass:: Base
+.. doxygen-class:: Base
    :project: classes
 
 
