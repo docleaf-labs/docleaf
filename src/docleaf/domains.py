@@ -1,7 +1,4 @@
-import logging
-
 from sphinx.domains import cpp, c
-from docutils import nodes
 
 from . import copied
 from .errors import DocleafError
@@ -12,9 +9,10 @@ def null_handler(finder, location):
 
 
 def strip_desc_addname(finder, location):
-    # We pass qualified values to the domain directives but we don't always want Sphinx to show the qualified part
-    # in the output as normally it is shown but the nesting of the entities so we strip it out which involes removing
-    # the 'desc_addname' node in the output
+    # We pass qualified values to the domain directives but we don't always want Sphinx
+    # to show the qualified part in the output as normally it is shown but the nesting
+    # of the entities so we strip it out which involes removing the 'desc_addname' node
+    # in the output
     finder.declarator.children = [
         node for node in finder.declarator.children if node.tagname != "desc_addname"
     ]
@@ -109,9 +107,10 @@ def render_domain_entry(
 
 def set_children(node, children):
     """
-    The children have to be informed of the parent and that happens in the parents helper methods like 'append' and
-    'extend' so we can't just replace 'node.children' with 'children'. Instead we empty the children list and then
-    add the children so they are set up properly.
+    The children have to be informed of the parent and that happens in the parents
+    helper methods like 'append' and 'extend' so we can't just replace 'node.children'
+    with 'children'. Instead we empty the children list and then add the children so
+    they are set up properly.
     """
     node.children.clear()
     node.extend(children)

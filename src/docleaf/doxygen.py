@@ -1,17 +1,13 @@
 from typing import List
-from collections import defaultdict
 from pathlib import Path
 import itertools
 import textwrap
 import hashlib
-import pprint
 import time
 import sys
 import os
 
 from docutils.nodes import Node
-from docutils.parsers.rst.directives import unchanged_required, unchanged, flag
-from docutils.parsers.rst.states import Text
 from docutils.parsers.rst import Directive, directives
 from docutils.statemachine import StringList
 from docutils import nodes
@@ -19,7 +15,6 @@ from docutils import nodes
 from sphinx.application import Sphinx
 from sphinx.environment import BuildEnvironment
 from sphinx.util.nodes import nested_parse_with_titles
-from sphinx.domains import c
 from sphinx.util import logging
 import sphinx.addnodes
 
@@ -254,14 +249,16 @@ class Project:
             root = data["root"]
         except Exception:
             raise DocleafError(
-                f"Unable to find the 'root' entry in the data for '{name}' project defined in the docleaf_projects config variable"
+                f"Unable to find the 'root' entry in the data for '{name}' project defined in the docleaf_projects "
+                "config variable"
             )
 
         try:
             xml = data["xml"]
         except Exception:
             raise DocleafError(
-                f"Unable to find the 'xml' entry in the data for '{name}' project defined in the docleaf_projects config variable"
+                f"Unable to find the 'xml' entry in the data for '{name}' project defined in the docleaf_projects "
+                "config variable"
             )
 
         return Project(root, xml)
@@ -444,9 +441,7 @@ def calculate_files_to_refresh(app: Sphinx, env, added, changed, removed):
         stat = os.stat(xml_file_path)
         if stat.st_mtime > last_build_time:
             hash = hash_file(xml_file_path)
-            logger.debug(
-                f"docleaf: stored hash for {xml_file_path} = {hash}. Calculated hash: {info.hash}"
-            )
+            logger.debug(f"docleaf: stored hash for {xml_file_path} = {hash}. Calculated hash: {info.hash}")
             if hash != info.hash:
                 # Store the new hash
                 info.hash = hash

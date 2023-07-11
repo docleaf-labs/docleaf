@@ -27,6 +27,7 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
+from docutils.statemachine import UnexpectedIndentationError
 from docutils.parsers.rst.states import Text
 from docutils import nodes
 

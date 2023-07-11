@@ -38,10 +38,10 @@ python-source = "src"
 manifest-path = "rust/Cargo.toml"
 
 [tool.black]
-line-length = 100
-extend-exclude = '''
-^/docleaf/parser/.*
-'''
+line-length = 120
+
+[tool.ruff]
+line-length = 120
 
 # Poetry - used for dev and must be kept in sync with the top sections until we abandon it or they update to 
 # support the use of the main [project] and dependencies information

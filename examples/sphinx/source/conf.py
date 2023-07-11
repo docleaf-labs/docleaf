@@ -1,7 +1,4 @@
-from pathlib import Path
 import docleaf.doxygen
-import sys
-import os
 
 # Configuration file for the Sphinx documentation builder.
 #
