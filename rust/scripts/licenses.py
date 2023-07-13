@@ -63,7 +63,6 @@ def extract_license_text(licenses):
 
 
 def main(args):
-
     if not args:
         print("Usage: licenses.py <mode>", file=sys.stderr)
         return 1
