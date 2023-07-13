@@ -13,6 +13,11 @@ jobs:
     - uses: psf/black@stable
     - uses: chartboost/ruff-action@v1
     - uses: actions/setup-python@v4
+    - uses: dtolnay/rust-toolchain@stable
+      # Install cargo bundle-licenses for use in the next step
+    - name: Install cargo bundle-licenses
+      run: |
+        cargo install cargo-bundle-licenses
     - name: Check third party licenses files
       run: |
         cd rust
