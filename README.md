@@ -9,6 +9,13 @@
 Docleaf smoothly integrates your technical and long-form documentation. It is a Sphinx extension which reads Doxygen
 XML output and formats the information seamlessly with your user documentation.
 
+- [License](#license)
+- [Features](#features)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Performance](#performance)
+- [History](#history)
+
 ## License
 
 Docleaf is licensed under the [Parity Public License](./LICENSE.md). The Parity license allows permissive use of 
