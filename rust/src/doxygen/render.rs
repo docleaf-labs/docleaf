@@ -247,8 +247,10 @@ pub fn render_compound(
 
     let kind = text::render_compound_kind(&compound_def.kind);
 
-    Ok(vec![Node::Desc(
-        vec![Node::DescSignature(
+    Ok(vec![Node::Desc {
+        object_type: text::render_compound_kind(&compound_def.kind).to_string(),
+        domain: ctx.domain.clone(),
+        signature_lines: vec![Node::DescSignature(
             SignatureType::MultiLine,
             vec![Node::DescSignatureLine(vec![
                 Node::Target(target),
@@ -259,8 +261,8 @@ pub fn render_compound(
                 ))),
             ])],
         )],
-        Box::new(content),
-    )])
+        content: Box::new(content),
+    }])
 }
 
 /// Entry point
@@ -630,13 +632,15 @@ pub fn render_member_def(
 
     let content = Node::DescContent(content_nodes);
 
-    vec![Node::Desc(
-        vec![Node::DescSignature(
+    vec![Node::Desc {
+        object_type: text::render_member_kind(&member_def.kind).to_string(),
+        domain: ctx.domain.clone(),
+        signature_lines: vec![Node::DescSignature(
             SignatureType::MultiLine,
             vec![Node::DescSignatureLine(signature_line)],
         )],
-        Box::new(content),
-    )]
+        content: Box::new(content),
+    }]
 }
 
 fn is_upper_snake_case(str: &str) -> bool {
@@ -741,15 +745,17 @@ pub fn render_enum_value(ctx: &Context, enum_name: &str, enum_value: &e::Enumval
     } else {
         let content = Node::DescContent(content_nodes);
 
-        Node::Desc(
-            vec![Node::DescSignature(
+        Node::Desc {
+            domain: None,
+            object_type: String::from("enumvalue"),
+            signature_lines: vec![Node::DescSignature(
                 SignatureType::MultiLine,
                 vec![Node::DescSignatureLine(vec![Node::DescName(Box::new(
                     Node::DescSignatureName(enum_value.name.clone()),
                 ))])],
             )],
-            Box::new(content),
-        )
+            content: Box::new(content),
+        }
     }
 }
 
@@ -1057,19 +1063,21 @@ fn render_doc_entry_type(ctx: &Context, element: &e::DocEntryType) -> TableCell 
 }
 
 fn render_doc_xref_sect_type(ctx: &Context, element: &e::DocXRefSectType) -> Node {
-    Node::Desc(
-        vec![Node::DescSignature(
+    Node::Desc {
+        domain: ctx.domain.clone(),
+        object_type: String::from("xrefsect"),
+        signature_lines: vec![Node::DescSignature(
             SignatureType::MultiLine,
             vec![Node::Emphasis(vec![Node::Text(format!(
                 "{}:",
                 element.xreftitle
             ))])],
         )],
-        Box::new(Node::DescContent(render_description(
+        content: Box::new(Node::DescContent(render_description(
             ctx,
             &element.xrefdescription,
         ))),
-    )
+    }
 }
 
 fn render_verbatim_text(_ctx: &Context, text: &str) -> CategorizedNode {

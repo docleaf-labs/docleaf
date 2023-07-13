@@ -36,6 +36,25 @@ pub fn render_compound_kind(kind: &e::DoxCompoundKind) -> &'static str {
     }
 }
 
+pub fn render_member_kind(kind: &e::DoxMemberKind) -> &'static str {
+    match kind {
+        e::DoxMemberKind::Define => "define",
+        e::DoxMemberKind::Property => "property",
+        e::DoxMemberKind::Event => "event",
+        e::DoxMemberKind::Variable => "variable",
+        e::DoxMemberKind::Typedef => "typedef",
+        e::DoxMemberKind::Enum => "enum",
+        e::DoxMemberKind::Function => "function",
+        e::DoxMemberKind::Signal => "signal",
+        e::DoxMemberKind::Prototype => "prototype",
+        e::DoxMemberKind::Friend => "friend",
+        e::DoxMemberKind::Dcop => "dcop",
+        e::DoxMemberKind::Slot => "slot",
+        e::DoxMemberKind::Interface => "interface",
+        e::DoxMemberKind::Service => "service",
+    }
+}
+
 fn with_trailing(mut string: String, suffix: &str) -> String {
     string.push_str(suffix);
     string

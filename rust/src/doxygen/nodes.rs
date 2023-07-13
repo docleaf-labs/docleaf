@@ -74,8 +74,9 @@ pub enum SignatureType {
     MultiLine,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub enum Domain {
+    #[default]
     CPlusPlus,
     C,
 }
@@ -209,7 +210,13 @@ pub enum Node {
     // Nodes
     /// Used in this code base like an html5 div - just a block level wrapper
     Container(Vec<Node>),
-    Desc(Vec<Node>, Box<Node>),
+    /// sphinx.addnodes.desc requires 'objtype' and 'domain' attributes
+    Desc {
+        object_type: String,
+        domain: Option<Domain>,
+        signature_lines: Vec<Node>,
+        content: Box<Node>,
+    },
     DescContent(Vec<Node>),
     DescName(Box<Node>),
     DescParameter(Vec<Node>),
@@ -347,12 +354,24 @@ impl IntoPy<PyObject> for Node {
             Self::Container(nodes) => {
                 node(py, "container", CallAs::Element, Attributes::new(), nodes).into_py(py)
             }
-            Self::Desc(lines, content) => {
-                let mut children: Vec<_> =
-                    lines.into_iter().map(|entry| entry.into_py(py)).collect();
+            Self::Desc {
+                object_type,
+                domain,
+                signature_lines,
+                content,
+            } => {
+                let mut children: Vec<_> = signature_lines
+                    .into_iter()
+                    .map(|entry| entry.into_py(py))
+                    .collect();
                 children.push(content.into_py(py));
 
-                node(py, "desc", CallAs::Element, Attributes::new(), children).into_py(py)
+                let attributes = HashMap::from([
+                    ("objtype".into(), object_type.into_py(py)),
+                    ("domain".into(), domain.unwrap_or_default().into_py(py)),
+                ]);
+
+                node(py, "desc", CallAs::Element, attributes, children).into_py(py)
             }
             Self::DescContent(nodes) => node(
                 py,
