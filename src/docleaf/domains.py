@@ -13,9 +13,7 @@ def strip_desc_addname(finder, location):
     # to show the qualified part in the output as normally it is shown but the nesting
     # of the entities so we strip it out which involes removing the 'desc_addname' node
     # in the output
-    finder.declarator.children = [
-        node for node in finder.declarator.children if node.tagname != "desc_addname"
-    ]
+    finder.declarator.children = [node for node in finder.declarator.children if node.tagname != "desc_addname"]
 
 
 def add_location_via_names(finder, location):
