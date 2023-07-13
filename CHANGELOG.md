@@ -1,11 +1,17 @@
 # Docleaf Changelog
 
-## Unreleased
+## Version 0.8.2 - 2023-07-13
 
 ### Added
 
 - Added third-party licenses file to the distributed Python wheels to include the licenses for the Rust crates used
   in the Rust part of the this project.
+
+### Fixed
+
+- Added `objtype` and `domain` attributes to all directly created `desc` nodes to resolve
+  [#3](https://github.com/docleaf-labs/docleaf/issues/3). The `domain` value falls back to `cpp` if no explicit domain
+  is detected from the Doxygen XML files or a setting like `docleaf_domain_by_extension`.
 
 ## Version 0.8.1 - 2023-07-03
 
