@@ -16,6 +16,7 @@ Welcome to Docleaf's documentation!
    functions
    groups
    htmlonly
+   includes
    paragraphs
    preformatted
    program-listings
