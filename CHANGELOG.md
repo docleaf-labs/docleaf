@@ -1,5 +1,13 @@
 # Docleaf Changelog
 
+## Version 0.8.3 - 2023-08-04
+
+### Fixed
+
+- Fixed handling of `includes` XML tags that do not have a `refid` attribute. This occurs
+  for `includes` that point to files that Doxygen is not aware of or hasn't generated an
+  entry for.
+
 ## Version 0.8.2 - 2023-07-13
 
 ### Added
