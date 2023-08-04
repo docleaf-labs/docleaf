@@ -20,9 +20,9 @@ XML output and formats the information seamlessly with your user documentation.
 
 Docleaf is licensed under the [Parity Public License](./LICENSE.md). The Parity license allows permissive use of 
 Docleaf to help document open source projects. If you have a closed source project that you would like to document with
-Docleaf then you must purchase a commercial license.
+Docleaf then you must purchase a commercial license. Please see the [Docleaf Pricing](https://docleaf.io/pricing) page for more information.
 
-For further information please email: [support@docleaf.io](mailto:support@docleaf.io)
+If you have any questions please email: [support@docleaf.io](mailto:support@docleaf.io)
 
 ## Features
 
